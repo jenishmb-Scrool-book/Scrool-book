@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Скролл — читалка</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#05050a;color:#eceaf3;
+  font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+button,textarea,input{font:inherit;color:inherit}
+
+#phone{position:relative;width:100%;max-width:440px;height:100dvh;margin:0 auto;
+  overflow:hidden;background:#0b0b12;box-shadow:0 0 60px #000}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;background:#0b0b12}
+.screen.on{display:flex}
+
+.status{flex:none;display:flex;justify-content:space-between;align-items:center;
+  padding:8px 18px 2px;font-size:12px;opacity:.75;letter-spacing:.3px}
+.hdr{flex:none;display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:#14141f;border-bottom:1px solid #ffffff12}
+.hdr h2{margin:0;font-size:16px;font-weight:600;flex:1}
+.back{cursor:pointer;font-size:24px;line-height:1;padding:2px 8px;opacity:.9;user-select:none}
+.body{flex:1;overflow-y:auto;overscroll-behavior:contain;position:relative}/* offsetParent для карточек */
+.prog{flex:none;height:3px;background:#ffffff14}
+.prog i{display:block;height:100%;width:0;background:#7c5cff;transition:width .2s}
+.float{position:absolute;z-index:5}
+
+/* ===== дом ===== */
+#home{background:linear-gradient(165deg,#22325c 0%,#3b2050 45%,#0b0b12 100%)}
+.widget{margin:18px 16px 6px;padding:14px 16px;border-radius:18px;
+  background:#ffffff14;backdrop-filter:blur(8px);border:1px solid #ffffff1f}
+.widget .t{font-size:13px;opacity:.7}
+.widget .n{font-size:17px;font-weight:600;margin:2px 0 10px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.widget .bar{height:5px;border-radius:3px;background:#ffffff26;overflow:hidden;margin-bottom:12px}
+.widget .bar i{display:block;height:100%;background:#8f7bff;transition:width .2s}
+.widget button{width:100%;border:0;border-radius:12px;padding:11px;
+  background:#7c5cff;font-weight:600;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px 6px;padding:22px 14px}
+.icon{display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer}
+.icon b{width:58px;height:58px;border-radius:17px;display:grid;place-items:center;
+  font-size:28px;box-shadow:0 8px 18px #0008}
+.icon span{font-size:11px;opacity:.92;text-align:center}
+.dock{margin-top:auto;display:flex;justify-content:space-around;padding:14px 18px 26px;
+  background:#ffffff10;backdrop-filter:blur(10px)}
+
+/* ===== чаты ===== */
+#chats .body{padding:12px 12px 4px;background:#0d1620}
+.msg{max-width:84%;padding:9px 12px 6px;border-radius:16px 16px 16px 4px;margin:8px 0;
+  background:#1e2c36;white-space:pre-wrap;word-break:break-word;animation:pop .18s ease-out}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}}
+.msg .t{display:block;text-align:right;font-size:10px;opacity:.45;margin-top:3px}
+.next{display:block;margin:16px auto 20px;border:0;border-radius:22px;padding:11px 22px;
+  background:#2ea36f;font-weight:600;cursor:pointer}
+.done{text-align:center;opacity:.6;font-size:14px;padding:20px}
+
+/* ===== клипы ===== */
+#reels .body{padding:0;scroll-snap-type:y mandatory}
+#reels .float.back{top:10px;left:8px;font-size:28px;text-shadow:0 2px 8px #000}
+#reels .prog.float{top:0;left:0;right:0;background:#ffffff20}
+.reel{height:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative;
+  display:flex;flex-direction:column;justify-content:flex-end;padding:56px 74px 44px 20px}
+.reel .txt{font-size:21px;line-height:1.45;font-weight:600;text-shadow:0 2px 14px #000a;
+  max-height:76%;overflow:auto;word-break:break-word}
+.reel .cnt{margin-top:14px;font-size:12px;opacity:.65}
+.rail{position:absolute;right:10px;bottom:64px;display:flex;flex-direction:column;
+  gap:20px;align-items:center;font-size:25px;text-shadow:0 2px 8px #000}
+.rail small{display:block;font-size:10px;text-align:center;font-weight:600}
+
+/* ===== лента ===== */
+.post{border-bottom:1px solid #ffffff10;padding-bottom:12px;margin-bottom:8px}
+.post .u{display:flex;align-items:center;gap:9px;padding:9px 12px;font-size:14px;font-weight:600}
+.post .av{width:32px;height:32px;border-radius:50%;flex:none}
+.post .pic{aspect-ratio:4/5;display:flex;align-items:center;padding:26px 22px;
+  font-size:17px;line-height:1.5;font-weight:500;overflow:auto;word-break:break-word}
+.post .acts{padding:9px 12px 4px;font-size:21px;letter-spacing:12px}
+.post .cap{padding:0 12px;font-size:13px;opacity:.6}
+
+/* ===== видео ===== */
+.vid{display:flex;gap:10px;padding:9px 12px;cursor:pointer;align-items:flex-start}
+.vid .th{width:132px;aspect-ratio:16/9;border-radius:9px;flex:none;display:grid;
+  place-items:center;font-size:26px;opacity:.9}
+.vid .ti{font-size:14px;font-weight:600;line-height:1.35;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.vid .meta{font-size:12px;opacity:.55;margin-top:5px}
+#player .stage{flex:none;aspect-ratio:16/9;display:flex;align-items:center;
+  padding:20px;font-size:16px;line-height:1.5;overflow:auto;word-break:break-word}
+#player .info{padding:14px}
+#player .info h3{margin:0 0 6px;font-size:16px}
+#player .info .m{font-size:12px;opacity:.55;margin-bottom:16px}
+
+/* ===== библиотека ===== */
+#library .body{padding:14px}
+#library textarea{width:100%;height:140px;border-radius:12px;border:1px solid #ffffff20;
+  background:#15151f;padding:10px;resize:vertical}
+.row{display:flex;gap:8px;margin:10px 0 22px}
+.row button,.filebtn{flex:1;border:0;border-radius:11px;padding:11px;cursor:pointer;
+  background:#7c5cff;font-weight:600;text-align:center}
+.filebtn{background:#2a2a3a}
+.filebtn input{display:none}
+.book{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:12px;
+  background:#15151f;margin-bottom:8px;cursor:pointer;border:1px solid transparent}
+.book.sel{border-color:#7c5cff;background:#1c1830}
+.book .i{flex:1;min-width:0}
+.book .i b{display:block;font-size:14px;font-weight:600;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.book .i span{font-size:12px;opacity:.55}
+.book .x{opacity:.5;padding:4px 6px;font-size:18px}
+.hint{opacity:.5;font-size:13px;margin:6px 0 16px}
+</style>
+</head>
+<body>
+<div id="phone">
+
+  <!-- ДОМ -->
+  <div class="screen on" id="home">
+    <div class="status"><span class="ct">9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+    <div class="widget">
+      <div class="t">Читаешь сейчас</div>
+      <div class="n" id="wName">—</div>
+      <div class="bar"><i id="wBar"></i></div>
+      <button onclick="cont()">Продолжить</button>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="dock">
+      <div class="icon" onclick="go('library')"><b style="background:#2a2a3a">📚</b><span>Библиотека</span></div>
+      <div class="icon" onclick="go('reels')"><b style="background:linear-gradient(145deg,#ff2d55,#7c5cff)">🎬</b><span>Клипы</span></div>
+      <div class="icon" onclick="go('chats')"><b style="background:linear-gradient(145deg,#2ea36f,#0f7a4d)">💬</b><span>Чаты</span></div>
+    </div>
+  </div>
+
+  <!-- ЧАТЫ -->
+  <div class="screen" id="chats">
+    <div class="status"><span class="ct">9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+    <div class="hdr">
+      <span class="back" onclick="go('home')">‹</span>
+      <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(145deg,#7c5cff,#ff2d55)"></div>
+      <h2 id="chatName">Книга</h2>
+      <span style="opacity:.5">⋮</span>
+    </div>
+    <div class="prog"><i></i></div>
+    <div class="body"></div>
+  </div>
+
+  <!-- КЛИПЫ -->
+  <div class="screen" id="reels">
+    <div class="prog float"><i></i></div>
+    <span class="back float" onclick="go('home')">‹</span>
+    <div class="body"></div>
+  </div>
+
+  <!-- ЛЕНТА -->
+  <div class="screen" id="feed">
+    <div class="status"><span class="ct">9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+    <div class="hdr"><span class="back" onclick="go('home')">‹</span><h2>Лента</h2></div>
+    <div class="prog"><i></i></div>
+    <div class="body"></div>
+  </div>
+
+  <!-- ВИДЕО -->
+  <div class="screen" id="video">
+    <div class="status"><span class="ct">9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+    <div class="hdr"><span class="back" onclick="go('home')">‹</span><h2>Видео</h2></div>
+    <div class="prog"><i></i></div>
+    <div class="body"></div>
+  </div>
+
+  <!-- ПЛЕЕР -->
+  <div class="screen" id="player">
+    <div class="status"><span class="ct">9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+    <div class="hdr"><span class="back" onclick="go('video')">‹</span><h2>Смотрим</h2></div>
+    <div class="prog"><i></i></div>
+    <div class="body"><div class="stage"></div><div class="info"></div></div>
+  </div>
+
+  <!-- БИБЛИОТЕКА -->
+  <div class="screen" id="library">
+    <div class="status"><span class="ct">9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+    <div class="hdr"><span class="back" onclick="go('home')">‹</span><h2>Библиотека</h2></div>
+    <div class="body">
+      <textarea id="paste" placeholder="Вставь сюда текст книги…"></textarea>
+      <div class="row">
+        <button onclick="fromPaste()">Добавить</button>
+        <label class="filebtn">Файл .txt<input type="file" accept=".txt,.md,text/plain" onchange="fromFile(this)"></label>
+      </div>
+      <div class="hint">Один текст — один прогресс. Читай его в чатах, клипах, ленте или «видео», позиция общая.</div>
+      <div id="books"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const KEY = 'scroll.meta', BKEY = 'scroll.book.';
+
+// localStorage бросает SecurityError в приватном режиме и на opaque origin — тогда память на сессию.
+const LS = (() => {
+  try { localStorage.setItem('_t', '1'); localStorage.removeItem('_t'); return localStorage; }
+  catch (e) {
+    const m = {};
+    return {getItem: k => (k in m ? m[k] : null), setItem: (k, v) => m[k] = String(v), removeItem: k => delete m[k]};
+  }
+})();
+
+// ponytail: localStorage, лимит ~5 МБ на домен. Тексты книг лежат отдельными ключами,
+// чтобы не пересериализовывать книгу на каждый сдвиг курсора. IndexedDB — когда упрёмся в лимит.
+let M = JSON.parse(LS.getItem(KEY) || 'null') || {books: [], cur: null, pos: {}, last: 'reels'};
+let chunks = [];
+
+const save   = () => LS.setItem(KEY, JSON.stringify(M));
+const bookOf = id => M.books.find(b => b.id === id);
+const pos    = () => M.pos[M.cur] || 0;
+
+function setPos(i, repaint) {
+  if (!M.cur || !chunks.length) return;
+  i = Math.max(0, Math.min(i, chunks.length - 1));
+  if (M.pos[M.cur] === i) return;
+  M.pos[M.cur] = i; save();
+  if (repaint !== false) paint();
+}
+
+/* ===== чанкер ===== */
+function chunk(text, max = 280) {
+  const out = [];
+  for (const para of String(text).split(/\n\s*\n+/)) {
+    const p = para.trim().replace(/\s+/g, ' ');
+    if (!p) continue;
+    if (p.length <= max) { out.push(p); continue; }
+    let buf = '';
+    for (const s of p.split(/(?<=[.!?…»"])\s+/)) {
+      if (buf && (buf + ' ' + s).length > max) { out.push(buf); buf = s; }
+      else buf = buf ? buf + ' ' + s : s;
+    }
+    if (buf) out.push(buf);
+  }
+  return out;
+}
+
+/* ===== книги ===== */
+function addBook(title, txt) {
+  txt = (txt || '').trim();
+  if (!txt) return alert('Пустой текст');
+  const id = String(Date.now());
+  try { LS.setItem(BKEY + id, txt); }
+  catch (e) { return alert('Не влезло в хранилище браузера (~5 МБ). Разбей текст на части.'); }
+  M.books.push({id, title: (title || txt.slice(0, 40)).trim(), n: chunk(txt).length});
+  M.pos[id] = 0; save(); openBook(id);
+}
+function openBook(id) {
+  M.cur = id; save();
+  chunks = chunk(LS.getItem(BKEY + id) || '');
+  const b = bookOf(id); if (b) b.n = chunks.length;
+  paint();
+}
+function delBook(id, ev) {
+  ev.stopPropagation();
+  const b = bookOf(id);
+  if (!confirm('Удалить «' + (b ? b.title : '') + '»?')) return;
+  LS.removeItem(BKEY + id);
+  M.books = M.books.filter(x => x.id !== id);
+  delete M.pos[id];
+  save();
+  if (M.cur === id) {
+    if (M.books.length) openBook(M.books[0].id);
+    else { M.cur = null; chunks = []; save(); paint(); }
+  }
+  renderLibrary();
+}
+const fromPaste = () => { const t = $('#paste'); addBook(t.value.split('\n')[0], t.value); t.value = ''; renderLibrary(); go('home'); };
+const fromFile  = el => { const f = el.files[0]; if (f) f.text().then(t => { addBook(f.name.replace(/\.\w+$/, ''), t); renderLibrary(); go('home'); }); el.value = ''; };
+
+/* ===== навигация ===== */
+const RENDER = {chats: renderChats, reels: renderReels, feed: renderFeed, video: renderVideo, library: renderLibrary, home: paintHome};
+function go(id) {
+  if (!['home', 'library'].includes(id) && !chunks.length) id = 'library';
+  if (['chats', 'reels', 'feed', 'video'].includes(id)) { M.last = id; save(); }
+  $$('.screen').forEach(s => s.classList.toggle('on', s.id === id));
+  paintProgress();
+  if (RENDER[id]) RENDER[id]();
+}
+const cont = () => go(chunks.length ? (M.last || 'reels') : 'library');
+
+/* ===== общая отрисовка ===== */
+function paint() { paintProgress(); paintHome(); }
+function paintProgress() {
+  const p = chunks.length ? (pos() + 1) / chunks.length * 100 : 0;
+  $$('.prog i, #wBar').forEach(i => i.style.width = p.toFixed(1) + '%');
+}
+function paintHome() {
+  const b = bookOf(M.cur);
+  $('#wName').textContent = b ? b.title : 'Нет текста — добавь в библиотеке';
+  $('#chatName').textContent = b ? b.title : 'Книга';
+}
+
+const APPS = [
+  ['💬', 'Чаты',        'chats',   'linear-gradient(145deg,#2ea36f,#0f7a4d)'],
+  ['🎬', 'Клипы',       'reels',   'linear-gradient(145deg,#ff2d55,#7c5cff)'],
+  ['📷', 'Лента',       'feed',    'linear-gradient(145deg,#f9a03f,#d62976 60%,#7c5cff)'],
+  ['▶️', 'Видео',       'video',   'linear-gradient(145deg,#ff4b4b,#a10f0f)'],
+  ['📚', 'Книги',       'library', '#2a2a3a'],
+  ['⚙️', 'Настройки',   'library', '#33333f'],
+  ['🔔', 'Уведомления', 'chats',   'linear-gradient(145deg,#4a90d9,#1f4f8f)'],
+  ['🔥', 'Стрик',       'reels',   'linear-gradient(145deg,#ff8a00,#e52e71)']
+];
+$('#grid').innerHTML = APPS.map(a =>
+  `<div class="icon" onclick="go('${a[2]}')"><b style="background:${a[3]}">${a[0]}</b><span>${a[1]}</span></div>`).join('');
+
+const hue  = i => (i * 47) % 360;
+const grad = i => `linear-gradient(160deg,hsl(${hue(i)} 58% 30%),hsl(${(hue(i) + 50) % 360} 55% 13%))`;
+
+/* Курсор двигает карточка, которая сейчас вверху экрана.
+   ponytail: линейный проход по окну + дебаунс 120 мс. Станут тысячи карточек — бинарный поиск по offsetTop. */
+function grow(box, n, make) {
+  const from = +box.dataset.end, end = Math.min(chunks.length, from + n);
+  if (from >= end) return;
+  box.insertAdjacentHTML('beforeend', Array.from({length: end - from}, (_, k) => make(from + k)).join(''));
+  box.dataset.end = end;
+}
+function track(box, sel, make, readPos) {
+  let t;
+  box.onscroll = () => {
+    clearTimeout(t);
+    t = setTimeout(() => {
+      if (readPos) for (const el of box.querySelectorAll(sel))
+        if (el.offsetTop + el.offsetHeight > box.scrollTop + 40) { setPos(+el.dataset.i, false); paintProgress(); break; }
+      if (box.scrollTop + box.clientHeight * 2 > box.scrollHeight) grow(box, 20, make);
+    }, 120);
+  };
+}
+// ponytail: окно рендера, а не виртуализация. Растёт по скроллу, сбрасывается при входе на экран.
+function mount(box, sel, make, ahead, readPos) {
+  box.dataset.end = Math.max(0, pos() - ahead);
+  box.innerHTML = '';
+  grow(box, 25, make);
+  track(box, sel, make, readPos);
+  const cur = box.querySelector('[data-i="' + pos() + '"]');
+  if (cur) box.scrollTop = cur.offsetTop;
+}
+
+/* ===== чаты ===== */
+function renderChats() {
+  const box = $('#chats .body');
+  const d = new Date(), time = d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
+  const from = Math.max(0, pos() - 14);
+  box.innerHTML = chunks.slice(from, pos() + 1)
+      .map(c => `<div class="msg">${esc(c)}<span class="t">${time}</span></div>`).join('')
+    + (pos() + 1 < chunks.length
+        ? `<button class="next" onclick="setPos(${pos() + 1});renderChats()">Дальше ↓</button>`
+        : `<div class="done">Конец текста</div>`);
+  box.scrollTop = box.scrollHeight;
+}
+
+/* ===== клипы ===== */
+const reelCard = i => `<div class="reel" data-i="${i}" style="background:${grad(i)}">
+    <div class="txt">${esc(chunks[i])}</div>
+    <div class="cnt">@книга · ${i + 1} из ${chunks.length}</div>
+    <div class="rail">❤️<small>${(i * 37) % 900 + 12}</small>💬<small>${(i * 11) % 90}</small>↗<small>${(i * 7) % 60}</small></div>
+  </div>`;
+function renderReels() { mount($('#reels .body'), '.reel', reelCard, 2, true); }
+
+/* ===== лента ===== */
+const postCard = i => `<div class="post" data-i="${i}">
+    <div class="u"><div class="av" style="background:${grad(i)}"></div>книга.дня</div>
+    <div class="pic" style="background:${grad(i + 3)}">${esc(chunks[i])}</div>
+    <div class="acts">♡ ⌯ ↗</div>
+    <div class="cap">${(i * 53) % 4000 + 80} отметок · фрагмент ${i + 1} из ${chunks.length}</div>
+  </div>`;
+function renderFeed() { mount($('#feed .body'), '.post', postCard, 1, true); }
+
+/* ===== видео ===== */
+const vidRow = i => `<div class="vid" data-i="${i}" onclick="playVideo(${i})">
+    <div class="th" style="background:${grad(i)}">▶</div>
+    <div><div class="ti">${esc(chunks[i].slice(0, 70))}${chunks[i].length > 70 ? '…' : ''}</div>
+    <div class="meta">книга · ${(i * 91) % 900 + 3} тыс. просмотров${i === pos() ? ' · тут остановился' : ''}</div></div>
+  </div>`;
+function renderVideo() { mount($('#video .body'), '.vid', vidRow, 1, false); }
+
+function playVideo(i) {
+  setPos(i);
+  $('#player .stage').style.background = grad(i);
+  $('#player .stage').innerHTML = `<div>${esc(chunks[i])}</div>`;
+  $('#player .info').innerHTML =
+    `<h3>Фрагмент ${i + 1} из ${chunks.length}</h3>
+     <div class="m">${(i * 91) % 900 + 3} тыс. просмотров · сегодня</div>`
+    + (i + 1 < chunks.length ? `<button class="next" onclick="playVideo(${i + 1})">Следующее ▶</button>`
+                             : `<div class="done">Конец текста</div>`);
+  go('player');
+  $('#player .body').scrollTop = 0;
+}
+
+/* ===== библиотека ===== */
+function renderLibrary() {
+  $('#books').innerHTML = M.books.length ? M.books.map(b => {
+    const p = b.n ? Math.round(((M.pos[b.id] || 0) + 1) / b.n * 100) : 0;
+    return `<div class="book ${b.id === M.cur ? 'sel' : ''}" onclick="openBook('${b.id}');go('home')">
+      <div class="i"><b>${esc(b.title)}</b><span>${b.n} фрагментов · ${p}%</span></div>
+      <span class="x" onclick="delBook('${b.id}',event)">✕</span></div>`;
+  }).join('') : '<div class="hint">Пока пусто.</div>';
+}
+
+/* ===== старт ===== */
+const SEED = `Как это работает
+
+Ты вставляешь свою книгу или любой текст. Приложение режет его на короткие куски — примерно по одному экрану каждый.
+
+Дальше ты читаешь его не как книгу, а как телефон. Открываешь «Чаты» — текст приходит сообщениями. Открываешь «Клипы» — листаешь вертикально, как ленту коротких видео.
+
+«Лента» показывает те же куски постами. «Видео» — списком роликов, где текст лежит на месте самого видео.
+
+Главное: позиция общая. Прочитал десять кусков в клипах, зашёл в чаты — продолжаешь с одиннадцатого.
+
+Мозг, привыкший к бесконечной ленте, получает знакомую форму. А содержание при этом твоё.
+
+Свой текст добавляй в «Библиотеке»: вставь в поле или загрузи файл .txt.
+
+Прогресс сохраняется в браузере. Можно закрыть вкладку и вернуться.
+
+Этот текст — тоже книга. Удали его, когда добавишь свою.`;
+
+if (!M.books.length) addBook('Как это работает', SEED);
+else if (M.cur) openBook(M.cur);
+else paint();
+renderLibrary();
+
+const clock = () => {
+  const d = new Date(), t = d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
+  $$('.ct').forEach(e => e.textContent = t);
+};
+clock(); setInterval(clock, 30000);
+
+/* Самопроверка чанкера: index.html?test */
+if (location.search.includes('test')) {
+  const ok = (c, m) => { if (!c) throw new Error('чанкер: ' + m); };
+  ok(chunk('раз\n\nдва').length === 2, 'абзацы не разделились');
+  ok(chunk('  \n\n  ').length === 0, 'пустое не отфильтровалось');
+  ok(chunk('а'.repeat(50), 280).length === 1, 'короткий абзац разрезан');
+  const long = chunk('Первое предложение. '.repeat(40), 280);
+  ok(long.length > 1, 'длинный абзац не разрезан');
+  ok(long.every(c => c.length <= 320), 'кусок длиннее лимита: ' + Math.max(...long.map(c => c.length)));
+  ok(chunk('Одно. Два.', 280).length === 1, 'мелочь разрезана зря');
+  document.title = 'тесты ок ✓';
+  console.log('chunk(): все проверки прошли');
+}
+</script>
+</body>
+</html>
