@@ -12,3 +12,6 @@ export const comments = i => (i * 11) % 90;
 export const shares = i => (i * 7) % 60;
 export const marks = i => (i * 53) % 4000 + 80;
 export const views = i => (i * 91) % 900 + 3;
+
+// Длительность «ролика» — та же бутафория, что и счётчики: от индекса, не от часов.
+export const dur = i => ((i * 13) % 18 + 3) + ':' + String((i * 29) % 60).padStart(2, '0');

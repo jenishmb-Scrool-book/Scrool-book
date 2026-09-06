@@ -8,6 +8,7 @@ import useCardWindow from '../ui/useCardWindow.js';
 import useChunks from '../ui/useChunks.js';
 import {SIZE} from '../ui/sizes.js';
 import {grad, marks} from '../ui/visual.js';
+import {NAMES} from '../lib/fake.js';
 
 // «Лента»: те же куски постами. Текст лежит ровно на месте картинки —
 // в этом весь фокус, картинки тут нет вообще.
@@ -24,6 +25,16 @@ export default function Feed({go}) {
       <Header onBack={() => go('home')} title={t('feed.title')} />
       <Progress offset={offset} len={text.length} />
       <div className="body" ref={boxRef}>
+        {/* Полоса «историй» над лентой. Она декоративна и не нажимается: её
+            задача — чтобы экран узнавался с первого взгляда, а не открывался. */}
+        <div className="srow">
+          {NAMES.slice(0, 6).map((name, k) => (
+            <div className="sitem" key={k}>
+              <div className="ring" style={{background: grad(k * 7 + 2)}}><i /></div>
+              <span>{k === 0 ? t('feed.your_story') : name}</span>
+            </div>
+          ))}
+        </div>
         {items.map(i => (
           <div className="post" key={i} data-i={i}>
             <div className="u">
@@ -32,6 +43,7 @@ export default function Feed({go}) {
             </div>
             <div className="pic" style={{background: grad(i + 3)}}>{chunks[i].text}</div>
             <div className="acts">♡ ⌯ ↗</div>
+            <div className="cap likes">{t('feed.likes', {n: marks(i)})}</div>
             <div className="cap">{t('feed.caption', {marks: marks(i), i: i + 1, n: count})}</div>
           </div>
         ))}

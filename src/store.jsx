@@ -17,7 +17,11 @@ const THEMES = ['system', 'light', 'dark'];
 const FONTS = ['sm', 'md', 'lg'];
 const LANGS = ['ru', 'en'];
 const TIPS = ['on', 'off'];
-const UI = {theme: 'system', lang: 'ru', font: 'md', wallTip: 'on', notify: 'off'};
+// Скин мессенджера. Живёт в сторе, а не в состоянии App, ровно по одной причине:
+// иначе «Продолжить» после перезапуска открывало бы чтение в чужой обёртке —
+// человек закрыл приложение в зелёном мессенджере, а вернулся в синий.
+const SKINS = ['tg', 'wa', 'ms'];
+const UI = {theme: 'system', lang: 'ru', font: 'md', wallTip: 'on', notify: 'off', skin: 'tg'};
 
 const EMPTY = {books: [], cur: null, at: {}, last: 'reels', ui: UI};
 
@@ -30,7 +34,8 @@ const readUi = raw => ({
   wallTip: pick(raw && raw.wallTip, TIPS, UI.wallTip),
   // Уведомления по умолчанию выключены: системный диалог показывается один раз
   // за всё время, и спрашивать до того, как человек что-то прочитал, — сжечь его.
-  notify: pick(raw && raw.notify, TIPS, UI.notify)
+  notify: pick(raw && raw.notify, TIPS, UI.notify),
+  skin: pick(raw && raw.skin, SKINS, UI.skin)
 });
 
 // Сравнение по ключам UI, а не по перечислению полей вручную: следующее

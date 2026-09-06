@@ -20,11 +20,18 @@ export default function Reels({go}) {
     <Screen id="reels">
       <Progress offset={offset} len={text.length} float />
       <span className="back float" onClick={() => go('home')} role="button" aria-label={t('back')}>‹</span>
+      {/* Вкладки сверху не работают и работать не должны — без них экран
+          читается как «карточки с текстом», а не как лента коротких видео. */}
+      <div className="rtabs">
+        <span>{t('reels.tab_subs')}</span>
+        <span className="on">{t('reels.tab_feed')}</span>
+      </div>
       <div className="body" ref={boxRef}>
         {items.map(i => (
           <div className="reel" key={i} data-i={i} style={{background: grad(i)}}>
             <div className="txt">{chunks[i].text}</div>
             <div className="cnt">{t('reels.handle')} · {t('reels.of', {i: i + 1, n: count})}</div>
+            <div className="tag">{t('reels.tag')}</div>
             <div className="rail">
               ❤️<small>{likes(i)}</small>
               💬<small>{comments(i)}</small>

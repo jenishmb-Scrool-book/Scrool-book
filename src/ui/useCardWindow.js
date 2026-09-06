@@ -23,8 +23,14 @@ const DEBOUNCE = 120; // мс, столько ждём тишины после �
  * @param {number} ahead         сколько карточек показать «до» курсора
  * @param {string} cardSelector  селектор карточки внутри контейнера, например '.reel'
  * @param {boolean} trackPos     двигает ли скролл курсор (в «Видео» — нет)
+ * @param {'top'|'bottom'} anchor где стоит «текущая» карточка
+ *
+ * Про `anchor`. В клипах и ленте карточка занимает экран, и текущая — верхняя.
+ * В чатах на экран помещается пять-шесть пузырей, и всё, что выше нижнего
+ * видимого, уже прочитано. С якорем `top` курсор отставал бы на целый экран, и
+ * переход в клипы отбрасывал бы человека на пять фрагментов назад.
  */
-export default function useCardWindow({count, pos, setPos, ahead = 1, cardSelector, trackPos = true}) {
+export default function useCardWindow({count, pos, setPos, ahead = 1, cardSelector, trackPos = true, anchor = 'top'}) {
   const boxRef = useRef(null);
 
   // Начало окна фиксируется один раз — на входе на экран. Дальше pos может ехать
@@ -42,15 +48,24 @@ export default function useCardWindow({count, pos, setPos, ahead = 1, cardSelect
   // монтирование. Если бы он пересоздавался на каждый рендер, чужая перерисовка
   // в середине дебаунса гасила бы ещё не сработавший таймер.
   const live = useRef(null);
-  live.current = {count, setPos, trackPos, cardSelector, pos};
+  live.current = {count, setPos, trackPos, cardSelector, pos, anchor};
 
   // Стартовая прокрутка к текущему куску.
   useLayoutEffect(() => {
     const box = boxRef.current;
     if (!box) return;
     const cur = box.querySelector('[data-i="' + live.current.pos + '"]');
-    if (cur) box.scrollTop = cur.offsetTop;
+    if (!cur) return;
+    box.scrollTop = anchor === 'bottom'
+      ? cur.offsetTop + cur.offsetHeight - box.clientHeight   // как в мессенджере: свежее внизу
+      : cur.offsetTop;
   }, []);
+
+  // Курсор может уехать вперёд не скроллом, а действием — кнопкой «отправить»
+  // в чате. Окно обязано его догнать, иначе рендерить будет нечего.
+  useEffect(() => {
+    setEnd(e => Math.max(e, Math.min(count, pos + 2)));
+  }, [pos, count]);
 
   useEffect(() => {
     const box = boxRef.current;
@@ -60,7 +75,16 @@ export default function useCardWindow({count, pos, setPos, ahead = 1, cardSelect
       clearTimeout(timer);
       timer = setTimeout(() => {
         const s = live.current;
-        if (s.trackPos) {
+        if (s.trackPos && s.anchor === 'bottom') {
+          // Последняя карточка, начавшаяся выше нижней кромки, — та, которую
+          // человек читает сейчас; всё, что над ней, уже позади.
+          let last = null;
+          for (const el of box.querySelectorAll(s.cardSelector)) {
+            if (el.offsetTop < box.scrollTop + box.clientHeight - 40) last = el;
+            else break;
+          }
+          if (last) s.setPos(Number(last.dataset.i));
+        } else if (s.trackPos) {
           // Первая карточка, чей низ ещё ниже верхней кромки контейнера, — та,
           // которую человек сейчас видит сверху.
           for (const el of box.querySelectorAll(s.cardSelector)) {

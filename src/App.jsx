@@ -4,23 +4,37 @@ import {initNative} from './native.js';
 import {SEED, SEED_TITLE} from './seed.js';
 import {DICT} from './i18n.js';
 import Home from './screens/Home.jsx';
-import Chats from './screens/Chats.jsx';
+import Chats, {Chat, Stub} from './screens/Chats.jsx';
 import Reels from './screens/Reels.jsx';
+import Stories from './screens/Stories.jsx';
 import Feed from './screens/Feed.jsx';
 import Video, {Player} from './screens/Video.jsx';
+import Tweets from './screens/Tweets.jsx';
 import Library from './screens/Library.jsx';
 import Settings from './screens/Settings.jsx';
 
 const SCREENS = {
-  home: Home, chats: Chats, reels: Reels, feed: Feed,
-  video: Video, player: Player, library: Library, settings: Settings
+  home: Home,
+  chats: Chats, chat: Chat, stub: Stub,
+  reels: Reels, stories: Stories, feed: Feed,
+  video: Video, player: Player, tweets: Tweets,
+  library: Library, settings: Settings
 };
-const READERS = ['chats', 'reels', 'feed', 'video'];      // эти запоминаются как lastApp
+
+// Куда возвращает «Продолжить». Список чатов сюда не входит намеренно:
+// продолжать чтение надо в самой переписке, а не в её списке.
+const READERS = ['chat', 'reels', 'stories', 'feed', 'video', 'tweets'];
 const NO_BOOK_OK = ['home', 'library', 'settings'];       // этим книга не нужна
+
+// Куда ведёт аппаратная «назад». Всё, чего здесь нет, возвращает домой.
+// Без этой таблицы «назад» из плеера или витринного чата выбрасывало на дом,
+// хотя человек пришёл из списка — и терялся ровно тот экран, куда он метил.
+const BACK = {chat: 'chats', stub: 'chats', player: 'video'};
 
 export default function App() {
   const {ready, books, text, ui, addBook, setLastApp, error} = useStore();
   const [screen, setScreen] = useState('home');
+  const [arg, setArg] = useState(null);      // параметр экрана: номер витринного чата
 
   // Тема, кегль и язык живут атрибутами на <html>: токены палитры объявлены
   // на :root, а body красит система вокруг «телефона» — под #phone их не спрятать.
@@ -48,20 +62,26 @@ export default function App() {
   const textRef = useRef(text);
   textRef.current = text;
 
-  const go = id => {
+  const go = (id, opt) => {
     // Читать нечего — вместо пустого экрана уводим в библиотеку.
     if (!NO_BOOK_OK.includes(id) && !textRef.current.length) id = 'library';
-    if (READERS.includes(id)) setLastApp(id);
+    // Список чатов запоминаем как саму переписку: продолжить надо чтение.
+    const remember = id === 'chats' ? 'chat' : id;
+    if (READERS.includes(remember)) setLastApp(remember);
+    setArg(opt && 'arg' in opt ? opt.arg : null);
     setScreen(id);
   };
+  const goRef = useRef(go);
+  goRef.current = go;
 
   useEffect(() => {
     let off;
     let dead = false;
-    // С любого экрана «назад» возвращает домой; с дома — false, приложение сворачивается.
+    // С дома «назад» отдаёт false — приложение сворачивается.
     const onBack = () => {
-      if (screenRef.current === 'home') return false;
-      setScreen('home');
+      const at = screenRef.current;
+      if (at === 'home') return false;
+      goRef.current(BACK[at] || 'home');
       return true;
     };
     Promise.resolve(initNative({onBack}))
@@ -77,7 +97,7 @@ export default function App() {
     };
   }, []);
 
-  // Пока хранилище не прогидрировано — chunks трогать нельзя.
+  // Пока хранилище не прогидрировано — текст трогать нельзя.
   if (!ready) {
     return (
       <div id="phone">
@@ -89,7 +109,7 @@ export default function App() {
   const Current = SCREENS[screen] || Home;
   return (
     <div id="phone">
-      <Current go={go} />
+      <Current go={go} arg={arg} />
       {error ? <div className="err">{error}</div> : null}
     </div>
   );

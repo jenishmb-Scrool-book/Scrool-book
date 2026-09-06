@@ -11,22 +11,26 @@ import {getWallpaper, setWallpaper, shrink} from '../wallpaper.js';
 // Названия намеренно искажённые. Настоящие бренды здесь нельзя: это чужие
 // товарные знаки, и Google Play такое приложение снимет с публикации.
 // Узнаваемость даёт вёрстка и расположение, а не буквы в названии.
+//
+// Восемь иконок ведут в шесть движков. Три мессенджера — один экран с разными
+// скинами: списки переписок у них устроены одинаково, и три копии одного кода
+// утроили бы цену каждой правки. Различие даёт `skin` (пятый элемент строки).
 const APPS = [
-  ['✈️', 'Telegran', 'chats', 'linear-gradient(145deg,#41b6e6,#1d7fb8)'],
-  ['💬', 'Whhatsapp', 'chats', 'linear-gradient(145deg,#4ee07f,#0f7a4d)'],
+  ['✈️', 'Telegran', 'chats', 'linear-gradient(145deg,#41b6e6,#1d7fb8)', 'tg'],
+  ['💬', 'Whhatsapp', 'chats', 'linear-gradient(145deg,#4ee07f,#0f7a4d)', 'wa'],
   ['📷', 'IInstagram', 'feed', 'linear-gradient(145deg,#f9a03f,#d62976 60%,#7c5cff)'],
   ['🎵', 'TikTak', 'reels', 'linear-gradient(145deg,#ff2d55,#26f4ee 140%)'],
   ['▶️', 'YuoTube', 'video', 'linear-gradient(145deg,#ff4b4b,#a10f0f)'],
-  ['💌', 'Massenger', 'chats', 'linear-gradient(145deg,#b06cff,#0084ff)'],
-  ['👻', 'Snapchart', 'reels', 'linear-gradient(145deg,#fffc00,#e0c000)'],
-  ['🐦', 'Tvitter', 'feed', 'linear-gradient(145deg,#5aa9e6,#1b6ca8)']
+  ['💌', 'Massenger', 'chats', 'linear-gradient(145deg,#b06cff,#0084ff)', 'ms'],
+  ['👻', 'Snapchart', 'stories', 'linear-gradient(145deg,#fffc00,#e0c000)'],
+  ['🐦', 'Tvitter', 'tweets', 'linear-gradient(145deg,#5aa9e6,#1b6ca8)']
 ];
 
 // Подписи док-панели переводятся, названия «приложений» — нет: это имена собственные.
 const DOCK = [
   ['📚', 'app.books', 'library', '#2a2a3a'],
   ['🎵', 'TikTak', 'reels', 'linear-gradient(145deg,#ff2d55,#26f4ee 140%)'],
-  ['💬', 'Whhatsapp', 'chats', 'linear-gradient(145deg,#4ee07f,#0f7a4d)'],
+  ['💬', 'Whhatsapp', 'chats', 'linear-gradient(145deg,#4ee07f,#0f7a4d)', 'wa'],
   ['⚙️', 'app.settings', 'settings', '#33333f']
 ];
 
@@ -54,6 +58,13 @@ export default function Home({go}) {
 
   // «Продолжить» уводит туда, где читали в прошлый раз. Нет книги — в библиотеку.
   const cont = () => go(text.length ? (lastApp || 'reels') : 'library');
+
+  // Скин запоминается в сторе, а не в состоянии экрана: иначе «Продолжить»
+  // после перезапуска открывало бы чтение в чужой обёртке.
+  const open = (to, skin) => {
+    if (skin && skin !== ui.skin) setUi({skin});
+    go(to);
+  };
 
   // Обои предлагаем прямо здесь, а не только в настройках: подтянуть настоящие
   // обои телефона нельзя (с Android 14 система их приложениям не отдаёт совсем),
@@ -93,14 +104,15 @@ export default function Home({go}) {
         </div>
       ) : null}
       <div className="grid">
-        {APPS.map(([glyph, label, to, background], k) => (
-          <Icon key={k} glyph={glyph} label={label} background={background} onClick={() => go(to)} />
+        {APPS.map(([glyph, label, to, background, skin], k) => (
+          <Icon key={k} glyph={glyph} label={label} background={background}
+                onClick={() => open(to, skin)} />
         ))}
       </div>
       <div className="dock">
-        {DOCK.map(([glyph, label, to, background], k) => (
+        {DOCK.map(([glyph, label, to, background, skin], k) => (
           <Icon key={k} glyph={glyph} label={label.includes('.') ? t(label) : label}
-                background={background} onClick={() => go(to)} />
+                background={background} onClick={() => open(to, skin)} />
         ))}
       </div>
     </Screen>

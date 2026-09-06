@@ -8,7 +8,7 @@ import Progress from '../ui/Progress.jsx';
 import useCardWindow from '../ui/useCardWindow.js';
 import useChunks from '../ui/useChunks.js';
 import {SIZE} from '../ui/sizes.js';
-import {grad, views} from '../ui/visual.js';
+import {grad, views, dur} from '../ui/visual.js';
 
 /**
  * «Видео» — список роликов.
@@ -33,11 +33,18 @@ export default function Video({go}) {
     <Screen id="video">
       <StatusBar />
       <Header onBack={() => go('home')} title={t('video.title')} />
+      {/* Чипсы фильтров декоративны: узнаваемость экрана держится на них
+          не меньше, чем на списке превью. */}
+      <div className="chips">
+        <span className="on">{t('video.chip_all')}</span>
+        <span>{t('video.chip_new')}</span>
+        <span>{t('video.channel')}</span>
+      </div>
       <Progress offset={offset} len={text.length} />
       <div className="body" ref={boxRef}>
         {items.map(i => (
           <div className="vid" key={i} data-i={i} onClick={() => play(i)}>
-            <div className="th" style={{background: grad(i)}}>▶</div>
+            <div className="th" style={{background: grad(i)}}>▶<em>{dur(i)}</em></div>
             <div>
               <div className="ti">{chunks[i].text.slice(0, 70)}{chunks[i].text.length > 70 ? '…' : ''}</div>
               <div className="meta">

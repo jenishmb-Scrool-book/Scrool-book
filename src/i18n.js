@@ -44,6 +44,7 @@ const ru = {
   'chats.stub_1': 'ты где пропал',
   'chats.stub_2': 'опять читаешь?',
   'chats.stub_3': 'ладно, не отвлекаю 😄',
+  'chats.stub_me': 'читаю',
   'chats.to_book': 'Вернуться к книге',
   'reader.end': 'Конец текста',
 
@@ -88,7 +89,9 @@ const ru = {
   'video.subscribe': 'Подписаться',
 
   // ===== индикатор =====
-  'pace.left': '≈ {n} мин',
+  'pace.m': '{m} мин',
+  'pace.hm': '{h} ч {m} мин',
+  'pace.h': '{h} ч',
   'pace.done': 'дочитано',
 
   // ===== библиотека =====
@@ -163,6 +166,7 @@ const en = {
   'chats.stub_1': 'where have you been',
   'chats.stub_2': 'reading again?',
   'chats.stub_3': 'fine, I’ll leave you to it 😄',
+  'chats.stub_me': 'reading',
   'chats.to_book': 'Back to the book',
   'reader.end': 'End of text',
 
@@ -201,7 +205,9 @@ const en = {
   'video.channel': 'book',
   'video.subscribe': 'Subscribe',
 
-  'pace.left': '≈ {n} min',
+  'pace.m': '{m} min',
+  'pace.hm': '{h}h {m}m',
+  'pace.h': '{h} h',
   'pace.done': 'finished',
 
   'lib.title': 'Library',
