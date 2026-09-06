@@ -67,6 +67,20 @@ cd android && ./gradlew bundleRelease
 
 Результат: `android/app/build/outputs/bundle/release/app-release.aab`.
 
+### 3.1. Версия при каждой новой заливке
+
+`versionCode` в `android/app/build.gradle` обязан расти на **каждой** загрузке
+в Play, иначе консоль отклонит файл. Вместе с ним правятся ещё два места:
+
+| Файл | Поле |
+|---|---|
+| `android/app/build.gradle` | `versionCode` — увеличить на 1 |
+| `android/app/build.gradle` | `versionName` — например `1.0.1` |
+| `package.json` | `version` — то же значение; отсюда его показывает экран «О приложении» |
+
+Тестировщик называет сборку именно этими числами: в разделе «О приложении»
+видно `1.0.0 (1)`, где в скобках `versionCode`.
+
 ### 4. GitHub Pages для политики — владелец
 
 Репозиторий должен стать публичным (сейчас он локальный, без remote).
