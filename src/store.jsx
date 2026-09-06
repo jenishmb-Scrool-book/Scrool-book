@@ -17,7 +17,7 @@ const THEMES = ['system', 'light', 'dark'];
 const FONTS = ['sm', 'md', 'lg'];
 const LANGS = ['ru', 'en'];
 const TIPS = ['on', 'off'];
-const UI = {theme: 'system', lang: 'ru', font: 'md', wallTip: 'on'};
+const UI = {theme: 'system', lang: 'ru', font: 'md', wallTip: 'on', notify: 'off'};
 
 const EMPTY = {books: [], cur: null, at: {}, last: 'reels', ui: UI};
 
@@ -27,8 +27,15 @@ const readUi = raw => ({
   theme: pick(raw && raw.theme, THEMES, UI.theme),
   lang: pick(raw && raw.lang, LANGS, UI.lang),
   font: pick(raw && raw.font, FONTS, UI.font),
-  wallTip: pick(raw && raw.wallTip, TIPS, UI.wallTip)
+  wallTip: pick(raw && raw.wallTip, TIPS, UI.wallTip),
+  // Уведомления по умолчанию выключены: системный диалог показывается один раз
+  // за всё время, и спрашивать до того, как человек что-то прочитал, — сжечь его.
+  notify: pick(raw && raw.notify, TIPS, UI.notify)
 });
+
+// Сравнение по ключам UI, а не по перечислению полей вручную: следующее
+// добавленное поле иначе молча перестало бы сохраняться.
+const sameUi = (a, b) => Object.keys(UI).every(k => a[k] === b[k]);
 
 const Ctx = createContext(null);
 
@@ -138,8 +145,7 @@ export function StoreProvider({children}) {
     const m = metaRef.current;
     const next = readUi({...m.ui, ...patch});
     const cur = m.ui || UI;
-    if (next.theme === cur.theme && next.lang === cur.lang &&
-        next.font === cur.font && next.wallTip === cur.wallTip) return;
+    if (sameUi(next, cur)) return;
     applyMeta({...m, ui: next});
     schedule();
   }, [applyMeta, schedule]);
