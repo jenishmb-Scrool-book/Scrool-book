@@ -6,9 +6,28 @@ import StatusBar from '../ui/StatusBar.jsx';
 import Header from '../ui/Header.jsx';
 import {percent} from '../ui/Progress.jsx';
 import {pageCount} from '../lib/pages.js';
+import {parseFb2} from '../lib/fb2.js';
+import {parseEpub} from '../lib/epub.js';
 
 // Стор возвращает Promise; но если реализация вдруг синхронная — не падаем.
 const later = v => Promise.resolve(v);
+
+// Коды ошибок парсеров → ключи i18n. Всё, что кодом не помечено, — просто
+// «файл не разобрался»: пользователю незачем знать, XML там сломался или ZIP.
+const ERR = {zip: 'lib.parse_failed_zip', unsupported: 'lib.unsupported'};
+
+/**
+ * Файл → {title, text}. Парсер выбираем по расширению, а не по MIME: Android
+ * отдаёт для .fb2 и .epub то application/octet-stream, то пустую строку.
+ */
+const parseFile = async f => {
+  const ext = (/\.(\w+)$/.exec(f.name) || ['', ''])[1].toLowerCase();
+  if (ext === 'fb2') return parseFb2(await f.arrayBuffer());
+  if (ext === 'epub') return parseEpub(await f.arrayBuffer());
+  // Без расширения считаем текстом: хуже, чем отказ, только отказ по ошибке.
+  if (!ext || ext === 'txt' || ext === 'md') return {title: '', text: await f.text()};
+  throw Object.assign(new Error('неизвестное расширение: ' + ext), {code: 'unsupported'});
+};
 
 // Библиотека: только книги. Настройки живут отдельным экраном — этот файл
 // иначе становится местом, где сходятся сразу несколько несвязанных задач.
@@ -39,7 +58,17 @@ export default function Library({go}) {
   const fromFile = e => {
     const f = e.target.files && e.target.files[0];
     e.target.value = '';           // чтобы тот же файл можно было выбрать второй раз
-    if (f) f.text().then(v => add(f.name.replace(/\.\w+$/, ''), v));
+    if (!f) return;
+    setMsg('');
+    parseFile(f)
+      .then(r => {
+        // Главы (r.chapters) пока некуда девать: стор хранит только title и
+        // text, а addBook(title, text) менять нельзя. Оглавление и переходы
+        // по нему — Этап 2, вместе с местом под них в сторе.
+        if (!String(r.text || '').trim()) return setMsg(t('lib.no_text'));
+        add(r.title || f.name.replace(/\.\w+$/, ''), r.text);
+      })
+      .catch(err => setMsg(t(ERR[err && err.code] || 'lib.parse_failed')));
   };
 
   const open = id => later(openBook(id)).then(() => go('home')).catch(() => {});
@@ -79,7 +108,7 @@ export default function Library({go}) {
           <button onClick={fromPaste}>{t('lib.add')}</button>
           <label className="filebtn">
             {t('lib.file')}
-            <input type="file" accept=".txt,.md,text/plain" onChange={fromFile} />
+            <input type="file" accept=".txt,.md,.fb2,.epub" onChange={fromFile} />
           </label>
         </div>
         {msg ? <div className="hint">{msg}</div> : null}

@@ -2,9 +2,16 @@ import {useEffect, useState} from 'react';
 import {useStore} from '../store.jsx';
 import {useT} from '../i18n.js';
 import {clearWallpaper, getWallpaper, setWallpaper, shrink} from '../wallpaper.js';
+import {cancelNotifications, ensureNotifications} from '../native.js';
+import {pageAt} from '../lib/pages.js';
 import Screen from '../ui/Screen.jsx';
 import StatusBar from '../ui/StatusBar.jsx';
 import Header from '../ui/Header.jsx';
+
+// Имя приложения для случая «уведомление включили, книги ещё нет».
+// В i18n его нет намеренно: это не строка интерфейса, а название продукта —
+// одинаковое в обоих языках (index.html <title>, strings.xml app_name).
+const APP = 'Скролл';
 
 // Переключатель из нескольких кнопок. Ползунка нет намеренно: три градации
 // кегля покрывают почти всех, а точное значение — это лишний выбор на экране,
@@ -22,10 +29,11 @@ function Seg({value, options, onPick}) {
 }
 
 export default function Settings({go}) {
-  const {ui, setUi} = useStore();
+  const {ui, setUi, current, offset} = useStore();
   const t = useT();
   const [wall, setWall] = useState('');
   const [msg, setMsg] = useState('');
+  const [notifMsg, setNotifMsg] = useState('');
 
   useEffect(() => {
     let live = true;
@@ -46,6 +54,31 @@ export default function Settings({go}) {
   };
 
   const dropWall = () => clearWallpaper().then(() => setWall('')).catch(() => {});
+
+  // Позиция в тексте ЗАМОРАЖИВАЕТСЯ в момент включения — и это осознанно.
+  // Уведомление планируется один раз, а курсор двигается десятки раз в секунду;
+  // перепланировать будильник на каждый сдвиг — это будить AlarmManager весь
+  // сеанс чтения ради строки, которую человек увидит завтра в полдень.
+  // Смягчение бесплатное: повторное нажатие «Вкл» перепланирует напоминание
+  // с текущей страницей, поэтому раннего возврата на «то же значение» здесь нет.
+  const pickNotify = async v => {
+    setNotifMsg('');
+    if (v === 'off') {
+      await cancelNotifications();
+      setUi({notify: 'off'});
+      return;
+    }
+    const page = current ? pageAt(offset, current.len) : 1;
+    const ok = await ensureNotifications({
+      title: t('notif.title', {page}),
+      body: t('notif.body', {title: (current && current.title) || APP})
+    });
+    // Флаг ставим только после реального разрешения. «Включено» без разрешения —
+    // худший из исходов: уведомлений нет, а системный диалог второй раз не придёт,
+    // и починить это из приложения человек уже не сможет.
+    if (ok) setUi({notify: 'on'});
+    else setNotifMsg(t('set.notif_denied'));
+  };
 
   return (
     <Screen id="settings">
@@ -84,6 +117,15 @@ export default function Settings({go}) {
         {wall ? <div className="wallprev" style={{backgroundImage: `url(${wall})`}} /> : null}
         {msg ? <div className="hint">{msg}</div> : null}
         <div className="hint">{t('set.wall_hint')}</div>
+
+        <div className="sect">{t('set.notif')}</div>
+        <Seg
+          value={ui.notify}
+          options={[['on', t('set.notif_on')], ['off', t('set.notif_off')]]}
+          onPick={pickNotify}
+        />
+        {notifMsg ? <div className="hint">{notifMsg}</div> : null}
+        <div className="hint">{t('set.notif_hint')}</div>
       </div>
     </Screen>
   );
