@@ -25,7 +25,7 @@ import {pageAt, pageCount} from '../lib/pages.js';
 const DECOYS = 6;      // столько витринных чатов в списке
 const TYPING = 260;    // мс, столько показывается «печатает…» после отправки
 
-function ChatHead({onBack, seed, glyph, title, sub}) {
+function ChatHead({onBack, seed, glyph, title, sub, onMenu}) {
   return (
     <div className="chdr">
       <span className="back" onClick={onBack} role="button" aria-label="Назад">‹</span>
@@ -34,7 +34,9 @@ function ChatHead({onBack, seed, glyph, title, sub}) {
         <b>{title}</b>
         <span>{sub}</span>
       </div>
-      <span className="ic">⋮</span>
+      {/* Единственная работающая кнопка в шапке: перепрыгнуть по главам в
+          мессенджере больше нечем, а иногда нужно. */}
+      <span className="ic" onClick={onMenu} role={onMenu ? 'button' : undefined}>⋮</span>
     </div>
   );
 }
@@ -153,6 +155,7 @@ export function Chat({go}) {
         glyph="📖"
         title={current ? current.title : t('chats.title')}
         sub={typing ? t('chats.typing') : t('chats.online')}
+        onMenu={() => go('toc')}
       />
       <Progress offset={offset} len={text.length} />
       <div className="body" ref={boxRef}>

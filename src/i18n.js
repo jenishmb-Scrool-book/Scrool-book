@@ -88,6 +88,17 @@ const ru = {
   'video.channel': 'книга',
   'video.subscribe': 'Подписаться',
 
+  // ===== оглавление =====
+  'toc.title': 'Оглавление',
+  'toc.count': '{n} глав',
+  'toc.count.one': '{n} глава',
+  'toc.count.few': '{n} главы',
+  'toc.count.many': '{n} глав',
+  'toc.count.other': '{n} главы',
+  'toc.page': 'стр. {n}',
+  'toc.here': 'читаешь',
+  'toc.empty': 'В этом тексте глав не нашлось. Они есть в файлах .fb2 и .epub, а в обычном тексте распознаются заголовки вида «Глава 5», «ЧАСТЬ ВТОРАЯ» или римские цифры отдельной строкой.',
+
   // ===== индикатор =====
   'pace.m': '{m} мин',
   'pace.hm': '{h} ч {m} мин',
@@ -205,6 +216,16 @@ const en = {
   'video.channel': 'book',
   'video.subscribe': 'Subscribe',
 
+  'toc.title': 'Contents',
+  'toc.count': '{n} chapters',
+  'toc.count.one': '{n} chapter',
+  'toc.count.few': '{n} chapters',
+  'toc.count.many': '{n} chapters',
+  'toc.count.other': '{n} chapters',
+  'toc.page': 'p. {n}',
+  'toc.here': 'reading',
+  'toc.empty': 'No chapters found in this text. They come with .fb2 and .epub files; in plain text the app recognises headings like “Chapter 5”, “PART TWO” or a roman numeral on its own line.',
+
   'pace.m': '{m} min',
   'pace.hm': '{h}h {m}m',
   'pace.h': '{h} h',
@@ -258,6 +279,22 @@ export const DICT = {ru, en};
 
 // Подстановка вида «{i} из {n}». Отсутствующий параметр оставляем как есть —
 // это заметно на экране, а значит, будет починено, в отличие от пустой строки.
+/**
+ * Форма множественного числа для числа `n`.
+ *
+ * Заводится не «для красоты»: «3 глав» — это не опечатка, а неверный русский,
+ * и заметно оно сразу. Считает `Intl.PluralRules` — у русского три формы плюс
+ * дробная, и таблица падежей руками здесь была бы своим же багом.
+ * Нет Intl (очень старый WebView) — работаем без склонения, а не падаем.
+ */
+export function pluralForm(lang, n) {
+  try {
+    return new Intl.PluralRules(lang).select(n);
+  } catch {
+    return null;
+  }
+}
+
 export function format(str, params) {
   if (!params) return str;
   return str.replace(/\{(\w+)\}/g, (whole, k) => (k in params ? String(params[k]) : whole));
@@ -270,8 +307,14 @@ export function format(str, params) {
 export function useT() {
   const {ui} = useStore();
   const lang = DICT[ui.lang] ? ui.lang : 'ru';
-  return useCallback(
-    (key, params) => format(DICT[lang][key] ?? DICT.ru[key] ?? key, params),
-    [lang]
-  );
+  return useCallback((key, params) => {
+    // Ключ со склонением берётся, только если он объявлен: остальным строкам
+    // ничего знать про формы не нужно.
+    let k = key;
+    if (params && typeof params.n === 'number') {
+      const form = pluralForm(lang, params.n);
+      if (form && DICT[lang][key + '.' + form]) k = key + '.' + form;
+    }
+    return format(DICT[lang][k] ?? DICT.ru[k] ?? DICT[lang][key] ?? DICT.ru[key] ?? key, params);
+  }, [lang]);
 }

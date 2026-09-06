@@ -32,7 +32,8 @@ export default function Video({go}) {
   return (
     <Screen id="video">
       <StatusBar />
-      <Header onBack={() => go('home')} title={t('video.title')} />
+      <Header onBack={() => go('home')} title={t('video.title')}
+              right={<span className="ic" onClick={() => go('toc')} role="button">☰</span>} />
       {/* Чипсы фильтров декоративны: узнаваемость экрана держится на них
           не меньше, чем на списке превью. */}
       <div className="chips">

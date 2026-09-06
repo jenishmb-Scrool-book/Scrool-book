@@ -1,5 +1,5 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {loadMeta, saveMeta, loadText, saveText, deleteText, StorageFullError} from './storage.js';
+import {loadMeta, saveMeta, loadText, saveText, deleteText, saveToc, loadToc, deleteToc, StorageFullError} from './storage.js';
 
 // В jsdom Capacitor.isNativePlatform() === false, значит проверяется веб-ветка на localStorage.
 const META = 'scroll.meta';
@@ -99,5 +99,39 @@ describe('переполнение хранилища', () => {
     const e = await saveText('1', 'текст').catch(x => x);
     expect(e).not.toBeInstanceOf(StorageFullError);
     expect(e).toBe(boom);
+  });
+});
+
+describe('оглавление', () => {
+  const toc = [{title: 'Глава 1', at: 0}, {title: 'Глава 2', at: 900}];
+
+  it('переживает круговорот сохранить/прочитать', async () => {
+    await saveToc('1', toc);
+    expect(await loadToc('1')).toEqual(toc);
+  });
+
+  it('у книги без оглавления — пустой массив, а не null', async () => {
+    expect(await loadToc('нет-такой')).toEqual([]);
+  });
+
+  // Испорченное оглавление не должно мешать открыть саму книгу.
+  it('мусор в хранилище отдаётся как пустое оглавление', async () => {
+    localStorage.setItem('scroll.book.1.toc', '{это не json');
+    expect(await loadToc('1')).toEqual([]);
+    localStorage.setItem('scroll.book.1.toc', '"строка вместо массива"');
+    expect(await loadToc('1')).toEqual([]);
+  });
+
+  it('не мешает тексту той же книги и удаляется отдельно', async () => {
+    await saveText('1', 'текст книги');
+    await saveToc('1', toc);
+    await deleteToc('1');
+    expect(await loadToc('1')).toEqual([]);
+    expect(await loadText('1')).toBe('текст книги');
+  });
+
+  it('не-массив на входе сохраняется как пустое оглавление', async () => {
+    await saveToc('1', null);
+    expect(await loadToc('1')).toEqual([]);
   });
 });

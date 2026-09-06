@@ -22,7 +22,8 @@ export default function Feed({go}) {
   return (
     <Screen id="feed">
       <StatusBar />
-      <Header onBack={() => go('home')} title={t('feed.title')} />
+      <Header onBack={() => go('home')} title={t('feed.title')}
+              right={<span className="ic" onClick={() => go('toc')} role="button">☰</span>} />
       <Progress offset={offset} len={text.length} />
       <div className="body" ref={boxRef}>
         {/* Полоса «историй» над лентой. Она декоративна и не нажимается: её

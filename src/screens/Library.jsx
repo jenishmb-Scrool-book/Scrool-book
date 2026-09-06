@@ -37,14 +37,14 @@ export default function Library({go}) {
   const [text, setText] = useState('');
   const [msg, setMsg] = useState('');
 
-  const add = (title, body) => {
+  const add = (title, body, chapters) => {
     const v = (body || '').trim();
     if (!v) return setMsg(t('lib.empty_text'));
     setMsg('');
     // Заголовок по умолчанию — первые 40 символов, как в прототипе.
     // addBook не реджектится: при переполнении и на пустом тексте она резолвится
     // в null и пишет причину в store.error. Поэтому решаем по id, а не по .catch.
-    later(addBook((title || v.slice(0, 40)).trim(), v))
+    later(addBook((title || v.slice(0, 40)).trim(), v, chapters))
       .then(id => {
         if (!id) return setMsg(t('lib.save_failed_space'));
         setText('');            // поле чистим только после успеха, иначе текст потерян навсегда
@@ -62,11 +62,10 @@ export default function Library({go}) {
     setMsg('');
     parseFile(f)
       .then(r => {
-        // Главы (r.chapters) пока некуда девать: стор хранит только title и
-        // text, а addBook(title, text) менять нельзя. Оглавление и переходы
-        // по нему — Этап 2, вместе с местом под них в сторе.
         if (!String(r.text || '').trim()) return setMsg(t('lib.no_text'));
-        add(r.title || f.name.replace(/\.\w+$/, ''), r.text);
+        // Главы от парсера идут в стор как есть. Если файл их не размечал,
+        // стор сам распознает заголовки в тексте — как для вставленного руками.
+        add(r.title || f.name.replace(/\.\w+$/, ''), r.text, r.chapters);
       })
       .catch(err => setMsg(t(ERR[err && err.code] || 'lib.parse_failed')));
   };

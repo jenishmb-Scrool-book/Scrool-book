@@ -10,6 +10,7 @@ import Stories from './screens/Stories.jsx';
 import Feed from './screens/Feed.jsx';
 import Video, {Player} from './screens/Video.jsx';
 import Tweets from './screens/Tweets.jsx';
+import Chapters from './screens/Chapters.jsx';
 import Library from './screens/Library.jsx';
 import Settings from './screens/Settings.jsx';
 
@@ -18,7 +19,7 @@ const SCREENS = {
   chats: Chats, chat: Chat, stub: Stub,
   reels: Reels, stories: Stories, feed: Feed,
   video: Video, player: Player, tweets: Tweets,
-  library: Library, settings: Settings
+  toc: Chapters, library: Library, settings: Settings
 };
 
 // Куда возвращает «Продолжить». Список чатов сюда не входит намеренно:
@@ -32,7 +33,7 @@ const NO_BOOK_OK = ['home', 'library', 'settings'];       // этим книга
 const BACK = {chat: 'chats', stub: 'chats', player: 'video'};
 
 export default function App() {
-  const {ready, books, text, ui, addBook, setLastApp, error} = useStore();
+  const {ready, books, text, ui, lastApp, addBook, setLastApp, error} = useStore();
   const [screen, setScreen] = useState('home');
   const [arg, setArg] = useState(null);      // параметр экрана: номер витринного чата
 
@@ -59,6 +60,10 @@ export default function App() {
   // не переподписываясь на каждый рендер.
   const screenRef = useRef(screen);
   screenRef.current = screen;
+  // Оглавление открывается из любой читалки, поэтому «назад» из него ведёт
+  // не в фиксированный экран, а туда, откуда читали.
+  const lastRef = useRef(null);
+  lastRef.current = lastApp;
   const textRef = useRef(text);
   textRef.current = text;
 
@@ -81,7 +86,8 @@ export default function App() {
     const onBack = () => {
       const at = screenRef.current;
       if (at === 'home') return false;
-      goRef.current(BACK[at] || 'home');
+      if (at === 'toc') goRef.current(lastRef.current || 'reels');
+      else goRef.current(BACK[at] || 'home');
       return true;
     };
     Promise.resolve(initNative({onBack}))

@@ -198,12 +198,31 @@ describe('openBook / deleteBook', () => {
 describe('lastApp', () => {
   it('запоминается и переживает перезапуск', async () => {
     const h = await mount();
-    act(() => h.result.current.setLastApp('chats'));
-    expect(h.result.current.lastApp).toBe('chats');
+    act(() => h.result.current.setLastApp('chat'));
+    expect(h.result.current.lastApp).toBe('chat');
     h.unmount();
 
     const again = await mount();
-    expect(again.result.current.lastApp).toBe('chats');
+    expect(again.result.current.lastApp).toBe('chat');
+  });
+
+  // Список читалок в сторе обязан совпадать с READERS в App.jsx. Когда на
+  // Этапе 1 появились три новых экрана, а сюда они не доехали, setLastApp
+  // молча их отбрасывал: «Продолжить» после чтения в чатах открывало клипы.
+  it('принимает все шесть экранов-читалок', async () => {
+    const h = await mount();
+    for (const id of ['chat', 'reels', 'stories', 'feed', 'video', 'tweets']) {
+      act(() => h.result.current.setLastApp(id));
+      expect(h.result.current.lastApp, id).toBe(id);
+    }
+  });
+
+  // Список переписок — не место чтения: продолжать надо в самой переписке.
+  it('не запоминает список чатов', async () => {
+    const h = await mount();
+    act(() => h.result.current.setLastApp('feed'));
+    act(() => h.result.current.setLastApp('chats'));
+    expect(h.result.current.lastApp).toBe('feed');
   });
 
   // «Продолжить» уводит в читалку. Запомнить тут home или library — значит
@@ -237,5 +256,101 @@ describe('useStore', () => {
   it('вне провайдера бросает понятную ошибку', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(() => renderHook(() => useStore())).toThrow(/StoreProvider/);
+  });
+});
+
+describe('оглавление', () => {
+  const book = 'Начало текста.\n\nГлава 1\n\nТело первой главы.\n\nГлава 2\n\nТело второй главы.';
+
+  it('на пустом хранилище — пусто', async () => {
+    const h = await mount();
+    expect(h.result.current.chapters).toEqual([]);
+  });
+
+  // Главная проверка: смещение главы — та же координата, что и курсор чтения.
+  it('распознаётся в обычном тексте при добавлении книги', async () => {
+    const h = await mount();
+    await act(async () => { await h.result.current.addBook('Книга', book); });
+    const ch = h.result.current.chapters;
+    expect(ch.map(c => c.title)).toEqual(['Глава 1', 'Глава 2']);
+    expect(book.slice(ch[0].at, ch[0].at + 7)).toBe('Глава 1');
+    expect(book.slice(ch[1].at, ch[1].at + 7)).toBe('Глава 2');
+  });
+
+  it('главы от парсера важнее распознанных', async () => {
+    const h = await mount();
+    const given = [{title: 'От парсера', at: 5}, {title: 'Вторая', at: 40}];
+    await act(async () => { await h.result.current.addBook('Книга', book, given); });
+    expect(h.result.current.chapters.map(c => c.title)).toEqual(['От парсера', 'Вторая']);
+  });
+
+  it('переживает перезапуск и не пересчитывается заново', async () => {
+    const h = await mount();
+    await act(async () => { await h.result.current.addBook('Книга', book); });
+    h.unmount();
+
+    const again = await mount();
+    expect(again.result.current.chapters.map(c => c.title)).toEqual(['Глава 1', 'Глава 2']);
+    expect(again.result.current.current.toc).toBe(1);   // флаг «уже считали» на месте
+  });
+
+  it('главы за пределами текста подрезаются, мусорные выбрасываются', async () => {
+    const h = await mount();
+    const junk = [
+      {title: 'Нормальная', at: 3},
+      {title: '', at: 10},                 // без названия — выбросить
+      {title: 'За концом', at: 99999},     // подрезать по длине
+      {title: 'Отрицательная', at: -5}
+    ];
+    await act(async () => { await h.result.current.addBook('Книга', book, junk); });
+    const ch = h.result.current.chapters;
+    expect(ch.map(c => c.title)).not.toContain('');
+    for (const c of ch) {
+      expect(c.at).toBeGreaterThanOrEqual(0);
+      expect(c.at).toBeLessThan(book.length);
+    }
+    // отсортированы по возрастанию смещения
+    for (let i = 1; i < ch.length; i++) expect(ch[i].at).toBeGreaterThan(ch[i - 1].at);
+  });
+
+  it('переключение книги подставляет её оглавление', async () => {
+    const h = await mount();
+    await act(async () => { await h.result.current.addBook('Первая', book); });
+    const first = h.result.current.current.id;
+    await act(async () => { await h.result.current.addBook('Вторая', 'Просто текст без глав вообще.'); });
+    expect(h.result.current.chapters).toEqual([]);
+
+    await act(async () => { await h.result.current.openBook(first); });
+    expect(h.result.current.chapters.map(c => c.title)).toEqual(['Глава 1', 'Глава 2']);
+  });
+
+  it('удаление книги уносит и её оглавление', async () => {
+    const h = await mount();
+    await act(async () => { await h.result.current.addBook('Книга', book); });
+    const id = h.result.current.current.id;
+    await act(async () => { await h.result.current.deleteBook(id); });
+    expect(h.result.current.chapters).toEqual([]);
+    expect(localStorage.getItem('scroll.book.' + id + '.toc')).toBeNull();
+  });
+});
+
+describe('оглавление и подрезка текста', () => {
+  // Парсер считает смещения по своему тексту, стор перед сохранением делает
+  // trim(). Без поправки на ведущие пробелы всё оглавление съезжает.
+  it('ведущие пробелы не сдвигают главы от парсера', async () => {
+    const body = '\n\n\n   Начало книги.\n\nГлава 1\n\nТело.';
+    const lead = body.length - body.trimStart().length;
+    const at = body.indexOf('Глава 1');
+
+    const h = await mount();
+    await act(async () => {
+      await h.result.current.addBook('Книга', body, [{title: 'Глава 1', at}]);
+    });
+
+    const saved = h.result.current.text;
+    const ch = h.result.current.chapters;
+    expect(ch).toHaveLength(1);
+    expect(ch[0].at).toBe(at - lead);
+    expect(saved.slice(ch[0].at, ch[0].at + 7)).toBe('Глава 1');
   });
 });

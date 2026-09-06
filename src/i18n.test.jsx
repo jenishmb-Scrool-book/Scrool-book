@@ -2,7 +2,7 @@ import React from 'react';
 import {describe, it, expect, beforeEach} from 'vitest';
 import {renderHook, act, waitFor} from '@testing-library/react';
 import {StoreProvider, useStore} from './store.jsx';
-import {DICT, LANGS, format, useT} from './i18n.js';
+import {DICT, LANGS, format, pluralForm, useT} from './i18n.js';
 
 const wrapper = ({children}) => <StoreProvider>{children}</StoreProvider>;
 
@@ -108,5 +108,45 @@ describe('настройки интерфейса в сторе', () => {
     }));
     const h = await mount();
     expect(h.result.current.ui).toEqual({theme: 'system', lang: 'ru', font: 'md', wallTip: 'on', notify: 'off', skin: 'tg'});
+  });
+});
+
+describe('склонение числительных', () => {
+  async function mount() {
+    const h = renderHook(() => ({store: useStore(), t: useT()}), {wrapper});
+    await waitFor(() => expect(h.result.current.store.ready).toBe(true));
+    return h;
+  }
+
+  it('русские формы выбираются по числу', () => {
+    expect(pluralForm('ru', 1)).toBe('one');
+    expect(pluralForm('ru', 3)).toBe('few');
+    expect(pluralForm('ru', 7)).toBe('many');
+    expect(pluralForm('ru', 21)).toBe('one');
+    expect(pluralForm('ru', 11)).toBe('many');
+  });
+
+  // «3 глав» — не опечатка, а неверный русский, и видно это сразу.
+  it('t() подставляет нужную форму', async () => {
+    const h = await mount();
+    const t = () => h.result.current.t;
+    expect(t()('toc.count', {n: 1})).toBe('1 глава');
+    expect(t()('toc.count', {n: 3})).toBe('3 главы');
+    expect(t()('toc.count', {n: 7})).toBe('7 глав');
+    expect(t()('toc.count', {n: 21})).toBe('21 глава');
+  });
+
+  it('в английском формы свои', async () => {
+    const h = await mount();
+    act(() => h.result.current.store.setUi({lang: 'en'}));
+    expect(h.result.current.t('toc.count', {n: 1})).toBe('1 chapter');
+    expect(h.result.current.t('toc.count', {n: 5})).toBe('5 chapters');
+  });
+
+  // Ключам без объявленных форм механизм мешать не должен.
+  it('строка без форм отдаётся как была', async () => {
+    const h = await mount();
+    expect(h.result.current.t('lib.pages', {n: 5})).toBe('5 стр.');
+    expect(h.result.current.t('feed.likes', {n: 2})).toBe('Нравится: 2');
   });
 });

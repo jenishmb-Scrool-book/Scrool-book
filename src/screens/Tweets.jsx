@@ -25,6 +25,7 @@ export default function Tweets({go}) {
       <div className="thdr">
         <span className="back" onClick={() => go('home')} role="button" aria-label={t('back')}>‹</span>
         <h2>{t('tw.title')}</h2>
+        <span className="ic" onClick={() => go('toc')} role="button">☰</span>
       </div>
       <div className="tabs">
         <span className="on">{t('tw.tab_feed')}</span>

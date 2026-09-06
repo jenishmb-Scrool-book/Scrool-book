@@ -1,5 +1,6 @@
 import React, {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
-import {StorageFullError, deleteText, loadMeta, loadText, saveMeta, saveText} from './lib/storage.js';
+import {StorageFullError, deleteText, deleteToc, loadMeta, loadText, loadToc, saveMeta, saveText, saveToc} from './lib/storage.js';
+import {detect} from './lib/toc.js';
 
 // Одно состояние на всё приложение: сырой текст книги и один курсор.
 //
@@ -10,7 +11,12 @@ import {StorageFullError, deleteText, loadMeta, loadText, saveMeta, saveText} fr
 // же места, хотя фрагменты там совсем другой длины.
 
 const DEBOUNCE = 400;                                   // мс между последним сдвигом курсора и записью
-const APPS = ['reels', 'chats', 'feed', 'video'];       // экраны-читалки, куда уводит «Продолжить»
+// Экраны-читалки, куда уводит «Продолжить». Список обязан совпадать с READERS
+// в App.jsx: на Этапе 1 сюда не доехали три новых экрана, и `setLastApp` молча
+// отбрасывал их — «Продолжить» после чтения в чатах открывало клипы.
+// «chats» здесь нет намеренно: это список переписок, продолжать надо в самой
+// переписке, поэтому App подставляет 'chat'.
+const APPS = ['chat', 'reels', 'stories', 'feed', 'video', 'tweets'];
 // Настройки интерфейса живут в той же мете: им нужны те же дебаунс и дозапись
 // при выходе, что и курсору, — заводить ради них второе хранилище незачем.
 const THEMES = ['system', 'light', 'dark'];
@@ -42,11 +48,26 @@ const readUi = raw => ({
 // добавленное поле иначе молча перестало бы сохраняться.
 const sameUi = (a, b) => Object.keys(UI).every(k => a[k] === b[k]);
 
+// Оглавление приходит из трёх мест — от парсера fb2/epub, от распознавания в
+// обычном тексте и из хранилища, — и ни одному из них доверять нельзя: файл
+// мог быть кривым, а запись остаться от прошлой версии книги. Пропускаем
+// только то, что указывает внутрь текста.
+const readToc = (list, len) =>
+  (Array.isArray(list) ? list : [])
+    .map(c => ({
+      title: String((c && c.title) || '').trim().slice(0, 120),
+      at: Math.min(Math.max(Math.trunc(Number(c && c.at)) || 0, 0), Math.max(0, len - 1))
+    }))
+    .filter(c => c.title)
+    .sort((a, b) => a.at - b.at)
+    .filter((c, i, all) => i === 0 || c.at !== all[i - 1].at);
+
 const Ctx = createContext(null);
 
 export function StoreProvider({children}) {
   const [meta, setMeta] = useState(EMPTY);
   const [text, setText] = useState('');
+  const [chapters, setChapters] = useState([]);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(null);
 
@@ -66,6 +87,28 @@ export function StoreProvider({children}) {
   const applyText = useCallback(txt => {
     textRef.current = txt;
     if (mounted.current) setText(txt);
+  }, []);
+  const applyToc = useCallback(list => {
+    if (mounted.current) setChapters(list);
+  }, []);
+
+  /**
+   * Оглавление книги. Считается ОДИН раз за книгу, дальше берётся из хранилища.
+   *
+   * Флаг `toc` в записи книги отличает «ещё не считали» от «считали, глав нет».
+   * Без него распознавание гонялось бы по всему тексту при каждом открытии
+   * книги, в которой глав и нет.
+   */
+  const bookToc = useCallback(async (book, txt) => {
+    if (!book) return [];
+    if (book.toc) return readToc(await loadToc(book.id), txt.length);
+    const list = readToc(detect(txt), txt.length);
+    try {
+      await saveToc(book.id, list);
+    } catch {
+      /* оглавление — удобство, а не книга: не легло, так не легло */
+    }
+    return list;
   }, []);
 
   const report = useCallback(e => {
@@ -113,13 +156,17 @@ export function StoreProvider({children}) {
       } else {
         m.cur = null;                       // мета ссылается на исчезнувшую книгу
       }
+      const book = m.books.find(b => b.id === m.cur) || null;
+      const toc = await bookToc(book, txt);
+      if (book) m.books = m.books.map(b => (b.id === book.id ? {...b, toc: 1} : b));
       if (!live) return;
       applyMeta(m);
       applyText(txt);
+      applyToc(toc);
       setReady(true);
     })();
     return () => {live = false;};
-  }, [applyMeta, applyText]);
+  }, [applyMeta, applyText, applyToc, bookToc]);
 
   /* ===== размонтирование ===== */
   useEffect(() => {
@@ -164,9 +211,13 @@ export function StoreProvider({children}) {
   }, [applyMeta, schedule]);
 
   /* ===== книги ===== */
-  const addBook = useCallback(async (title, body) => {
+  const addBook = useCallback(async (title, body, incoming) => {
     if (mounted.current) setError(null);
-    const txt = String(body ?? '').trim();
+    const raw = String(body ?? '');
+    const txt = raw.trim();
+    // Парсер считал смещения глав по СВОЕМУ тексту, а хранить мы будем
+    // подрезанный. Ведущие пробелы сдвинули бы всё оглавление на свою длину.
+    const lead = raw.length - raw.trimStart().length;
     if (!txt) {
       if (mounted.current) setError('Пустой текст — читать нечего.');
       return null;
@@ -184,9 +235,22 @@ export function StoreProvider({children}) {
       return null;
     }
 
+    // Главы от парсера .fb2/.epub, а если их нет — распознанные в самом тексте.
+    const toc = readToc(
+      Array.isArray(incoming) && incoming.length
+        ? incoming.map(c => ({...c, at: (Math.trunc(Number(c && c.at)) || 0) - lead}))
+        : detect(txt),
+      txt.length
+    );
+    try {
+      await saveToc(id, toc);
+    } catch {
+      /* книга уже сохранена; без оглавления она читается, без текста — нет */
+    }
+
     const next = {
       ...prev,
-      books: [...prev.books, {id, title: (title || txt.slice(0, 40)).trim(), len: txt.length}],
+      books: [...prev.books, {id, title: (title || txt.slice(0, 40)).trim(), len: txt.length, toc: 1}],
       at: {...prev.at, [id]: 0},
       cur: id
     };
@@ -200,13 +264,15 @@ export function StoreProvider({children}) {
       // в хранилище: из библиотеки его будет не видно и не удалить.
       metaRef.current = prev;
       await deleteText(id).catch(() => {});
+      await deleteToc(id).catch(() => {});
       report(e);
       return null;
     }
     if (mounted.current) setMeta(next);
     applyText(txt);
+    applyToc(toc);
     return id;
-  }, [applyText, report]);
+  }, [applyText, applyToc, report]);
 
   const openBook = useCallback(async id => {
     if (mounted.current) setError(null);
@@ -217,19 +283,23 @@ export function StoreProvider({children}) {
     if (seq !== openSeq.current) return;          // пока грузили — открыли другую книгу
 
     const base = metaRef.current;                 // мету перечитываем: за await она могла уехать
+    const toc = await bookToc(base.books.find(b => b.id === id) || null, txt);
+    if (seq !== openSeq.current) return;          // и ещё раз: чтение оглавления тоже асинхронно
     applyMeta({
       ...base,
       cur: id,
       at: {...base.at, [id]: clamp(base.at[id], txt.length)},
-      books: base.books.map(b => (b.id === id ? {...b, len: txt.length} : b))
+      books: base.books.map(b => (b.id === id ? {...b, len: txt.length, toc: 1} : b))
     });
     applyText(txt);
+    applyToc(toc);
     await write();                                // смена книги важнее дебаунса
-  }, [applyMeta, applyText, write]);
+  }, [applyMeta, applyText, applyToc, bookToc, write]);
 
   const deleteBook = useCallback(async id => {
     if (mounted.current) setError(null);
     await deleteText(id);
+    await deleteToc(id).catch(() => {});
 
     const prev = metaRef.current;
     const books = prev.books.filter(b => b.id !== id);
@@ -237,27 +307,31 @@ export function StoreProvider({children}) {
     delete at[id];
     const next = {...prev, books, at};
     let txt = null;                               // null — текст не трогаем
+    let toc = null;
 
     if (prev.cur === id) {
       const first = books[0] || null;
       next.cur = first ? first.id : null;
       txt = first ? String((await loadText(first.id)) ?? '') : '';
+      toc = first ? await bookToc(first, txt) : [];
       if (first) {
-        next.books = books.map(b => (b.id === first.id ? {...b, len: txt.length} : b));
+        next.books = books.map(b => (b.id === first.id ? {...b, len: txt.length, toc: 1} : b));
         next.at = {...next.at, [first.id]: clamp(next.at[first.id], txt.length)};
       }
     }
 
     applyMeta(next);
     if (txt !== null) applyText(txt);
+    if (toc !== null) applyToc(toc);
     await write();
-  }, [applyMeta, applyText, write]);
+  }, [applyMeta, applyText, applyToc, bookToc, write]);
 
   const value = useMemo(() => ({
     ready,
     books: meta.books,
     current: meta.books.find(b => b.id === meta.cur) || null,
     text,
+    chapters,
     offset: meta.cur ? meta.at[meta.cur] || 0 : 0,
     setOffset,
     lastApp: meta.last,
@@ -268,7 +342,7 @@ export function StoreProvider({children}) {
     openBook,
     deleteBook,
     error
-  }), [ready, meta, text, error, setOffset, setLastApp, setUi, addBook, openBook, deleteBook]);
+  }), [ready, meta, text, chapters, error, setOffset, setLastApp, setUi, addBook, openBook, deleteBook]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

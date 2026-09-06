@@ -132,3 +132,29 @@ export async function deleteText(id) {
   }
   LS.removeItem(BOOK_KEY + id);
 }
+
+/* ===== оглавление =====
+   Лежит рядом с текстом, отдельным ключом, а НЕ внутри меты. Причина та же,
+   по которой там не лежат тексты: у fb2 на шестьсот страниц оглавление это
+   сотни записей, а мета пересериализуется на каждый сдвиг курсора.
+   Пишется один раз при импорте — ровно как текст, поэтому и хранится так же. */
+const TOC = '.toc';
+
+/** @param {string} id @param {{title:string,at:number}[]} chapters */
+export const saveToc = (id, chapters) =>
+  saveText(id + TOC, JSON.stringify(Array.isArray(chapters) ? chapters : []));
+
+/** @param {string} id @returns {Promise<{title:string,at:number}[]>} пустой массив, если нет или испорчено */
+export async function loadToc(id) {
+  const raw = await loadText(id + TOC);
+  if (!raw) return [];
+  try {
+    const v = JSON.parse(raw);
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];                                  // испорченное оглавление — не повод не открыть книгу
+  }
+}
+
+/** @param {string} id @returns {Promise<void>} */
+export const deleteToc = id => deleteText(id + TOC);
