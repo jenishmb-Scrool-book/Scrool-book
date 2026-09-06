@@ -37,6 +37,7 @@ export default function Stories({go}) {
           <div className="av sm" style={{background: grad(pos + 5)}}>📖</div>
           <b>{current ? current.title : t('stories.title')}</b>
           <i>{msgTime(pos)}</i>
+          <span className="ic" onClick={() => go('toc')} role="button" aria-label={t('toc.title')}>☰</span>
           <span className="back" onClick={() => go('home')} role="button" aria-label={t('back')}>✕</span>
         </div>
         <div className="stxt">{cur ? cur.text : ''}</div>

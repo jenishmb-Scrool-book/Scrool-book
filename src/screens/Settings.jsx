@@ -2,7 +2,7 @@ import {useEffect, useState} from 'react';
 import {useStore} from '../store.jsx';
 import {useT} from '../i18n.js';
 import {clearWallpaper, getWallpaper, setWallpaper, shrink} from '../wallpaper.js';
-import {cancelNotifications, ensureNotifications} from '../native.js';
+import {appInfo, cancelNotifications, ensureNotifications} from '../native.js';
 import {pageAt} from '../lib/pages.js';
 import Screen from '../ui/Screen.jsx';
 import StatusBar from '../ui/StatusBar.jsx';
@@ -28,15 +28,37 @@ function Seg({value, options, onPick}) {
   );
 }
 
+// Строка для сообщения об ошибке. Здесь нет ничего о человеке и ничего из
+// книги — только версия сборки и то, на чём она запущена. Длина книги нужна
+// затем, что половина проблем воспроизводится лишь на большом тексте.
+function details(info, ui, len) {
+  const s = window.screen || {};
+  return [
+    'СДВГ ' + (info.version || '?') + (info.build ? ' (' + info.build + ')' : ''),
+    info.id || '',
+    navigator.userAgent,
+    // Плотность округляем: у неё бывает хвост вида 2.0000000596046448,
+    // и в письме это выглядит как мусор, а не как сведения.
+    'экран ' + (s.width || '?') + '×' + (s.height || '?') +
+      ' @' + Math.round((window.devicePixelRatio || 1) * 100) / 100,
+    'тема ' + ui.theme + ', шрифт ' + ui.font + ', язык ' + ui.lang + ', обёртка ' + ui.skin,
+    'книга ' + len + ' знаков'
+  ].filter(Boolean).join('\n');
+}
+
 export default function Settings({go}) {
-  const {ui, setUi, current, offset} = useStore();
+  const {ui, setUi, current, offset, text} = useStore();
   const t = useT();
   const [wall, setWall] = useState('');
   const [msg, setMsg] = useState('');
   const [notifMsg, setNotifMsg] = useState('');
+  const [info, setInfo] = useState({version: '', build: '', id: ''});
+  const [copied, setCopied] = useState('');
+  const [fallback, setFallback] = useState('');
 
   useEffect(() => {
     let live = true;
+    appInfo().then(i => live && setInfo(i)).catch(() => {});
     getWallpaper().then(w => live && setWall(w)).catch(() => {});
     return () => {live = false;};
   }, []);
@@ -61,6 +83,25 @@ export default function Settings({go}) {
   // сеанс чтения ради строки, которую человек увидит завтра в полдень.
   // Смягчение бесплатное: повторное нажатие «Вкл» перепланирует напоминание
   // с текущей страницей, поэтому раннего возврата на «то же значение» здесь нет.
+  // Своей почты в приложении нет: адрес разработчика — его решение, а не наше,
+  // и вписывать его в код без спроса нельзя. Поэтому не «написать нам», а
+  // «скопировать» — тестировщик отправит это тем способом, каким уже общается.
+  const copyDetails = async () => {
+    const s = details(info, ui, text.length);
+    try {
+      await navigator.clipboard.writeText(s);
+      setCopied(t('set.copied'));
+      setFallback('');
+    } catch {
+      // Буфер может быть недоступен: нет разрешения, старый WebView, не
+      // защищённый контекст. Тогда показываем те же сведения прямо на экране —
+      // их можно выделить или снять экран. Отказ без запасного пути означал бы,
+      // что человек просто не может сказать, какая у него сборка.
+      setCopied(t('set.copy_failed', {v: info.version || '?'}));
+      setFallback(s);
+    }
+  };
+
   const pickNotify = async v => {
     setNotifMsg('');
     if (v === 'off') {
@@ -126,6 +167,17 @@ export default function Settings({go}) {
         />
         {notifMsg ? <div className="hint">{notifMsg}</div> : null}
         <div className="hint">{t('set.notif_hint')}</div>
+
+        <div className="sect">{t('set.about')}</div>
+        <div className="hint">
+          {t('set.version', {v: info.version + (info.build ? ' (' + info.build + ')' : '')})}
+        </div>
+        <div className="row">
+          <button className="ghost" onClick={copyDetails}>{t('set.copy')}</button>
+        </div>
+        {copied ? <div className="hint">{copied}</div> : null}
+        {fallback ? <div className="diag">{fallback}</div> : null}
+        <div className="hint">{t('set.about_hint')}</div>
       </div>
     </Screen>
   );

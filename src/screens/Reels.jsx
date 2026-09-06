@@ -20,6 +20,10 @@ export default function Reels({go}) {
     <Screen id="reels">
       <Progress offset={offset} len={text.length} float />
       <span className="back float" onClick={() => go('home')} role="button" aria-label={t('back')}>‹</span>
+      {/* Оглавление есть на всех шести движках, включая полноэкранные: прыжок
+          через сорок страниц нужен ровно там, где книгу читают не подряд, и
+          зависеть это не должно от того, какую обёртку человек выбрал. */}
+      <span className="toc float" onClick={() => go('toc')} role="button" aria-label={t('toc.title')}>☰</span>
       {/* Вкладки сверху не работают и работать не должны — без них экран
           читается как «карточки с текстом», а не как лента коротких видео. */}
       <div className="rtabs">

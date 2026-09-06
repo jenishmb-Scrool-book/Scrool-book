@@ -203,3 +203,30 @@ export async function cancelNotifications() {
     console.warn('[native] не удалось снять напоминание:', err);
   }
 }
+
+/**
+ * Сведения о сборке для сообщения об ошибке.
+ *
+ * Нативно берём их у самого Android (`App.getInfo`): там есть `build` —
+ * versionCode, то есть ровно тот номер, которым сборка называется в Play.
+ * Из JS его иначе не достать, а тестировщику без него нечего сказать, кроме
+ * «у меня не работает».
+ *
+ * В браузере плагина нет, поэтому остаётся версия из package.json.
+ *
+ * @returns {Promise<{version: string, build: string, id: string}>}
+ */
+export async function appInfo() {
+  const version = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '';
+  if (!Capacitor.isNativePlatform()) return { version, build: '', id: '' };
+  try {
+    const i = await App.getInfo();
+    return {
+      version: i.version || version,
+      build: i.build || '',
+      id: i.id || ''
+    };
+  } catch {
+    return { version, build: '', id: '' };
+  }
+}

@@ -36,38 +36,61 @@ export default function Library({go}) {
   const t = useT();
   const [text, setText] = useState('');
   const [msg, setMsg] = useState('');
+  // Разбор большого .fb2 и запись его на диск занимают заметное время, а на
+  // экране до сих пор не менялось ничего. Секунда без единого признака жизни
+  // читается как «не нажалось» — и человек жмёт второй раз, добавляя книгу дважды.
+  //
+  // Хранится ключ строки, а не флаг: разбор файла и сохранение — разные фазы,
+  // и «разбираю файл» над вставленным из буфера текстом было бы просто неправдой.
+  const [busy, setBusy] = useState('');
 
   const add = (title, body, chapters) => {
     const v = (body || '').trim();
-    if (!v) return setMsg(t('lib.empty_text'));
+    if (!v) {
+      setBusy('');
+      return setMsg(t('lib.empty_text'));
+    }
     setMsg('');
     // Заголовок по умолчанию — первые 40 символов, как в прототипе.
     // addBook не реджектится: при переполнении и на пустом тексте она резолвится
     // в null и пишет причину в store.error. Поэтому решаем по id, а не по .catch.
+    setBusy('lib.busy');
     later(addBook((title || v.slice(0, 40)).trim(), v, chapters))
       .then(id => {
         if (!id) return setMsg(t('lib.save_failed_space'));
         setText('');            // поле чистим только после успеха, иначе текст потерян навсегда
         go('home');
       })
-      .catch(() => setMsg(t('lib.save_failed')));
+      .catch(() => setMsg(t('lib.save_failed')))
+      .finally(() => setBusy(''));
   };
 
-  const fromPaste = () => add(text.split('\n')[0], text);
+  const fromPaste = () => {
+    if (busy) return;
+    add(text.split('\n')[0], text);
+  };
 
   const fromFile = e => {
     const f = e.target.files && e.target.files[0];
     e.target.value = '';           // чтобы тот же файл можно было выбрать второй раз
-    if (!f) return;
+    if (!f || busy) return;
     setMsg('');
+    setBusy('lib.busy_file');
     parseFile(f)
       .then(r => {
-        if (!String(r.text || '').trim()) return setMsg(t('lib.no_text'));
+        if (!String(r.text || '').trim()) {
+          setBusy('');
+          return setMsg(t('lib.no_text'));
+        }
         // Главы от парсера идут в стор как есть. Если файл их не размечал,
         // стор сам распознает заголовки в тексте — как для вставленного руками.
+        // add() снимет busy сам: она же и завершает всю операцию.
         add(r.title || f.name.replace(/\.\w+$/, ''), r.text, r.chapters);
       })
-      .catch(err => setMsg(t(ERR[err && err.code] || 'lib.parse_failed')));
+      .catch(err => {
+        setBusy('');
+        setMsg(t(ERR[err && err.code] || 'lib.parse_failed'));
+      });
   };
 
   const open = id => later(openBook(id)).then(() => go('home')).catch(() => {});
@@ -104,12 +127,13 @@ export default function Library({go}) {
           onChange={e => setText(e.target.value)}
         />
         <div className="row">
-          <button onClick={fromPaste}>{t('lib.add')}</button>
-          <label className="filebtn">
+          <button onClick={fromPaste} disabled={!!busy}>{t('lib.add')}</button>
+          <label className={'filebtn' + (busy ? ' off' : '')}>
             {t('lib.file')}
-            <input type="file" accept=".txt,.md,.fb2,.epub" onChange={fromFile} />
+            <input type="file" accept=".txt,.md,.fb2,.epub" onChange={fromFile} disabled={!!busy} />
           </label>
         </div>
+        {busy ? <div className="hint busy">{t(busy)}</div> : null}
         {msg ? <div className="hint">{msg}</div> : null}
         <div className="hint">{t('lib.hint')}</div>
 
