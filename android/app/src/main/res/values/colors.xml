@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Фон приложения. Тот же цвет, что android.backgroundColor в capacitor.config.json
+         и что фон адаптивной иконки. Показывается в отступах под системными барами
+         на Android 15+, где edge-to-edge включён принудительно. -->
+    <color name="app_background">#0b0b12</color>
+</resources>

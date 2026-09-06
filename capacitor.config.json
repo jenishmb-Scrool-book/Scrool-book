@@ -1,0 +1,16 @@
+{
+  "appId": "com.sdvgapp.scroll",
+  "appName": "Скролл",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#0b0b12",
+    "adjustMarginsForEdgeToEdge": "auto"
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0b0b12",
+      "overlaysWebView": false
+    }
+  }
+}

@@ -1,0 +1,115 @@
+/* Порт стилей из www_backup/vanilla-prototype.html — один в один.
+   Вёрстка уже проверена на 375x812, поэтому правки только там, где без них
+   React-версия работать не может (помечено «добавлено»). */
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#05050a;color:#eceaf3;
+  font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+button,textarea,input{font:inherit;color:inherit}
+
+#phone{position:relative;width:100%;max-width:440px;height:100dvh;margin:0 auto;
+  overflow:hidden;background:#0b0b12;box-shadow:0 0 60px #000}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;background:#0b0b12}
+.screen.on{display:flex}
+
+.status{flex:none;display:flex;justify-content:space-between;align-items:center;
+  padding:8px 18px 2px;font-size:12px;opacity:.75;letter-spacing:.3px}
+.hdr{flex:none;display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:#14141f;border-bottom:1px solid #ffffff12}
+.hdr h2{margin:0;font-size:16px;font-weight:600;flex:1}
+.back{cursor:pointer;font-size:24px;line-height:1;padding:2px 8px;opacity:.9;user-select:none}
+.body{flex:1;overflow-y:auto;overscroll-behavior:contain;position:relative}/* offsetParent для карточек */
+.prog{flex:none;height:3px;background:#ffffff14}
+.prog i{display:block;height:100%;width:0;background:#7c5cff;transition:width .2s}
+.float{position:absolute;z-index:5}
+
+/* ===== дом ===== */
+#home{background:linear-gradient(165deg,#22325c 0%,#3b2050 45%,#0b0b12 100%)}
+.widget{margin:18px 16px 6px;padding:14px 16px;border-radius:18px;
+  background:#ffffff14;backdrop-filter:blur(8px);border:1px solid #ffffff1f}
+.widget .t{font-size:13px;opacity:.7}
+.widget .n{font-size:17px;font-weight:600;margin:2px 0 10px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.widget .bar{height:5px;border-radius:3px;background:#ffffff26;overflow:hidden;margin-bottom:12px}
+.widget .bar i{display:block;height:100%;background:#8f7bff;transition:width .2s}
+.widget button{width:100%;border:0;border-radius:12px;padding:11px;
+  background:#7c5cff;font-weight:600;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px 6px;padding:22px 14px}
+.icon{display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer}
+.icon b{width:58px;height:58px;border-radius:17px;display:grid;place-items:center;
+  font-size:28px;box-shadow:0 8px 18px #0008}
+.icon span{font-size:11px;opacity:.92;text-align:center}
+.dock{margin-top:auto;display:flex;justify-content:space-around;padding:14px 18px 26px;
+  background:#ffffff10;backdrop-filter:blur(10px)}
+
+/* ===== чаты ===== */
+#chats .body{padding:12px 12px 4px;background:#0d1620}
+.msg{max-width:84%;padding:9px 12px 6px;border-radius:16px 16px 16px 4px;margin:8px 0;
+  background:#1e2c36;white-space:pre-wrap;word-break:break-word;animation:pop .18s ease-out}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}}
+.msg .t{display:block;text-align:right;font-size:10px;opacity:.45;margin-top:3px}
+.next{display:block;margin:16px auto 20px;border:0;border-radius:22px;padding:11px 22px;
+  background:#2ea36f;font-weight:600;cursor:pointer}
+.done{text-align:center;opacity:.6;font-size:14px;padding:20px}
+
+/* ===== клипы ===== */
+#reels .body{padding:0;scroll-snap-type:y mandatory}
+#reels .float.back{top:10px;left:8px;font-size:28px;text-shadow:0 2px 8px #000}
+#reels .prog.float{top:0;left:0;right:0;background:#ffffff20}
+.reel{height:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative;
+  display:flex;flex-direction:column;justify-content:flex-end;padding:56px 74px 44px 20px}
+.reel .txt{font-size:21px;line-height:1.45;font-weight:600;text-shadow:0 2px 14px #000a;
+  max-height:76%;overflow:auto;word-break:break-word}
+.reel .cnt{margin-top:14px;font-size:12px;opacity:.65}
+.rail{position:absolute;right:10px;bottom:64px;display:flex;flex-direction:column;
+  gap:20px;align-items:center;font-size:25px;text-shadow:0 2px 8px #000}
+.rail small{display:block;font-size:10px;text-align:center;font-weight:600}
+
+/* ===== лента ===== */
+.post{border-bottom:1px solid #ffffff10;padding-bottom:12px;margin-bottom:8px}
+.post .u{display:flex;align-items:center;gap:9px;padding:9px 12px;font-size:14px;font-weight:600}
+.post .av{width:32px;height:32px;border-radius:50%;flex:none}
+.post .pic{aspect-ratio:4/5;display:flex;align-items:center;padding:26px 22px;
+  font-size:17px;line-height:1.5;font-weight:500;overflow:auto;word-break:break-word}
+.post .acts{padding:9px 12px 4px;font-size:21px;letter-spacing:12px}
+.post .cap{padding:0 12px;font-size:13px;opacity:.6}
+
+/* ===== видео ===== */
+.vid{display:flex;gap:10px;padding:9px 12px;cursor:pointer;align-items:flex-start}
+.vid .th{width:132px;aspect-ratio:16/9;border-radius:9px;flex:none;display:grid;
+  place-items:center;font-size:26px;opacity:.9}
+.vid .ti{font-size:14px;font-weight:600;line-height:1.35;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.vid .meta{font-size:12px;opacity:.55;margin-top:5px}
+#player .stage{flex:none;aspect-ratio:16/9;display:flex;align-items:center;
+  padding:20px;font-size:16px;line-height:1.5;overflow:auto;word-break:break-word}
+#player .info{padding:14px}
+#player .info h3{margin:0 0 6px;font-size:16px}
+#player .info .m{font-size:12px;opacity:.55;margin-bottom:16px}
+
+/* ===== библиотека ===== */
+#library .body{padding:14px}
+#library textarea{width:100%;height:140px;border-radius:12px;border:1px solid #ffffff20;
+  background:#15151f;padding:10px;resize:vertical}
+.row{display:flex;gap:8px;margin:10px 0 22px}
+.row button,.filebtn{flex:1;border:0;border-radius:11px;padding:11px;cursor:pointer;
+  background:#7c5cff;font-weight:600;text-align:center}
+.filebtn{background:#2a2a3a}
+.filebtn input{display:none}
+.book{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:12px;
+  background:#15151f;margin-bottom:8px;cursor:pointer;border:1px solid transparent}
+.book.sel{border-color:#7c5cff;background:#1c1830}
+.book .i{flex:1;min-width:0}
+.book .i b{display:block;font-size:14px;font-weight:600;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.book .i span{font-size:12px;opacity:.55}
+.book .x{opacity:.5;padding:4px 6px;font-size:18px}
+.hint{opacity:.5;font-size:13px;margin:6px 0 16px}
+
+/* ===== добавлено: то, чего в прототипе не было ===== */
+/* Прототип ругался через alert(); в WebView это модалка поверх всего — заменено на плашку. */
+.err{position:absolute;left:12px;right:12px;bottom:14px;z-index:9;
+  padding:10px 12px;border-radius:12px;background:#5a1730;border:1px solid #ff2d5559;
+  font-size:13px;line-height:1.35;box-shadow:0 8px 24px #0009}
+/* Заглушка на время гидрации хранилища: до ready трогать chunks нельзя. */
+.boot{flex:1;display:grid;place-items:center;opacity:.5;font-size:14px}
