@@ -1,5 +1,6 @@
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useStore} from '../store.jsx';
+import {clearWallpaper, getWallpaper, setWallpaper, shrink} from '../wallpaper.js';
 import Screen from '../ui/Screen.jsx';
 import StatusBar from '../ui/StatusBar.jsx';
 import Header from '../ui/Header.jsx';
@@ -11,6 +12,27 @@ export default function Library({go}) {
   const {books, current, chunks, pos, addBook, openBook, deleteBook} = useStore();
   const [text, setText] = useState('');
   const [msg, setMsg] = useState('');
+  const [wall, setWall] = useState('');
+
+  useEffect(() => {
+    let live = true;
+    getWallpaper().then(w => live && setWall(w)).catch(() => {});
+    return () => {live = false;};
+  }, []);
+
+  // Картинку ужимаем ДО записи: оригинал обоев с телефона — это мегабайты,
+  // которые не влезут в квоту и не нужны на экране шириной 440px.
+  const fromImage = e => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    setMsg('');
+    shrink(f)
+      .then(uri => setWallpaper(uri).then(() => setWall(uri)))
+      .catch(err => setMsg(err.message || 'Не удалось поставить обои'));
+  };
+
+  const dropWall = () => clearWallpaper().then(() => setWall('')).catch(() => {});
 
   const add = (title, body) => {
     const t = (body || '').trim();
@@ -70,6 +92,20 @@ export default function Library({go}) {
         {msg ? <div className="hint">{msg}</div> : null}
         <div className="hint">
           Один текст — один прогресс. Читай его в чатах, клипах, ленте или «видео», позиция общая.
+        </div>
+
+        <div className="sect">Обои рабочего стола</div>
+        <div className="row">
+          <label className="filebtn">
+            {wall ? 'Заменить' : 'Выбрать из галереи'}
+            <input type="file" accept="image/*" onChange={fromImage} />
+          </label>
+          {wall ? <button className="ghost" onClick={dropWall}>Убрать</button> : null}
+        </div>
+        {wall ? <div className="wallprev" style={{backgroundImage: `url(${wall})`}} /> : null}
+        <div className="hint">
+          Поставь те же обои, что на твоём телефоне — домашний экран приложения станет похож на настоящий.
+          Скриншот лаунчера снять нельзя: Android это запрещает приложениям.
         </div>
         <div>
           {books.length ? books.map(b => (
