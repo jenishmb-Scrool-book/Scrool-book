@@ -4,6 +4,8 @@ import Screen from '../ui/Screen.jsx';
 import StatusBar from '../ui/StatusBar.jsx';
 import Header from '../ui/Header.jsx';
 import Progress from '../ui/Progress.jsx';
+import useChunks from '../ui/useChunks.js';
+import {SIZE} from '../ui/sizes.js';
 
 const AVATAR = {
   width: 34, height: 34, borderRadius: '50%',
@@ -18,7 +20,8 @@ const clock = () => {
 // «Чаты»: прочитанное лежит перепиской. Показываем хвост в 15 пузырей
 // (от pos-14 до pos), дальше двигаем курсор кнопкой — здесь скролл не листает.
 export default function Chats({go}) {
-  const {current, chunks, pos, setPos} = useStore();
+  const {current, text, offset} = useStore();
+  const {chunks, pos, setPos} = useChunks(SIZE.chats);
   const boxRef = useRef(null);
   const from = Math.max(0, pos - 14);
   const time = clock();
@@ -38,11 +41,11 @@ export default function Chats({go}) {
         left={<div style={AVATAR} />}
         right={<span style={{opacity: .5}}>⋮</span>}
       />
-      <Progress pos={pos} count={chunks.length} />
+      <Progress offset={offset} len={text.length} />
       <div className="body" ref={boxRef}>
         {chunks.slice(from, pos + 1).map((c, k) => (
           <div className="msg" key={from + k}>
-            {c}
+            {c.text}
             <span className="t">{time}</span>
           </div>
         ))}

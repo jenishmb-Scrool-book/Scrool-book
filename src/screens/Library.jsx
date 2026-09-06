@@ -4,12 +4,14 @@ import {clearWallpaper, getWallpaper, setWallpaper, shrink} from '../wallpaper.j
 import Screen from '../ui/Screen.jsx';
 import StatusBar from '../ui/StatusBar.jsx';
 import Header from '../ui/Header.jsx';
+import {percent} from '../ui/Progress.jsx';
+import {pageCount} from '../lib/pages.js';
 
 // Стор возвращает Promise; но если реализация вдруг синхронная — не падаем.
 const later = v => Promise.resolve(v);
 
 export default function Library({go}) {
-  const {books, current, chunks, pos, addBook, openBook, deleteBook} = useStore();
+  const {books, current, text: bookText, offset, addBook, openBook, deleteBook} = useStore();
   const [text, setText] = useState('');
   const [msg, setMsg] = useState('');
   const [wall, setWall] = useState('');
@@ -66,10 +68,10 @@ export default function Library({go}) {
   };
 
   // Прогресс стор отдаёт только для текущей книги — у остальных показываем
-  // просто размер. См. контракт useStore(): pos там один, не по книгам.
+  // просто размер. См. контракт useStore(): смещение там одно, не по книгам.
   const progressOf = b =>
-    current && b.id === current.id && chunks.length
-      ? ' · ' + Math.round(((pos + 1) / chunks.length) * 100) + '%'
+    current && b.id === current.id && bookText.length
+      ? ' · ' + Math.round(percent(offset, bookText.length)) + '%'
       : '';
 
   return (
@@ -116,7 +118,7 @@ export default function Library({go}) {
             >
               <div className="i">
                 <b>{b.title}</b>
-                <span>{b.n} фрагментов{progressOf(b)}</span>
+                <span>{pageCount(b.len)} стр.{progressOf(b)}</span>
               </div>
               <span className="x" onClick={e => remove(e, b)} role="button" aria-label="Удалить">✕</span>
             </div>

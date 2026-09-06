@@ -1,26 +1,30 @@
 import React, {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
-import {chunk} from './lib/chunk.js';
 import {StorageFullError, deleteText, loadMeta, loadText, saveMeta, saveText} from './lib/storage.js';
 
-// Одно состояние на всё приложение: книга порезана на чанки один раз, курсор один.
-// Экраны — это разные рендереры одной пары (chunks, pos), поэтому позиция чтения общая.
+// Одно состояние на всё приложение: сырой текст книги и один курсор.
+//
+// Курсор — СМЕЩЕНИЕ В СИМВОЛАХ, а не номер фрагмента. Стор специально не режет
+// текст: у каждого экрана свой размер фрагмента, поэтому нарезка — дело экрана
+// (см. useChunks), а общая для всех величина только одна — позиция в символах.
+// Именно она и делает продукт: переключился с клипов на чаты — продолжил с того
+// же места, хотя фрагменты там совсем другой длины.
 
 const DEBOUNCE = 400;                                   // мс между последним сдвигом курсора и записью
 const APPS = ['reels', 'chats', 'feed', 'video'];       // экраны-читалки, куда уводит «Продолжить»
-const EMPTY = {books: [], cur: null, pos: {}, last: 'reels'};
+const EMPTY = {books: [], cur: null, at: {}, last: 'reels'};
 
 const Ctx = createContext(null);
 
 export function StoreProvider({children}) {
   const [meta, setMeta] = useState(EMPTY);
-  const [chunks, setChunks] = useState([]);
+  const [text, setText] = useState('');
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(null);
 
   // Зеркала состояния для колбэков: дебаунс и async-операции не должны
   // ловить устаревшее замыкание.
   const metaRef = useRef(EMPTY);
-  const chunksRef = useRef([]);
+  const textRef = useRef('');
   const timer = useRef(null);
   const dirty = useRef(false);       // есть несохранённые изменения меты
   const mounted = useRef(true);
@@ -30,9 +34,9 @@ export function StoreProvider({children}) {
     metaRef.current = next;
     if (mounted.current) setMeta(next);
   }, []);
-  const applyChunks = useCallback(parts => {
-    chunksRef.current = parts;
-    if (mounted.current) setChunks(parts);
+  const applyText = useCallback(txt => {
+    textRef.current = txt;
+    if (mounted.current) setText(txt);
   }, []);
 
   const report = useCallback(e => {
@@ -68,24 +72,24 @@ export function StoreProvider({children}) {
       const m = {
         books: Array.isArray(raw.books) ? raw.books : [],
         cur: raw.cur ?? null,
-        pos: {...(raw.pos || {})},
+        at: {...(raw.at || {})},
         last: APPS.includes(raw.last) ? raw.last : 'reels'
       };
-      let parts = [];
+      let txt = '';
       if (m.cur && m.books.some(b => b.id === m.cur)) {
-        parts = chunk(await loadText(m.cur));
-        m.pos[m.cur] = clamp(m.pos[m.cur], parts.length);
-        m.books = m.books.map(b => (b.id === m.cur ? {...b, n: parts.length} : b));
+        txt = String((await loadText(m.cur)) ?? '');
+        m.at[m.cur] = clamp(m.at[m.cur], txt.length);
+        m.books = m.books.map(b => (b.id === m.cur ? {...b, len: txt.length} : b));
       } else {
         m.cur = null;                       // мета ссылается на исчезнувшую книгу
       }
       if (!live) return;
       applyMeta(m);
-      applyChunks(parts);
+      applyText(txt);
       setReady(true);
     })();
     return () => {live = false;};
-  }, [applyMeta, applyChunks]);
+  }, [applyMeta, applyText]);
 
   /* ===== размонтирование ===== */
   useEffect(() => {
@@ -102,13 +106,13 @@ export function StoreProvider({children}) {
   }, []);
 
   /* ===== курсор ===== */
-  const setPos = useCallback(i => {
+  const setOffset = useCallback(n => {
     const m = metaRef.current;
-    const n = chunksRef.current.length;
-    if (!m.cur || !n) return;
-    const v = clamp(i, n);
-    if ((m.pos[m.cur] || 0) === v) return;
-    applyMeta({...m, pos: {...m.pos, [m.cur]: v}});
+    const len = textRef.current.length;
+    if (!m.cur || !len) return;
+    const v = clamp(n, len);
+    if ((m.at[m.cur] || 0) === v) return;
+    applyMeta({...m, at: {...m.at, [m.cur]: v}});
     schedule();
   }, [applyMeta, schedule]);
 
@@ -121,9 +125,9 @@ export function StoreProvider({children}) {
   }, [applyMeta, schedule]);
 
   /* ===== книги ===== */
-  const addBook = useCallback(async (title, text) => {
+  const addBook = useCallback(async (title, body) => {
     if (mounted.current) setError(null);
-    const txt = String(text ?? '').trim();
+    const txt = String(body ?? '').trim();
     if (!txt) {
       if (mounted.current) setError('Пустой текст — читать нечего.');
       return null;
@@ -141,11 +145,10 @@ export function StoreProvider({children}) {
       return null;
     }
 
-    const parts = chunk(txt);
     const next = {
       ...prev,
-      books: [...prev.books, {id, title: (title || txt.slice(0, 40)).trim(), n: parts.length}],
-      pos: {...prev.pos, [id]: 0},
+      books: [...prev.books, {id, title: (title || txt.slice(0, 40)).trim(), len: txt.length}],
+      at: {...prev.at, [id]: 0},
       cur: id
     };
     metaRef.current = next;
@@ -161,29 +164,29 @@ export function StoreProvider({children}) {
       report(e);
       return null;
     }
-    if (mounted.current) {setMeta(next); }
-    applyChunks(parts);
+    if (mounted.current) setMeta(next);
+    applyText(txt);
     return id;
-  }, [applyChunks, report]);
+  }, [applyText, report]);
 
   const openBook = useCallback(async id => {
     if (mounted.current) setError(null);
     if (!metaRef.current.books.some(b => b.id === id)) return;
 
     const seq = ++openSeq.current;
-    const parts = chunk(await loadText(id));
+    const txt = String((await loadText(id)) ?? '');
     if (seq !== openSeq.current) return;          // пока грузили — открыли другую книгу
 
     const base = metaRef.current;                 // мету перечитываем: за await она могла уехать
     applyMeta({
       ...base,
       cur: id,
-      pos: {...base.pos, [id]: clamp(base.pos[id], parts.length)},
-      books: base.books.map(b => (b.id === id ? {...b, n: parts.length} : b))
+      at: {...base.at, [id]: clamp(base.at[id], txt.length)},
+      books: base.books.map(b => (b.id === id ? {...b, len: txt.length} : b))
     });
-    applyChunks(parts);
+    applyText(txt);
     await write();                                // смена книги важнее дебаунса
-  }, [applyMeta, applyChunks, write]);
+  }, [applyMeta, applyText, write]);
 
   const deleteBook = useCallback(async id => {
     if (mounted.current) setError(null);
@@ -191,40 +194,40 @@ export function StoreProvider({children}) {
 
     const prev = metaRef.current;
     const books = prev.books.filter(b => b.id !== id);
-    const pos = {...prev.pos};
-    delete pos[id];
-    const next = {...prev, books, pos};
-    let parts = null;                             // null — чанки не трогаем
+    const at = {...prev.at};
+    delete at[id];
+    const next = {...prev, books, at};
+    let txt = null;                               // null — текст не трогаем
 
     if (prev.cur === id) {
       const first = books[0] || null;
       next.cur = first ? first.id : null;
-      parts = first ? chunk(await loadText(first.id)) : [];
+      txt = first ? String((await loadText(first.id)) ?? '') : '';
       if (first) {
-        next.books = books.map(b => (b.id === first.id ? {...b, n: parts.length} : b));
-        next.pos = {...next.pos, [first.id]: clamp(next.pos[first.id], parts.length)};
+        next.books = books.map(b => (b.id === first.id ? {...b, len: txt.length} : b));
+        next.at = {...next.at, [first.id]: clamp(next.at[first.id], txt.length)};
       }
     }
 
     applyMeta(next);
-    if (parts) applyChunks(parts);
+    if (txt !== null) applyText(txt);
     await write();
-  }, [applyMeta, applyChunks, write]);
+  }, [applyMeta, applyText, write]);
 
   const value = useMemo(() => ({
     ready,
     books: meta.books,
     current: meta.books.find(b => b.id === meta.cur) || null,
-    chunks,
-    pos: meta.cur ? meta.pos[meta.cur] || 0 : 0,
-    setPos,
+    text,
+    offset: meta.cur ? meta.at[meta.cur] || 0 : 0,
+    setOffset,
     lastApp: meta.last,
     setLastApp,
     addBook,
     openBook,
     deleteBook,
     error
-  }), [ready, meta, chunks, error, setPos, setLastApp, addBook, openBook, deleteBook]);
+  }), [ready, meta, text, error, setOffset, setLastApp, addBook, openBook, deleteBook]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -235,8 +238,9 @@ export function useStore() {
   return v;
 }
 
-// Курсор всегда внутри [0, n-1]; на пустой книге — 0.
-function clamp(i, n) {
-  const v = Math.trunc(Number(i)) || 0;
-  return Math.max(0, Math.min(v, Math.max(0, n - 1)));
+// Смещение всегда внутри [0, len-1]; на пустом тексте — 0.
+function clamp(n, len) {
+  const v = Math.trunc(Number(n)) || 0;
+  if (!len) return 0;
+  return Math.min(Math.max(v, 0), len - 1);
 }

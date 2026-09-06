@@ -38,9 +38,9 @@ function Icon({glyph, label, background, onClick}) {
 }
 
 export default function Home({go}) {
-  const {current, chunks, pos, lastApp} = useStore();
+  const {current, text, offset, lastApp} = useStore();
   const [wall, setWall] = useState('');
-  const width = percent(pos, chunks.length).toFixed(1) + '%';
+  const width = percent(offset, text.length).toFixed(1) + '%';
 
   // Обои читаются один раз за сессию — дальше отдаёт кеш в wallpaper.js.
   useEffect(() => {
@@ -50,7 +50,7 @@ export default function Home({go}) {
   }, []);
 
   // «Продолжить» уводит туда, где читали в прошлый раз. Нет книги — в библиотеку.
-  const cont = () => go(chunks.length ? (lastApp || 'reels') : 'library');
+  const cont = () => go(text.length ? (lastApp || 'reels') : 'library');
 
   return (
     <Screen id="home">

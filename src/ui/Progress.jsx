@@ -1,17 +1,22 @@
+import {pageAt, pageCount} from '../lib/pages.js';
+
 // Полоса прогресса чтения. `float` — вариант для «Клипов», где она лежит поверх карточки.
-export function percent(pos, count) {
-  return count ? ((pos + 1) / count) * 100 : 0;
+export function percent(offset, len) {
+  if (!len) return 0;
+  const at = Math.min(Math.max(Number(offset) || 0, 0), len - 1);
+  return ((at + 1) / len) * 100;
 }
 
-export default function Progress({pos, count, float}) {
-  const p = percent(pos, count);
+export default function Progress({offset, len, float}) {
+  const p = percent(offset, len);
+  const total = pageCount(len);
   return (
     <div className={float ? 'prog float' : 'prog'}>
       <i style={{width: p.toFixed(1) + '%'}} />
-      {/* Маленький индикатор «где я сейчас»: без него полоса показывает долю,
-          но не отвечает на вопрос «сколько ещё листать». */}
-      {count ? (
-        <span className="counter">{pos + 1} / {count} · {Math.round(p)}%</span>
+      {/* Считаем условными страницами, а не фрагментами: у каждого экрана своя
+          нарезка, и номер фрагмента прыгал бы при переключении приложений. */}
+      {total ? (
+        <span className="counter">{pageAt(offset, len)} / {total} · {Math.round(p)}%</span>
       ) : null}
     </div>
   );

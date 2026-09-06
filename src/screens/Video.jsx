@@ -5,6 +5,8 @@ import StatusBar from '../ui/StatusBar.jsx';
 import Header from '../ui/Header.jsx';
 import Progress from '../ui/Progress.jsx';
 import useCardWindow from '../ui/useCardWindow.js';
+import useChunks from '../ui/useChunks.js';
+import {SIZE} from '../ui/sizes.js';
 import {grad, views} from '../ui/visual.js';
 
 /**
@@ -13,7 +15,8 @@ import {grad, views} from '../ui/visual.js';
  * только открытие ролика. Поэтому trackPos: false.
  */
 export default function Video({go}) {
-  const {chunks, pos, setPos} = useStore();
+  const {text, offset} = useStore();
+  const {chunks, pos, setPos} = useChunks(SIZE.video);
   const count = chunks.length;
   const {boxRef, items} = useCardWindow({
     count, pos, setPos, ahead: 1, cardSelector: '.vid', trackPos: false
@@ -28,13 +31,13 @@ export default function Video({go}) {
     <Screen id="video">
       <StatusBar />
       <Header onBack={() => go('home')} title="Видео" />
-      <Progress pos={pos} count={count} />
+      <Progress offset={offset} len={text.length} />
       <div className="body" ref={boxRef}>
         {items.map(i => (
           <div className="vid" key={i} data-i={i} onClick={() => play(i)}>
             <div className="th" style={{background: grad(i)}}>▶</div>
             <div>
-              <div className="ti">{chunks[i].slice(0, 70)}{chunks[i].length > 70 ? '…' : ''}</div>
+              <div className="ti">{chunks[i].text.slice(0, 70)}{chunks[i].text.length > 70 ? '…' : ''}</div>
               <div className="meta">
                 книга · {views(i)} тыс. просмотров{i === pos ? ' · тут остановился' : ''}
               </div>
@@ -48,9 +51,11 @@ export default function Video({go}) {
 
 // Плеер показывает кусок, на котором стоит курсор: открытие ролика курсор и выставило.
 export function Player({go}) {
-  const {chunks, pos, setPos} = useStore();
+  const {text, offset} = useStore();
+  const {chunks, pos, setPos} = useChunks(SIZE.video);
   const count = chunks.length;
   const boxRef = useRef(null);
+  const cur = chunks[pos];
 
   // Переключились на следующий ролик — смотрим его сверху.
   useLayoutEffect(() => {
@@ -62,10 +67,10 @@ export function Player({go}) {
     <Screen id="player">
       <StatusBar />
       <Header onBack={() => go('video')} title="Смотрим" />
-      <Progress pos={pos} count={count} />
+      <Progress offset={offset} len={text.length} />
       <div className="body" ref={boxRef}>
         <div className="stage" style={{background: grad(pos)}}>
-          <div>{chunks[pos]}</div>
+          <div>{cur ? cur.text : ''}</div>
         </div>
         <div className="info">
           <h3>Фрагмент {pos + 1} из {count}</h3>

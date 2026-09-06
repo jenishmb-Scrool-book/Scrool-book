@@ -14,7 +14,7 @@ const READERS = ['chats', 'reels', 'feed', 'video'];  // эти запомина
 const NO_BOOK_OK = ['home', 'library'];               // этим двум книга не нужна
 
 export default function App() {
-  const {ready, books, chunks, addBook, setLastApp, error} = useStore();
+  const {ready, books, text, addBook, setLastApp, error} = useStore();
   const [screen, setScreen] = useState('home');
 
   // Первый запуск: вместо пустого экрана подкладываем текст, объясняющий механику.
@@ -30,12 +30,12 @@ export default function App() {
   // не переподписываясь на каждый рендер.
   const screenRef = useRef(screen);
   screenRef.current = screen;
-  const chunksRef = useRef(chunks);
-  chunksRef.current = chunks;
+  const textRef = useRef(text);
+  textRef.current = text;
 
   const go = id => {
     // Читать нечего — вместо пустого экрана уводим в библиотеку.
-    if (!NO_BOOK_OK.includes(id) && !chunksRef.current.length) id = 'library';
+    if (!NO_BOOK_OK.includes(id) && !textRef.current.length) id = 'library';
     if (READERS.includes(id)) setLastApp(id);
     setScreen(id);
   };
