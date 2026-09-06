@@ -2,20 +2,35 @@ import {useEffect, useRef, useState} from 'react';
 import {useStore} from './store.jsx';
 import {initNative} from './native.js';
 import {SEED, SEED_TITLE} from './seed.js';
+import {DICT} from './i18n.js';
 import Home from './screens/Home.jsx';
 import Chats from './screens/Chats.jsx';
 import Reels from './screens/Reels.jsx';
 import Feed from './screens/Feed.jsx';
 import Video, {Player} from './screens/Video.jsx';
 import Library from './screens/Library.jsx';
+import Settings from './screens/Settings.jsx';
 
-const SCREENS = {home: Home, chats: Chats, reels: Reels, feed: Feed, video: Video, player: Player, library: Library};
-const READERS = ['chats', 'reels', 'feed', 'video'];  // эти запоминаются как lastApp
-const NO_BOOK_OK = ['home', 'library'];               // этим двум книга не нужна
+const SCREENS = {
+  home: Home, chats: Chats, reels: Reels, feed: Feed,
+  video: Video, player: Player, library: Library, settings: Settings
+};
+const READERS = ['chats', 'reels', 'feed', 'video'];      // эти запоминаются как lastApp
+const NO_BOOK_OK = ['home', 'library', 'settings'];       // этим книга не нужна
 
 export default function App() {
-  const {ready, books, text, addBook, setLastApp, error} = useStore();
+  const {ready, books, text, ui, addBook, setLastApp, error} = useStore();
   const [screen, setScreen] = useState('home');
+
+  // Тема, кегль и язык живут атрибутами на <html>: токены палитры объявлены
+  // на :root, а body красит система вокруг «телефона» — под #phone их не спрятать.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (ui.theme === 'system') root.removeAttribute('data-theme');
+    else root.setAttribute('data-theme', ui.theme);
+    root.setAttribute('data-font', ui.font);
+    root.setAttribute('lang', ui.lang);
+  }, [ui.theme, ui.font, ui.lang]);
 
   // Первый запуск: вместо пустого экрана подкладываем текст, объясняющий механику.
   // Живёт здесь, а не в сторе: это онбординг, а не хранилище.
@@ -66,7 +81,7 @@ export default function App() {
   if (!ready) {
     return (
       <div id="phone">
-        <div className="screen on"><div className="boot">Загрузка…</div></div>
+        <div className="screen on"><div className="boot">{DICT[ui.lang] ? DICT[ui.lang].boot : DICT.ru.boot}</div></div>
       </div>
     );
   }

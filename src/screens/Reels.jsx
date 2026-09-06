@@ -1,4 +1,5 @@
 import {useStore} from '../store.jsx';
+import {useT} from '../i18n.js';
 import Screen from '../ui/Screen.jsx';
 import Progress from '../ui/Progress.jsx';
 import useCardWindow from '../ui/useCardWindow.js';
@@ -10,6 +11,7 @@ import {grad, likes, comments, shares} from '../ui/visual.js';
 // Карточка ровно height:100% — иначе snap ловит середину и текст режется.
 export default function Reels({go}) {
   const {text, offset} = useStore();
+  const t = useT();
   const {chunks, pos, setPos} = useChunks(SIZE.reels);
   const count = chunks.length;
   const {boxRef, items} = useCardWindow({count, pos, setPos, ahead: 2, cardSelector: '.reel'});
@@ -17,12 +19,12 @@ export default function Reels({go}) {
   return (
     <Screen id="reels">
       <Progress offset={offset} len={text.length} float />
-      <span className="back float" onClick={() => go('home')} role="button" aria-label="Назад">‹</span>
+      <span className="back float" onClick={() => go('home')} role="button" aria-label={t('back')}>‹</span>
       <div className="body" ref={boxRef}>
         {items.map(i => (
           <div className="reel" key={i} data-i={i} style={{background: grad(i)}}>
             <div className="txt">{chunks[i].text}</div>
-            <div className="cnt">@книга · {i + 1} из {count}</div>
+            <div className="cnt">{t('reels.handle')} · {t('reels.of', {i: i + 1, n: count})}</div>
             <div className="rail">
               ❤️<small>{likes(i)}</small>
               💬<small>{comments(i)}</small>

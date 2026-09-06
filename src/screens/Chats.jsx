@@ -1,5 +1,6 @@
 import {useLayoutEffect, useRef} from 'react';
 import {useStore} from '../store.jsx';
+import {useT} from '../i18n.js';
 import Screen from '../ui/Screen.jsx';
 import StatusBar from '../ui/StatusBar.jsx';
 import Header from '../ui/Header.jsx';
@@ -21,6 +22,7 @@ const clock = () => {
 // (от pos-14 до pos), дальше двигаем курсор кнопкой — здесь скролл не листает.
 export default function Chats({go}) {
   const {current, text, offset} = useStore();
+  const t = useT();
   const {chunks, pos, setPos} = useChunks(SIZE.chats);
   const boxRef = useRef(null);
   const from = Math.max(0, pos - 14);
@@ -37,7 +39,7 @@ export default function Chats({go}) {
       <StatusBar />
       <Header
         onBack={() => go('home')}
-        title={current ? current.title : 'Книга'}
+        title={current ? current.title : t('chats.title')}
         left={<div style={AVATAR} />}
         right={<span style={{opacity: .5}}>⋮</span>}
       />
@@ -50,8 +52,8 @@ export default function Chats({go}) {
           </div>
         ))}
         {pos + 1 < chunks.length
-          ? <button className="next" onClick={() => setPos(pos + 1)}>Дальше ↓</button>
-          : <div className="done">Конец текста</div>}
+          ? <button className="next" onClick={() => setPos(pos + 1)}>{t('chats.next')}</button>
+          : <div className="done">{t('reader.end')}</div>}
       </div>
     </Screen>
   );

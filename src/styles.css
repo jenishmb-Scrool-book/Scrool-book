@@ -1,131 +1,268 @@
-/* Порт стилей из www_backup/vanilla-prototype.html — один в один.
-   Вёрстка уже проверена на 375x812, поэтому правки только там, где без них
-   React-версия работать не может (помечено «добавлено»). */
+/* Порт стилей из www_backup/vanilla-prototype.html.
+   Вёрстка проверена на 375x812; правки — там, где без них не работает React-версия
+   или тема с размером шрифта.
+
+   Все цвета живут в токенах на :root. Тёмная палитра — базовая (приложение
+   притворяется телефоном, а домашние экраны чаще тёмные), светлая переопределяет
+   только сами токены. Ни один цвет не имеет единственного определения внутри
+   media-блока: иначе тема, выбранная руками, не смогла бы его перебить.
+
+   Три состояния темы: data-theme="dark" | "light" на <html>, либо атрибута нет —
+   тогда решает системная настройка. */
+
+:root {
+  color-scheme: dark;
+
+  --bg-outer:   #05050a;   /* поле вокруг «телефона» */
+  --bg:         #0b0b12;   /* экран */
+  --fg:         #eceaf3;
+  --hdr:        #14141f;
+  --line:       #ffffff12;
+  --line-2:     #ffffff10;
+  --glass:      #ffffff14;  /* полупрозрачные плашки поверх обоев */
+  --glass-2:    #ffffff10;
+  --glass-line: #ffffff1f;
+  --track:      #ffffff14;  /* фон полос прогресса */
+  --track-2:    #ffffff26;
+  --track-3:    #ffffff20;
+  --accent:     #7c5cff;
+  --accent-2:   #8f7bff;
+  --on-accent:  #ffffff;    /* текст на акцентной кнопке */
+  --ok:         #2ea36f;
+  --field:      #15151f;
+  --field-line: #ffffff20;
+  --card:       #15151f;
+  --card-sel:   #1c1830;
+  --btn-2:      #2a2a3a;
+  --chat-bg:    #0d1620;
+  --bubble:     #1e2c36;
+  --pill-bg:    #000000a6;  /* плашка счётчика страниц */
+  --pill-fg:    #ffffff;
+  --err-bg:     #5a1730;
+  --err-line:   #ff2d5559;
+  --home-1:     #22325c;    /* градиент дома, когда обоев нет */
+  --home-2:     #3b2050;
+  --home-3:     #0b0b12;
+  --shadow:     #000000;
+  --shadow-ic:  #00000088;  /* тень под иконками */
+
+  --fs: 16px;               /* базовый кегль, три градации ниже */
+}
+
+/* Светлая палитра. Повторяется дважды намеренно: под media — для режима
+   «как в системе», под атрибутом — для выбора руками. Ровно те же токены. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg-outer:   #d7d7de;
+    --bg:         #f4f4f7;
+    --fg:         #16161c;
+    --hdr:        #ffffff;
+    --line:       #00000014;
+    --line-2:     #00000010;
+    --glass:      #ffffff5c;
+    --glass-2:    #ffffff47;
+    --glass-line: #ffffff8a;
+    --track:      #00000014;
+    --track-2:    #00000021;
+    --track-3:    #ffffff59;
+    --accent:     #6544e8;
+    --accent-2:   #7c5cff;
+    --on-accent:  #ffffff;
+    --ok:         #14855a;
+    --field:      #ffffff;
+    --field-line: #00000024;
+    --card:       #ffffff;
+    --card-sel:   #efeaff;
+    --btn-2:      #e2e2ea;
+    --chat-bg:    #e9e4dc;
+    --bubble:     #ffffff;
+    --pill-bg:    #000000a6;
+    --pill-fg:    #ffffff;
+    --err-bg:     #ffe0e8;
+    --err-line:   #ff2d5559;
+    --home-1:     #7d96d8;
+    --home-2:     #a68ac9;
+    --home-3:     #f4f4f7;
+    --shadow:     #6b6b7a;
+    --shadow-ic:  #0000002e;
+  }
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg-outer:   #d7d7de;
+  --bg:         #f4f4f7;
+  --fg:         #16161c;
+  --hdr:        #ffffff;
+  --line:       #00000014;
+  --line-2:     #00000010;
+  --glass:      #ffffff5c;
+  --glass-2:    #ffffff47;
+  --glass-line: #ffffff8a;
+  --track:      #00000014;
+  --track-2:    #00000021;
+  --track-3:    #ffffff59;
+  --accent:     #6544e8;
+  --accent-2:   #7c5cff;
+  --on-accent:  #ffffff;
+  --ok:         #14855a;
+  --field:      #ffffff;
+  --field-line: #00000024;
+  --card:       #ffffff;
+  --card-sel:   #efeaff;
+  --btn-2:      #e2e2ea;
+  --chat-bg:    #e9e4dc;
+  --bubble:     #ffffff;
+  --pill-bg:    #000000a6;
+  --pill-fg:    #ffffff;
+  --err-bg:     #ffe0e8;
+  --err-line:   #ff2d5559;
+  --home-1:     #7d96d8;
+  --home-2:     #a68ac9;
+  --home-3:     #f4f4f7;
+  --shadow:     #6b6b7a;
+  --shadow-ic:  #0000002e;
+}
+
+/* Три градации кегля вместо ползунка: часть людей с СДВГ читает легче крупным,
+   часть — мелким, чтобы реже листать. Промежуточные значения никому не нужны. */
+:root[data-font="sm"] { --fs: 14px; }
+:root[data-font="lg"] { --fs: 19px; }
 
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;background:#05050a;color:#eceaf3;
-  font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+html,body{margin:0;height:100%;background:var(--bg-outer);color:var(--fg);
+  font:var(--fs)/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
 button,textarea,input{font:inherit;color:inherit}
 
 #phone{position:relative;width:100%;max-width:440px;height:100dvh;margin:0 auto;
-  overflow:hidden;background:#0b0b12;box-shadow:0 0 60px #000}
-.screen{position:absolute;inset:0;display:none;flex-direction:column;background:#0b0b12}
+  overflow:hidden;background:var(--bg);box-shadow:0 0 60px var(--shadow)}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;background:var(--bg)}
 .screen.on{display:flex}
 
 .status{flex:none;display:flex;justify-content:space-between;align-items:center;
-  padding:8px 18px 2px;font-size:12px;opacity:.75;letter-spacing:.3px}
+  padding:8px 18px 2px;font-size:.75rem;opacity:.75;letter-spacing:.3px}
 .hdr{flex:none;display:flex;align-items:center;gap:10px;padding:10px 14px;
-  background:#14141f;border-bottom:1px solid #ffffff12}
-.hdr h2{margin:0;font-size:16px;font-weight:600;flex:1}
-.back{cursor:pointer;font-size:24px;line-height:1;padding:2px 8px;opacity:.9;user-select:none}
+  background:var(--hdr);border-bottom:1px solid var(--line)}
+.hdr h2{margin:0;font-size:1rem;font-weight:600;flex:1}
+.back{cursor:pointer;font-size:1.5rem;line-height:1;padding:2px 8px;opacity:.9;user-select:none}
 .body{flex:1;overflow-y:auto;overscroll-behavior:contain;position:relative}/* offsetParent для карточек */
-.prog{flex:none;height:3px;background:#ffffff14;position:relative;z-index:6}
+.prog{flex:none;height:3px;background:var(--track);position:relative;z-index:6}
 /* Маленький индикатор страницы: висит поверх контента, кликам не мешает. */
 .prog .counter{position:absolute;right:8px;top:7px;font-size:10px;font-weight:600;
   letter-spacing:.3px;white-space:nowrap;padding:2px 8px;border-radius:9px;
-  background:#000000a6;color:#fff;opacity:.9;pointer-events:none}
-.prog i{display:block;height:100%;width:0;background:#7c5cff;transition:width .2s}
+  background:var(--pill-bg);color:var(--pill-fg);opacity:.9;pointer-events:none}
+.prog i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
 .float{position:absolute;z-index:5}
 
 /* ===== дом ===== */
-#home{background:linear-gradient(165deg,#22325c 0%,#3b2050 45%,#0b0b12 100%)}
+#home{background:linear-gradient(165deg,var(--home-1) 0%,var(--home-2) 45%,var(--home-3) 100%)}
 /* Обои пользователя. Затемнение сверху — иначе на светлом фото пропадают белые подписи. */
 .wall{position:absolute;inset:0;background-size:cover;background-position:center;z-index:0}
 .wall::after{content:'';position:absolute;inset:0;
   background:linear-gradient(180deg,#00000059,#000000a6)}
 #home > .status,#home > .widget,#home > .grid,#home > .dock{position:relative;z-index:1}
+/* Поверх обоев всегда лежит затемнение, поэтому подписи там белые при любой теме. */
+#home:has(.wall) .icon span,#home:has(.wall) .widget{color:#fff}
 .widget{margin:18px 16px 6px;padding:14px 16px;border-radius:18px;
-  background:#ffffff14;backdrop-filter:blur(8px);border:1px solid #ffffff1f}
-.widget .t{font-size:13px;opacity:.7}
-.widget .n{font-size:17px;font-weight:600;margin:2px 0 10px;
+  background:var(--glass);backdrop-filter:blur(8px);border:1px solid var(--glass-line)}
+.widget .t{font-size:.8rem;opacity:.7}
+.widget .n{font-size:1.06rem;font-weight:600;margin:2px 0 10px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.widget .bar{height:5px;border-radius:3px;background:#ffffff26;overflow:hidden;margin-bottom:12px}
-.widget .bar i{display:block;height:100%;background:#8f7bff;transition:width .2s}
+.widget .bar{height:5px;border-radius:3px;background:var(--track-2);overflow:hidden;margin-bottom:12px}
+.widget .bar i{display:block;height:100%;background:var(--accent-2);transition:width .2s}
 .widget button{width:100%;border:0;border-radius:12px;padding:11px;
-  background:#7c5cff;font-weight:600;cursor:pointer}
+  background:var(--accent);color:var(--on-accent);font-weight:600;cursor:pointer}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px 6px;padding:22px 14px}
 .icon{display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer}
 .icon b{width:58px;height:58px;border-radius:17px;display:grid;place-items:center;
-  font-size:28px;box-shadow:0 8px 18px #0008}
-.icon span{font-size:11px;opacity:.92;text-align:center}
+  font-size:1.75rem;box-shadow:0 8px 18px var(--shadow-ic)}
+.icon span{font-size:.69rem;opacity:.92;text-align:center}
 .dock{margin-top:auto;display:flex;justify-content:space-around;padding:14px 18px 26px;
-  background:#ffffff10;backdrop-filter:blur(10px)}
+  background:var(--glass-2);backdrop-filter:blur(10px)}
 
 /* ===== чаты ===== */
-#chats .body{padding:12px 12px 4px;background:#0d1620}
+#chats .body{padding:12px 12px 4px;background:var(--chat-bg)}
 .msg{max-width:84%;padding:9px 12px 6px;border-radius:16px 16px 16px 4px;margin:8px 0;
-  background:#1e2c36;white-space:pre-wrap;word-break:break-word;animation:pop .18s ease-out}
+  background:var(--bubble);white-space:pre-wrap;word-break:break-word;animation:pop .18s ease-out}
 @keyframes pop{from{opacity:0;transform:translateY(6px)}}
 .msg .t{display:block;text-align:right;font-size:10px;opacity:.45;margin-top:3px}
 .next{display:block;margin:16px auto 20px;border:0;border-radius:22px;padding:11px 22px;
-  background:#2ea36f;font-weight:600;cursor:pointer}
-.done{text-align:center;opacity:.6;font-size:14px;padding:20px}
+  background:var(--ok);color:var(--on-accent);font-weight:600;cursor:pointer}
+.done{text-align:center;opacity:.6;font-size:.87rem;padding:20px}
 
 /* ===== клипы ===== */
 #reels .body{padding:0;scroll-snap-type:y mandatory}
-#reels .float.back{top:10px;left:8px;font-size:28px;text-shadow:0 2px 8px #000}
-#reels .prog.float{top:0;left:0;right:0;background:#ffffff20}
+#reels .float.back{top:10px;left:8px;font-size:1.75rem;text-shadow:0 2px 8px #000;color:#fff}
+#reels .prog.float{top:0;left:0;right:0;background:var(--track-3)}
 .reel{height:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative;
-  display:flex;flex-direction:column;justify-content:flex-end;padding:56px 74px 44px 20px}
-.reel .txt{font-size:21px;line-height:1.45;font-weight:600;text-shadow:0 2px 14px #000a;
+  display:flex;flex-direction:column;justify-content:flex-end;padding:56px 74px 44px 20px;
+  color:#fff}/* карточка всегда на цветном градиенте — текст белый в любой теме */
+.reel .txt{font-size:1.31rem;line-height:1.45;font-weight:600;text-shadow:0 2px 14px #000a;
   max-height:76%;overflow:auto;word-break:break-word}
-.reel .cnt{margin-top:14px;font-size:12px;opacity:.65}
+.reel .cnt{margin-top:14px;font-size:.75rem;opacity:.65}
 .rail{position:absolute;right:10px;bottom:64px;display:flex;flex-direction:column;
-  gap:20px;align-items:center;font-size:25px;text-shadow:0 2px 8px #000}
+  gap:20px;align-items:center;font-size:1.56rem;text-shadow:0 2px 8px #000}
 .rail small{display:block;font-size:10px;text-align:center;font-weight:600}
 
 /* ===== лента ===== */
-.post{border-bottom:1px solid #ffffff10;padding-bottom:12px;margin-bottom:8px}
-.post .u{display:flex;align-items:center;gap:9px;padding:9px 12px;font-size:14px;font-weight:600}
+.post{border-bottom:1px solid var(--line-2);padding-bottom:12px;margin-bottom:8px}
+.post .u{display:flex;align-items:center;gap:9px;padding:9px 12px;font-size:.87rem;font-weight:600}
 .post .av{width:32px;height:32px;border-radius:50%;flex:none}
 .post .pic{aspect-ratio:4/5;display:flex;align-items:center;padding:26px 22px;
-  font-size:17px;line-height:1.5;font-weight:500;overflow:auto;word-break:break-word}
-.post .acts{padding:9px 12px 4px;font-size:21px;letter-spacing:12px}
-.post .cap{padding:0 12px;font-size:13px;opacity:.6}
+  font-size:1.06rem;line-height:1.5;font-weight:500;overflow:auto;word-break:break-word;color:#fff}
+.post .acts{padding:9px 12px 4px;font-size:1.31rem;letter-spacing:12px}
+.post .cap{padding:0 12px;font-size:.81rem;opacity:.6}
 
 /* ===== видео ===== */
 .vid{display:flex;gap:10px;padding:9px 12px;cursor:pointer;align-items:flex-start}
 .vid .th{width:132px;aspect-ratio:16/9;border-radius:9px;flex:none;display:grid;
-  place-items:center;font-size:26px;opacity:.9}
-.vid .ti{font-size:14px;font-weight:600;line-height:1.35;
+  place-items:center;font-size:1.62rem;opacity:.9;color:#fff}
+.vid .ti{font-size:.87rem;font-weight:600;line-height:1.35;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.vid .meta{font-size:12px;opacity:.55;margin-top:5px}
+.vid .meta{font-size:.75rem;opacity:.55;margin-top:5px}
 #player .stage{flex:none;aspect-ratio:16/9;display:flex;align-items:center;
-  padding:20px;font-size:16px;line-height:1.5;overflow:auto;word-break:break-word}
+  padding:20px;font-size:1rem;line-height:1.5;overflow:auto;word-break:break-word;color:#fff}
 #player .info{padding:14px}
-#player .info h3{margin:0 0 6px;font-size:16px}
-#player .info .m{font-size:12px;opacity:.55;margin-bottom:16px}
+#player .info h3{margin:0 0 6px;font-size:1rem}
+#player .info .m{font-size:.75rem;opacity:.55;margin-bottom:16px}
 
-/* ===== библиотека ===== */
-#library .body{padding:14px}
-#library textarea{width:100%;height:140px;border-radius:12px;border:1px solid #ffffff20;
-  background:#15151f;padding:10px;resize:vertical}
+/* ===== библиотека и настройки ===== */
+#library .body,#settings .body{padding:14px}
+#library textarea{width:100%;height:140px;border-radius:12px;border:1px solid var(--field-line);
+  background:var(--field);padding:10px;resize:vertical}
 .row{display:flex;gap:8px;margin:10px 0 22px}
 .row button,.filebtn{flex:1;border:0;border-radius:11px;padding:11px;cursor:pointer;
-  background:#7c5cff;font-weight:600;text-align:center}
-.filebtn{background:#2a2a3a}
+  background:var(--accent);color:var(--on-accent);font-weight:600;text-align:center}
+.filebtn{background:var(--btn-2);color:var(--fg)}
 .filebtn input{display:none}
 .book{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:12px;
-  background:#15151f;margin-bottom:8px;cursor:pointer;border:1px solid transparent}
-.book.sel{border-color:#7c5cff;background:#1c1830}
+  background:var(--card);margin-bottom:8px;cursor:pointer;border:1px solid transparent}
+.book.sel{border-color:var(--accent);background:var(--card-sel)}
 .book .i{flex:1;min-width:0}
-.book .i b{display:block;font-size:14px;font-weight:600;
+.book .i b{display:block;font-size:.87rem;font-weight:600;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.book .i span{font-size:12px;opacity:.55}
-.book .x{opacity:.5;padding:4px 6px;font-size:18px}
-.hint{opacity:.5;font-size:13px;margin:6px 0 16px}
+.book .i span{font-size:.75rem;opacity:.55}
+.book .x{opacity:.5;padding:4px 6px;font-size:1.13rem}
+.hint{opacity:.5;font-size:.81rem;margin:6px 0 16px}
+
+/* Переключатель из нескольких кнопок: тема, кегль, язык. */
+.seg{display:flex;gap:6px;margin:0 0 18px}
+.seg button{flex:1;border:1px solid var(--field-line);border-radius:10px;padding:9px 6px;
+  background:var(--field);cursor:pointer;font-size:.81rem}
+.seg button.on{border-color:var(--accent);background:var(--card-sel);font-weight:600}
 
 /* ===== добавлено: то, чего в прототипе не было ===== */
 /* Прототип ругался через alert(); в WebView это модалка поверх всего — заменено на плашку. */
 .err{position:absolute;left:12px;right:12px;bottom:14px;z-index:9;
-  padding:10px 12px;border-radius:12px;background:#5a1730;border:1px solid #ff2d5559;
-  font-size:13px;line-height:1.35;box-shadow:0 8px 24px #0009}
-/* Заглушка на время гидрации хранилища: до ready трогать chunks нельзя. */
-.boot{flex:1;display:grid;place-items:center;opacity:.5;font-size:14px}
+  padding:10px 12px;border-radius:12px;background:var(--err-bg);border:1px solid var(--err-line);
+  font-size:.81rem;line-height:1.35;box-shadow:0 8px 24px var(--shadow-ic)}
+/* Заглушка на время гидрации хранилища: до ready трогать текст нельзя. */
+.boot{flex:1;display:grid;place-items:center;opacity:.5;font-size:.87rem}
 
 /* Настройки: заголовок секции и превью обоев */
-.sect{font-size:13px;font-weight:600;opacity:.6;margin:22px 0 8px;
+.sect{font-size:.81rem;font-weight:600;opacity:.6;margin:22px 0 8px;
   text-transform:uppercase;letter-spacing:.6px}
-.row .ghost{background:#2a2a3a}
+.row .ghost{background:var(--btn-2);color:var(--fg)}
 .wallprev{height:120px;border-radius:12px;background-size:cover;background-position:center;
-  margin:-12px 0 10px;border:1px solid #ffffff1f}
+  margin:-12px 0 10px;border:1px solid var(--glass-line)}

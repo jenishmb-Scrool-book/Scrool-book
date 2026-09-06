@@ -1,4 +1,5 @@
 import {useStore} from '../store.jsx';
+import {useT} from '../i18n.js';
 import Screen from '../ui/Screen.jsx';
 import StatusBar from '../ui/StatusBar.jsx';
 import Header from '../ui/Header.jsx';
@@ -12,6 +13,7 @@ import {grad, marks} from '../ui/visual.js';
 // в этом весь фокус, картинки тут нет вообще.
 export default function Feed({go}) {
   const {text, offset} = useStore();
+  const t = useT();
   const {chunks, pos, setPos} = useChunks(SIZE.feed);
   const count = chunks.length;
   const {boxRef, items} = useCardWindow({count, pos, setPos, ahead: 1, cardSelector: '.post'});
@@ -19,18 +21,18 @@ export default function Feed({go}) {
   return (
     <Screen id="feed">
       <StatusBar />
-      <Header onBack={() => go('home')} title="Лента" />
+      <Header onBack={() => go('home')} title={t('feed.title')} />
       <Progress offset={offset} len={text.length} />
       <div className="body" ref={boxRef}>
         {items.map(i => (
           <div className="post" key={i} data-i={i}>
             <div className="u">
               <div className="av" style={{background: grad(i)}} />
-              книга.дня
+              {t('feed.author')}
             </div>
             <div className="pic" style={{background: grad(i + 3)}}>{chunks[i].text}</div>
             <div className="acts">♡ ⌯ ↗</div>
-            <div className="cap">{marks(i)} отметок · фрагмент {i + 1} из {count}</div>
+            <div className="cap">{t('feed.caption', {marks: marks(i), i: i + 1, n: count})}</div>
           </div>
         ))}
       </div>

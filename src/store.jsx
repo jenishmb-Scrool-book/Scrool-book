@@ -11,7 +11,22 @@ import {StorageFullError, deleteText, loadMeta, loadText, saveMeta, saveText} fr
 
 const DEBOUNCE = 400;                                   // мс между последним сдвигом курсора и записью
 const APPS = ['reels', 'chats', 'feed', 'video'];       // экраны-читалки, куда уводит «Продолжить»
-const EMPTY = {books: [], cur: null, at: {}, last: 'reels'};
+// Настройки интерфейса живут в той же мете: им нужны те же дебаунс и дозапись
+// при выходе, что и курсору, — заводить ради них второе хранилище незачем.
+const THEMES = ['system', 'light', 'dark'];
+const FONTS = ['sm', 'md', 'lg'];
+const LANGS = ['ru', 'en'];
+const UI = {theme: 'system', lang: 'ru', font: 'md'};
+
+const EMPTY = {books: [], cur: null, at: {}, last: 'reels', ui: UI};
+
+// Значение из хранилища могло устареть или быть испорчено — берём только известные.
+const pick = (v, list, fallback) => (list.includes(v) ? v : fallback);
+const readUi = raw => ({
+  theme: pick(raw && raw.theme, THEMES, UI.theme),
+  lang: pick(raw && raw.lang, LANGS, UI.lang),
+  font: pick(raw && raw.font, FONTS, UI.font)
+});
 
 const Ctx = createContext(null);
 
@@ -73,7 +88,8 @@ export function StoreProvider({children}) {
         books: Array.isArray(raw.books) ? raw.books : [],
         cur: raw.cur ?? null,
         at: {...(raw.at || {})},
-        last: APPS.includes(raw.last) ? raw.last : 'reels'
+        last: APPS.includes(raw.last) ? raw.last : 'reels',
+        ui: readUi(raw.ui)
       };
       let txt = '';
       if (m.cur && m.books.some(b => b.id === m.cur)) {
@@ -113,6 +129,15 @@ export function StoreProvider({children}) {
     const v = clamp(n, len);
     if ((m.at[m.cur] || 0) === v) return;
     applyMeta({...m, at: {...m.at, [m.cur]: v}});
+    schedule();
+  }, [applyMeta, schedule]);
+
+  const setUi = useCallback(patch => {
+    const m = metaRef.current;
+    const next = readUi({...m.ui, ...patch});
+    const cur = m.ui || UI;
+    if (next.theme === cur.theme && next.lang === cur.lang && next.font === cur.font) return;
+    applyMeta({...m, ui: next});
     schedule();
   }, [applyMeta, schedule]);
 
@@ -223,11 +248,13 @@ export function StoreProvider({children}) {
     setOffset,
     lastApp: meta.last,
     setLastApp,
+    ui: meta.ui || UI,
+    setUi,
     addBook,
     openBook,
     deleteBook,
     error
-  }), [ready, meta, text, error, setOffset, setLastApp, addBook, openBook, deleteBook]);
+  }), [ready, meta, text, error, setOffset, setLastApp, setUi, addBook, openBook, deleteBook]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

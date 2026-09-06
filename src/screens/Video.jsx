@@ -1,5 +1,6 @@
 import {useLayoutEffect, useRef} from 'react';
 import {useStore} from '../store.jsx';
+import {useT} from '../i18n.js';
 import Screen from '../ui/Screen.jsx';
 import StatusBar from '../ui/StatusBar.jsx';
 import Header from '../ui/Header.jsx';
@@ -16,6 +17,7 @@ import {grad, views} from '../ui/visual.js';
  */
 export default function Video({go}) {
   const {text, offset} = useStore();
+  const t = useT();
   const {chunks, pos, setPos} = useChunks(SIZE.video);
   const count = chunks.length;
   const {boxRef, items} = useCardWindow({
@@ -30,7 +32,7 @@ export default function Video({go}) {
   return (
     <Screen id="video">
       <StatusBar />
-      <Header onBack={() => go('home')} title="Видео" />
+      <Header onBack={() => go('home')} title={t('video.title')} />
       <Progress offset={offset} len={text.length} />
       <div className="body" ref={boxRef}>
         {items.map(i => (
@@ -39,7 +41,7 @@ export default function Video({go}) {
             <div>
               <div className="ti">{chunks[i].text.slice(0, 70)}{chunks[i].text.length > 70 ? '…' : ''}</div>
               <div className="meta">
-                книга · {views(i)} тыс. просмотров{i === pos ? ' · тут остановился' : ''}
+                {t('video.meta', {views: views(i)})}{i === pos ? t('video.here') : ''}
               </div>
             </div>
           </div>
@@ -52,6 +54,7 @@ export default function Video({go}) {
 // Плеер показывает кусок, на котором стоит курсор: открытие ролика курсор и выставило.
 export function Player({go}) {
   const {text, offset} = useStore();
+  const t = useT();
   const {chunks, pos, setPos} = useChunks(SIZE.video);
   const count = chunks.length;
   const boxRef = useRef(null);
@@ -66,18 +69,18 @@ export function Player({go}) {
   return (
     <Screen id="player">
       <StatusBar />
-      <Header onBack={() => go('video')} title="Смотрим" />
+      <Header onBack={() => go('video')} title={t('video.playing')} />
       <Progress offset={offset} len={text.length} />
       <div className="body" ref={boxRef}>
         <div className="stage" style={{background: grad(pos)}}>
           <div>{cur ? cur.text : ''}</div>
         </div>
         <div className="info">
-          <h3>Фрагмент {pos + 1} из {count}</h3>
-          <div className="m">{views(pos)} тыс. просмотров · сегодня</div>
+          <h3>{t('video.fragment', {i: pos + 1, n: count})}</h3>
+          <div className="m">{t('video.views', {views: views(pos)})}</div>
           {pos + 1 < count
-            ? <button className="next" onClick={() => setPos(pos + 1)}>Следующее ▶</button>
-            : <div className="done">Конец текста</div>}
+            ? <button className="next" onClick={() => setPos(pos + 1)}>{t('video.next')}</button>
+            : <div className="done">{t('reader.end')}</div>}
         </div>
       </div>
     </Screen>

@@ -1,5 +1,6 @@
 import {useEffect, useState} from 'react';
 import {useStore} from '../store.jsx';
+import {useT} from '../i18n.js';
 import Screen from '../ui/Screen.jsx';
 import StatusBar from '../ui/StatusBar.jsx';
 import {percent} from '../ui/Progress.jsx';
@@ -21,11 +22,12 @@ const APPS = [
   ['🐦', 'Tvitter', 'feed', 'linear-gradient(145deg,#5aa9e6,#1b6ca8)']
 ];
 
+// Подписи док-панели переводятся, названия «приложений» — нет: это имена собственные.
 const DOCK = [
-  ['📚', 'Книги', 'library', '#2a2a3a'],
+  ['📚', 'app.books', 'library', '#2a2a3a'],
   ['🎵', 'TikTak', 'reels', 'linear-gradient(145deg,#ff2d55,#26f4ee 140%)'],
   ['💬', 'Whhatsapp', 'chats', 'linear-gradient(145deg,#4ee07f,#0f7a4d)'],
-  ['⚙️', 'Настройки', 'library', '#33333f']
+  ['⚙️', 'app.settings', 'settings', '#33333f']
 ];
 
 function Icon({glyph, label, background, onClick}) {
@@ -39,6 +41,7 @@ function Icon({glyph, label, background, onClick}) {
 
 export default function Home({go}) {
   const {current, text, offset, lastApp} = useStore();
+  const t = useT();
   const [wall, setWall] = useState('');
   const width = percent(offset, text.length).toFixed(1) + '%';
 
@@ -59,10 +62,10 @@ export default function Home({go}) {
       {wall ? <div className="wall" style={{backgroundImage: `url(${wall})`}} /> : null}
       <StatusBar />
       <div className="widget">
-        <div className="t">Читаешь сейчас</div>
-        <div className="n">{current ? current.title : 'Нет текста — добавь в библиотеке'}</div>
+        <div className="t">{t('home.now')}</div>
+        <div className="n">{current ? current.title : t('home.empty')}</div>
         <div className="bar"><i style={{width}} /></div>
-        <button onClick={cont}>Продолжить</button>
+        <button onClick={cont}>{t('home.continue')}</button>
       </div>
       <div className="grid">
         {APPS.map(([glyph, label, to, background], k) => (
@@ -71,7 +74,8 @@ export default function Home({go}) {
       </div>
       <div className="dock">
         {DOCK.map(([glyph, label, to, background], k) => (
-          <Icon key={k} glyph={glyph} label={label} background={background} onClick={() => go(to)} />
+          <Icon key={k} glyph={glyph} label={label.includes('.') ? t(label) : label}
+                background={background} onClick={() => go(to)} />
         ))}
       </div>
     </Screen>
