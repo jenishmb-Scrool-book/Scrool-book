@@ -53,9 +53,10 @@ captures/
 .idea/navEditor.xml
 
 # Keystore files
-# Ключи подписи в репозиторий не кладём.
+# Ключи подписи и пароли к ним в репозиторий не кладём.
 *.jks
 *.keystore
+keystore.properties
 
 # External native build folder generated in Android Studio 2.2 and later
 .externalNativeBuild

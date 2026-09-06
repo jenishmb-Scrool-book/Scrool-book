@@ -1,6 +1,6 @@
 {
-  "appId": "com.sdvgapp.scroll",
-  "appName": "Скролл",
+  "appId": "com.tirekai.sdvg",
+  "appName": "СДВГ",
   "webDir": "dist",
   "android": {
     "backgroundColor": "#0b0b12",

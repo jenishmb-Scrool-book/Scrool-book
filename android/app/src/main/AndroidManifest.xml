@@ -3,6 +3,8 @@
 
     <application
         android:allowBackup="true"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -38,5 +40,19 @@
 
     <!-- Permissions -->
 
-    <uses-permission android:name="android.permission.INTERNET" />
+    <!--
+        INTERNET здесь намеренно НЕТ.
+
+        Приложение целиком офлайновое: страница отдаётся из assets через
+        WebViewAssetLoader, сеть не нужна ни одному плагину. Отсутствие
+        разрешения — единственное утверждение о приватности, которое
+        пользователь может проверить сам, не веря нам на слово.
+
+        Обратная сторона: если что-то в WebView попробует выйти наружу, оно
+        молча не загрузится. Появится внешний ресурс — разрешение придётся
+        вернуть, и вместе с ним переписать раздел «Data Safety».
+
+        Уведомления добавляют POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED и
+        WAKE_LOCK — они приходят из манифеста плагина при сборке.
+    -->
 </manifest>

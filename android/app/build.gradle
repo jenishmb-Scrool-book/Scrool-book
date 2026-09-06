@@ -1,10 +1,22 @@
 apply plugin: 'com.android.application'
 
+/*
+ * Ключ подписи и пароли лежат в android/keystore.properties — файл не в гите
+ * (см. .gitignore) и создаётся вручную по README. Пока его нет, релизная
+ * сборка просто остаётся неподписанной, а не падает: отладочная сборка и CI
+ * не должны требовать секретов.
+ */
+def keystorePropsFile = rootProject.file('keystore.properties')
+def keystoreProps = new Properties()
+if (keystorePropsFile.exists()) {
+    keystorePropsFile.withInputStream { keystoreProps.load(it) }
+}
+
 android {
-    namespace "com.sdvgapp.scroll"
+    namespace "com.tirekai.sdvg"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.sdvgapp.scroll"
+        applicationId "com.tirekai.sdvg"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -16,8 +28,27 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (keystorePropsFile.exists()) {
+                // rootProject.file: путь считается от папки android/, а не от
+                // android/app/ — иначе ключ ищется не там, где его положили.
+                // Абсолютный путь тоже подойдёт, и он предпочтительнее:
+                // ключу лучше лежать вне репозитория совсем.
+                storeFile rootProject.file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
+            if (keystorePropsFile.exists()) {
+                signingConfig signingConfigs.release
+            }
+            // minifyEnabled оставлен выключенным: сжимать нечего — весь код
+            // в WebView, а R8 добавил бы к каждому падению шаг деобфускации.
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

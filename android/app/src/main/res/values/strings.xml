@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Скролл</string>
-    <string name="title_activity_main">Скролл</string>
-    <string name="package_name">com.sdvgapp.scroll</string>
-    <string name="custom_url_scheme">com.sdvgapp.scroll</string>
+    <string name="app_name">СДВГ</string>
+    <string name="title_activity_main">СДВГ</string>
+    <string name="package_name">com.tirekai.sdvg</string>
+    <string name="custom_url_scheme">com.tirekai.sdvg</string>
 </resources>

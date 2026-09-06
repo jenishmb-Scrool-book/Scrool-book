@@ -1,4 +1,4 @@
-package com.sdvgapp.scroll;
+package com.tirekai.sdvg;
 
 import com.getcapacitor.BridgeActivity;
 
