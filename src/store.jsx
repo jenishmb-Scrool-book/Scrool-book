@@ -16,7 +16,8 @@ const APPS = ['reels', 'chats', 'feed', 'video'];       // экраны-чита
 const THEMES = ['system', 'light', 'dark'];
 const FONTS = ['sm', 'md', 'lg'];
 const LANGS = ['ru', 'en'];
-const UI = {theme: 'system', lang: 'ru', font: 'md'};
+const TIPS = ['on', 'off'];
+const UI = {theme: 'system', lang: 'ru', font: 'md', wallTip: 'on'};
 
 const EMPTY = {books: [], cur: null, at: {}, last: 'reels', ui: UI};
 
@@ -25,7 +26,8 @@ const pick = (v, list, fallback) => (list.includes(v) ? v : fallback);
 const readUi = raw => ({
   theme: pick(raw && raw.theme, THEMES, UI.theme),
   lang: pick(raw && raw.lang, LANGS, UI.lang),
-  font: pick(raw && raw.font, FONTS, UI.font)
+  font: pick(raw && raw.font, FONTS, UI.font),
+  wallTip: pick(raw && raw.wallTip, TIPS, UI.wallTip)
 });
 
 const Ctx = createContext(null);
@@ -136,7 +138,8 @@ export function StoreProvider({children}) {
     const m = metaRef.current;
     const next = readUi({...m.ui, ...patch});
     const cur = m.ui || UI;
-    if (next.theme === cur.theme && next.lang === cur.lang && next.font === cur.font) return;
+    if (next.theme === cur.theme && next.lang === cur.lang &&
+        next.font === cur.font && next.wallTip === cur.wallTip) return;
     applyMeta({...m, ui: next});
     schedule();
   }, [applyMeta, schedule]);

@@ -4,7 +4,7 @@ import {useT} from '../i18n.js';
 import Screen from '../ui/Screen.jsx';
 import StatusBar from '../ui/StatusBar.jsx';
 import {percent} from '../ui/Progress.jsx';
-import {getWallpaper} from '../wallpaper.js';
+import {getWallpaper, setWallpaper, shrink} from '../wallpaper.js';
 
 // Сетка «как на телефоне»: часть иконок ведёт в те же экраны — это часть обмана.
 //
@@ -40,7 +40,7 @@ function Icon({glyph, label, background, onClick}) {
 }
 
 export default function Home({go}) {
-  const {current, text, offset, lastApp} = useStore();
+  const {current, text, offset, lastApp, ui, setUi} = useStore();
   const t = useT();
   const [wall, setWall] = useState('');
   const width = percent(offset, text.length).toFixed(1) + '%';
@@ -55,6 +55,20 @@ export default function Home({go}) {
   // «Продолжить» уводит туда, где читали в прошлый раз. Нет книги — в библиотеку.
   const cont = () => go(text.length ? (lastApp || 'reels') : 'library');
 
+  // Обои предлагаем прямо здесь, а не только в настройках: подтянуть настоящие
+  // обои телефона нельзя (с Android 14 система их приложениям не отдаёт совсем),
+  // поэтому единственный способ получить «свой» экран — попросить картинку.
+  // На домашнем экране это один тап вместо трёх, и просьба видна там, где
+  // сразу понятно, что она изменит.
+  const pickWall = e => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    shrink(f)
+      .then(uri => setWallpaper(uri).then(() => setWall(uri)))
+      .catch(() => setUi({wallTip: 'off'}));   // не смогли — молча убираем просьбу
+  };
+
   return (
     <Screen id="home">
       {/* Затемняющая накладка обязательна: обои — произвольное фото пользователя,
@@ -67,6 +81,17 @@ export default function Home({go}) {
         <div className="bar"><i style={{width}} /></div>
         <button onClick={cont}>{t('home.continue')}</button>
       </div>
+      {!wall && ui.wallTip === 'on' ? (
+        <div className="walltip">
+          <span>{t('home.wall_tip')}</span>
+          <label className="pick">
+            {t('home.wall_pick')}
+            <input type="file" accept="image/*" onChange={pickWall} />
+          </label>
+          <span className="x" onClick={() => setUi({wallTip: 'off'})}
+                role="button" aria-label={t('dismiss')}>✕</span>
+        </div>
+      ) : null}
       <div className="grid">
         {APPS.map(([glyph, label, to, background], k) => (
           <Icon key={k} glyph={glyph} label={label} background={background} onClick={() => go(to)} />

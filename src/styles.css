@@ -161,7 +161,17 @@ button,textarea,input{font:inherit;color:inherit}
 .wall{position:absolute;inset:0;background-size:cover;background-position:center;z-index:0}
 .wall::after{content:'';position:absolute;inset:0;
   background:linear-gradient(180deg,#00000059,#000000a6)}
-#home > .status,#home > .widget,#home > .grid,#home > .dock{position:relative;z-index:1}
+#home > .status,#home > .widget,#home > .grid,#home > .dock,
+#home > .walltip{position:relative;z-index:1}
+/* Просьба поставить обои: живёт на доме, потому что там сразу видно, что она изменит.
+   Настоящие обои телефона приложению недоступны — с Android 14 система их не отдаёт. */
+.walltip{flex:none;display:flex;align-items:center;gap:10px;margin:0 16px;padding:8px 12px;
+  border-radius:14px;background:var(--glass);border:1px solid var(--glass-line)}
+.walltip > span:first-child{flex:1;font-size:.75rem;opacity:.85;line-height:1.35}
+.walltip .pick{flex:none;border-radius:9px;padding:7px 12px;cursor:pointer;
+  background:var(--accent);color:var(--on-accent);font-size:.75rem;font-weight:600}
+.walltip .pick input{display:none}
+.walltip .x{flex:none;opacity:.5;padding:2px 4px;cursor:pointer;font-size:.87rem}
 /* Поверх обоев всегда лежит затемнение, поэтому подписи там белые при любой теме. */
 #home:has(.wall) .icon span,#home:has(.wall) .widget{color:#fff}
 .widget{margin:18px 16px 6px;padding:14px 16px;border-radius:18px;
@@ -173,12 +183,17 @@ button,textarea,input{font:inherit;color:inherit}
 .widget .bar i{display:block;height:100%;background:var(--accent-2);transition:width .2s}
 .widget button{width:100%;border:0;border-radius:12px;padding:11px;
   background:var(--accent);color:var(--on-accent);font-weight:600;cursor:pointer}
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px 6px;padding:22px 14px}
+/* Сетка забирает остаток высоты и при нехватке места прокручивается сама.
+   Без этого на коротком экране (360x640) док выдавливается за границу: колонка
+   фиксированной высоты, а содержимого над доком становится больше — например,
+   когда появляется просьба про обои или прибавляется иконок. */
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px 6px;padding:22px 14px;
+  flex:1 1 auto;min-height:0;overflow-y:auto;align-content:start}
 .icon{display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer}
 .icon b{width:58px;height:58px;border-radius:17px;display:grid;place-items:center;
   font-size:1.75rem;box-shadow:0 8px 18px var(--shadow-ic)}
 .icon span{font-size:.69rem;opacity:.92;text-align:center}
-.dock{margin-top:auto;display:flex;justify-content:space-around;padding:14px 18px 26px;
+.dock{flex:none;margin-top:auto;display:flex;justify-content:space-around;padding:14px 18px 26px;
   background:var(--glass-2);backdrop-filter:blur(10px)}
 
 /* ===== чаты ===== */

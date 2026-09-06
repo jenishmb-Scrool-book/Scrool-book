@@ -82,13 +82,13 @@ describe('настройки интерфейса в сторе', () => {
 
   it('по умолчанию — системная тема, обычный кегль, русский', async () => {
     const h = await mount();
-    expect(h.result.current.ui).toEqual({theme: 'system', lang: 'ru', font: 'md'});
+    expect(h.result.current.ui).toEqual({theme: 'system', lang: 'ru', font: 'md', wallTip: 'on'});
   });
 
   it('setUi меняет только переданное поле', async () => {
     const h = await mount();
     act(() => h.result.current.setUi({theme: 'dark'}));
-    expect(h.result.current.ui).toEqual({theme: 'dark', lang: 'ru', font: 'md'});
+    expect(h.result.current.ui).toEqual({theme: 'dark', lang: 'ru', font: 'md', wallTip: 'on'});
   });
 
   it('настройки переживают перезапуск', async () => {
@@ -104,9 +104,9 @@ describe('настройки интерфейса в сторе', () => {
   it('мусор в хранилище заменяется значениями по умолчанию', async () => {
     localStorage.setItem('scroll.meta', JSON.stringify({
       books: [], cur: null, at: {}, last: 'reels',
-      ui: {theme: 'неоновая', lang: 'kl', font: 42}
+      ui: {theme: 'неоновая', lang: 'kl', font: 42, wallTip: 'может быть'}
     }));
     const h = await mount();
-    expect(h.result.current.ui).toEqual({theme: 'system', lang: 'ru', font: 'md'});
+    expect(h.result.current.ui).toEqual({theme: 'system', lang: 'ru', font: 'md', wallTip: 'on'});
   });
 });
