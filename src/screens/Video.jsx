@@ -221,7 +221,7 @@ export function Player({go}) {
   }, [head]);
 
   return (
-    <Screen id="player">
+    <Screen id="player" bar="#000000">
       <StatusBar />
       <div className="stage" style={{background: grad(at)}}>
         <span className="back" onClick={() => go('video')} role="button" aria-label={t('back')}>‹</span>

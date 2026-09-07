@@ -28,7 +28,7 @@ export default function Reels({go}) {
   const {boxRef, items} = useCardWindow({count, pos, setPos, ahead: 2, cardSelector: '.reel'});
 
   return (
-    <Screen id="reels">
+    <Screen id="reels" bar="#000000">
       <Progress offset={offset} len={text.length} float />
       <span className="back float" onClick={() => go('home')} role="button" aria-label={t('back')}>‹</span>
       {/* Оглавление есть на всех шести движках, включая полноэкранные: прыжок

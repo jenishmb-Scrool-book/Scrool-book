@@ -6,6 +6,7 @@ import StatusBar from '../ui/StatusBar.jsx';
 import {percent} from '../ui/Progress.jsx';
 import {getWallpaper, setWallpaper, shrink} from '../wallpaper.js';
 import {APP_NAMES} from '../ui/skins.js';
+import {dayLine, hhmm, useNow} from '../ui/clock.js';
 
 // Сетка «как на телефоне»: часть иконок ведёт в те же экраны — это часть обмана.
 //
@@ -48,6 +49,7 @@ export default function Home({go}) {
   const {current, text, offset, lastApp, ui, setUi} = useStore();
   const t = useT();
   const [wall, setWall] = useState('');
+  const now = useNow();
   const width = percent(offset, text.length).toFixed(1) + '%';
 
   // Обои читаются один раз за сессию — дальше отдаёт кеш в wallpaper.js.
@@ -87,6 +89,12 @@ export default function Home({go}) {
           и без неё белые подписи иконок на светлой картинке пропадают. */}
       {wall ? <div className="wall" style={{backgroundImage: `url(${wall})`}} /> : null}
       <StatusBar />
+      {/* Часы с датой в левом верхнем углу — то, по чему домашний экран Android
+          узнаётся раньше всего остального, раньше даже иконок. */}
+      <div className="glance">
+        <b>{hhmm(now)}</b>
+        <span>{dayLine(now, ui.lang)}</span>
+      </div>
       <div className="widget">
         <div className="t">{t('home.now')}</div>
         <div className="n">{current ? current.title : t('home.empty')}</div>
@@ -110,11 +118,22 @@ export default function Home({go}) {
                 onClick={() => open(to, skin)} />
         ))}
       </div>
+      {/* Точки страниц и строка поиска не работают и работать не должны:
+          экранов у «рабочего стола» один, а искать в приложении нечего.
+          Стоят они потому, что без них это не домашний экран телефона, а
+          сетка иконок, — и переход из настоящей системы в такую сетку
+          чувствуется как выход из телефона, а не как открытие приложения. */}
+      <div className="dots" aria-hidden="true"><i className="on" /><i /><i /></div>
       <div className="dock">
         {DOCK.map(([glyph, label, to, background, skin], k) => (
           <Icon key={k} glyph={glyph} label={label.includes('.') ? t(label) : label}
                 background={background} onClick={() => open(to, skin)} />
         ))}
+      </div>
+      <div className="qsearch" aria-hidden="true">
+        <span className="g">⌕</span>
+        <span className="q">{t('home.search')}</span>
+        <span className="m">◉</span>
       </div>
     </Screen>
   );

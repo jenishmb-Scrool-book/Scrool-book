@@ -10,6 +10,7 @@
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { StatusBar, Style } from '@capacitor/status-bar';
+import { hexOf, isLight, rgbOf } from './ui/color.js';
 
 // Тот же цвет, что android.backgroundColor в capacitor.config.json
 // и @color/app_background в android/app/src/main/res/values/colors.xml.
@@ -29,27 +30,30 @@ if (!state) {
 
 const noop = () => {};
 
-// Все операции идут через очередь: React StrictMode в dev монтирует эффект
-// дважды, initNative может быть вызван повторно до того, как первый вызов
-// дождался своего PluginListenerHandle. Очередь гарантирует, что снятие старой
-// подписки всегда завершится раньше, чем начнётся установка новой.
-function enqueue(job) {
-  const next = state.queue.then(job);
-  state.queue = next.then(noop, noop);
-  return next;
-}
+/** Мы на телефоне или в браузере. Нужно интерфейсу: на телефоне статус-бар
+ *  рисует система, и второй, нарисованный нами, там лишний. */
+export const isNative = () => Capacitor.isNativePlatform();
 
-async function removeBack() {
-  const pending = state.back;
-  state.back = null;
-  if (!pending) return;
+/**
+ * Перекрасить СИСТЕМНЫЙ статус-бар под текущий экран.
+ *
+ * Ради этого всё и затевалось. На настоящем Android полоска наверху принимает
+ * цвет открытого приложения — и когда наша не принимает, переход из системы в
+ * «читалку» видно ровно по ней.
+ *
+ * @param {string} css цвет в форме `rgb(...)` из getComputedStyle
+ */
+export async function setBarColor(css) {
+  if (!Capacitor.isNativePlatform()) return;
+  const rgb = rgbOf(css);
+  if (!rgb) return;
   try {
-    // addListener в Capacitor 7 отдаёт Promise<PluginListenerHandle>,
-    // поэтому сначала дожидаемся хендла и только потом снимаем.
-    const handle = await pending;
-    await handle?.remove?.();
+    await StatusBar.setBackgroundColor({ color: hexOf(rgb) });
+    // Style.Dark — «светлый текст», Style.Light — «тёмный». Названия про тему
+    // подложки, а не про цвет значков, и перепутать их очень легко.
+    await StatusBar.setStyle({ style: isLight(rgb) ? Style.Light : Style.Dark });
   } catch {
-    // Подписка так и не поднялась — снимать нечего.
+    // Статус-бар — не критичная функция: не перекрасился, и ладно.
   }
 }
 

@@ -1,6 +1,7 @@
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {useStore} from './store.jsx';
-import {initNative} from './native.js';
+import {initNative, setBarColor} from './native.js';
+import {isLight, rgbOf} from './ui/color.js';
 import {SEED, SEED_TITLE} from './seed.js';
 import {DICT} from './i18n.js';
 import Home from './screens/Home.jsx';
@@ -34,6 +35,11 @@ const NO_BOOK_OK = ['home', 'library', 'settings'];       // этим книга
 // человек пришёл из списка — и терялся ровно тот экран, куда он метил.
 const BACK = {chat: 'chats', player: 'video'};
 
+// Шапки, с которых снимается цвет для системного статус-бара. Порядок не важен:
+// на экране она всегда одна.
+const BARS = '.screen .mhdr, .screen .chdr, .screen .yhdr, .screen .thdr, .screen .fhdr, .screen .hdr';
+const pick = el => (el ? getComputedStyle(el).backgroundColor : null);
+
 export default function App() {
   const {ready, books, text, ui, lastApp, addBook, setLastApp, error} = useStore();
   const [screen, setScreen] = useState('home');
@@ -48,6 +54,47 @@ export default function App() {
     root.setAttribute('data-font', ui.font);
     root.setAttribute('lang', ui.lang);
   }, [ui.theme, ui.font, ui.lang]);
+
+  // Системный статус-бар красим под шапку текущего экрана — так ведёт себя
+  // любое настоящее приложение, и именно по этой полоске видно переход из
+  // системы в «читалку», когда цвет не совпадает.
+  //
+  // Цвет замеряем с самой шапки, а не берём из таблицы: таблица разошлась бы
+  // с палитрой на первой же правке скина. Если шапки нет (клипы, истории) или
+  // фон у неё градиентный (дом) — берём фон «телефона».
+  // Именно useLayoutEffect, а не useEffect с requestAnimationFrame: кадра
+  // может не быть долго (в фоновой вкладке их около одного в секунду), и цвет
+  // приезжал бы с опозданием или не приезжал вовсе, если экран сменился раньше.
+  // Здесь же DOM уже собран, значит getComputedStyle отдаёт настоящий цвет.
+  useLayoutEffect(() => {
+    const phone = document.getElementById('phone');
+    const scr = document.querySelector('.screen');
+    // Порядок: объявленный экраном цвет → шапка → фон самого экрана → фон
+    // «телефона». Прозрачное на каждом шаге значит «цвета нет» и пропускается:
+    // у дома фон градиентный, background-color там пустой, и покрасить бар в
+    // него значило бы получить чёрную полоску поверх красивого перехода.
+    const color = [
+      scr && scr.dataset.barColor,
+      pick(document.querySelector(BARS)),
+      pick(scr),
+      pick(phone)
+    ].find(c => rgbOf(c));
+    if (!color) return;
+    setBarColor(color);
+
+    // Тем же цветом красим бар, нарисованный для браузера, — иначе на телефоне
+    // и на экране разработчика приложение выглядит по-разному ровно в том
+    // месте, ради которого всё это делается.
+    const rgb = rgbOf(color);
+    if (phone && rgb) {
+      phone.style.setProperty('--bar', color);
+      phone.setAttribute('data-bar', isLight(rgb) ? 'light' : 'dark');
+    }
+    // Chrome красит по theme-color свою полоску: в мобильном браузере переход
+    // выглядит так же ровно, как в приложении.
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', color);
+  }, [screen, ui.skin, ui.theme]);
 
   // Первый запуск: вместо пустого экрана подкладываем текст, объясняющий механику.
   // Живёт здесь, а не в сторе: это онбординг, а не хранилище.

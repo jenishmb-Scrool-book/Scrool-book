@@ -5,6 +5,13 @@
 // `skin` — вариант оформления одного и того же движка (три мессенджера на одном
 // экране чатов). Уезжает в data-атрибут, всё остальное делает CSS: заводить три
 // компонента ради разной шапки значило бы утроить цену каждой правки.
-export default function Screen({id, skin, children}) {
-  return <div className="screen on" id={id} data-skin={skin || undefined}>{children}</div>;
+// `bar` — цвет системного статус-бара, если его нельзя замерить. Нужен ровно
+// полноэкранным экранам: под баром там лежит не фон элемента, а карточка во
+// весь экран, и замер отдал бы фон приложения вместо того, что видно.
+export default function Screen({id, skin, bar, children}) {
+  return (
+    <div className="screen on" id={id} data-skin={skin || undefined} data-bar-color={bar || undefined}>
+      {children}
+    </div>
+  );
 }

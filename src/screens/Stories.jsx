@@ -26,7 +26,7 @@ export default function Stories({go}) {
   const last = pos + 1 >= count;
 
   return (
-    <Screen id="stories">
+    <Screen id="stories" bar="#000000">
       <div className="stage" style={{background: grad(pos)}}>
         <div className="bars">
           {Array.from({length: bars}, (unused, k) => (
