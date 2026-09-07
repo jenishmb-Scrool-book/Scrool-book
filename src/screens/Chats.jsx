@@ -9,6 +9,7 @@ import useCardWindow from '../ui/useCardWindow.js';
 import useChunks from '../ui/useChunks.js';
 import {SIZE} from '../ui/sizes.js';
 import {grad, reaction, reactionCount, sticker} from '../ui/visual.js';
+import {shot} from '../ui/pics.js';
 import {skinOf} from '../ui/skins.js';
 import {contactAt, msgTime} from '../lib/fake.js';
 
@@ -36,8 +37,10 @@ const TYPING = 260;    // мс, столько показывается «печ
 // разговор обратно в монолог, который и просили убрать.
 const isOut = i => i % 2 === 1;
 
-function Avatar({seed, glyph, cls}) {
-  return <div className={cls || 'av'} style={{background: grad(seed)}}>{glyph}</div>;
+// Аватарка со снимком. Буква на цветном кружке — это как выглядит контакт БЕЗ
+// фотографии, и когда без фотографии весь список, он читается как пустой.
+function Avatar({seed, cls}) {
+  return <div className={cls || 'av'} style={{background: shot(seed, grad(seed))}} />;
 }
 
 /**
@@ -45,13 +48,13 @@ function Avatar({seed, glyph, cls}) {
  * трубка, в «синем» — только трубка. Последняя иконка — единственная живая:
  * перепрыгнуть по главам в мессенджере больше нечем, а иногда нужно.
  */
-function ChatHead({skin, onBack, seed, glyph, title, sub, onMenu}) {
+function ChatHead({skin, onBack, seed, title, sub, onMenu}) {
   const S = skinOf(skin);
   const last = S.chat.length - 1;
   return (
     <div className="chdr">
       <span className="back" onClick={onBack} role="button" aria-label="Назад">‹</span>
-      <Avatar seed={seed} glyph={glyph} cls="av sm" />
+      <Avatar seed={seed} cls="av sm" />
       <div className="who">
         <b>{title}</b>
         <span>{sub}</span>
@@ -73,7 +76,7 @@ function ChatHead({skin, onBack, seed, glyph, title, sub, onMenu}) {
 function Row({i, name, seed, text, time, state, onClick}) {
   return (
     <div className={'crow ' + state} data-i={i} onClick={onClick}>
-      <Avatar seed={seed} glyph={name.slice(0, 1)} />
+      <Avatar seed={seed} />
       <div className="ci">
         <b>{name}</b>
         <span>{text}</span>
@@ -230,7 +233,6 @@ export function Chat({go, arg}) {
         skin={ui.skin}
         onBack={() => go('chats')}
         seed={c.seed}
-        glyph={c.name.slice(0, 1)}
         title={c.name}
         sub={typing ? t('chats.typing') : t('chats.online')}
         onMenu={() => go('toc')}

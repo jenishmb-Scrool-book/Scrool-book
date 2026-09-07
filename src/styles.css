@@ -230,8 +230,11 @@ button,textarea,input{font:inherit;color:inherit}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px 6px;padding:22px 14px;
   flex:1 1 auto;min-height:0;overflow-y:auto;align-content:start}
 .icon{display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer}
+/* Плитка значка. Глиф рисуется разметкой и занимает больше половины плитки —
+   как в настоящих иконках; эмодзи внутри цветной плитки читалась как наклейка. */
 .icon b{width:58px;height:58px;border-radius:17px;display:grid;place-items:center;
-  font-size:1.75rem;box-shadow:0 8px 18px var(--shadow-ic)}
+  box-shadow:0 8px 18px var(--shadow-ic);color:#fff;overflow:hidden}
+.icon b svg{width:56%;height:56%;display:block;filter:drop-shadow(0 1px 2px #0003)}
 .icon span{font-size:.69rem;opacity:.92;text-align:center}
 .dock{flex:none;display:flex;justify-content:space-around;padding:6px 18px 12px}
 /* Сетка забирает остаток высоты, поэтому «прижать вниз» делает она, а не док:
@@ -289,8 +292,9 @@ button,textarea,input{font:inherit;color:inherit}
    на курсоре читаем сейчас, ниже действительно не прочитано. */
 .crow.on{background:var(--card-sel)}
 .crow.seen .ci > span{opacity:.4}
-.crow .av{width:52px;height:52px;border-radius:50%;flex:none;display:grid;place-items:center;
-  font-size:1.31rem;color:#fff;font-weight:600}
+.crow .av,.av.sm,.tw .av,.post .av,.vid .ava,.cav,#player .chan .ava{
+  background-size:cover;background-position:center}
+.crow .av{width:52px;height:52px;border-radius:50%;flex:none}
 .crow .ci{flex:1;min-width:0}
 .crow .ci b{display:block;font-size:.94rem;font-weight:600;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -429,6 +433,14 @@ button,textarea,input{font:inherit;color:inherit}
 .done{text-align:center;opacity:.6;font-size:.87rem;padding:20px}
 
 /* ===== клипы ===== */
+/* Снимок под текстом. Затемнение обязательно: на светлом кадре белые буквы
+   пропадают целиком, а кадры у нас произвольные. Снизу сильнее — текст внизу. */
+.reel::before{content:'';position:absolute;inset:0;z-index:0;
+  background:linear-gradient(180deg,#00000080 0%,#0000002e 24%,#00000073 52%,#000000e0 100%)}
+.reel > *{position:relative;z-index:1}
+#stories .stage::before{content:'';position:absolute;inset:0;z-index:1;
+  background:linear-gradient(180deg,#0000008c 0%,#00000033 24%,#00000047 56%,#000000bf 100%)}
+
 #reels .body{padding:0;scroll-snap-type:y mandatory}
 #reels .float.back{top:10px;left:8px;font-size:1.75rem;text-shadow:0 2px 8px #000;color:#fff}
 #reels .prog.float{top:0;left:0;right:0;background:var(--track-3)}
@@ -450,8 +462,10 @@ button,textarea,input{font:inherit;color:inherit}
 .post{border-bottom:1px solid var(--line-2);padding-bottom:12px;margin-bottom:8px}
 .post .u{display:flex;align-items:center;gap:9px;padding:9px 12px;font-size:.87rem;font-weight:600}
 .post .av{width:32px;height:32px;border-radius:50%;flex:none}
-.post .pic{aspect-ratio:4/5;display:flex;align-items:center;padding:26px 22px;
+.post .pic{position:relative;aspect-ratio:4/5;display:flex;align-items:center;padding:26px 22px;
   font-size:1.06rem;line-height:1.5;font-weight:500;overflow:auto;word-break:break-word;color:#fff}
+.post .pic::before{content:'';position:absolute;inset:0;background:#00000085}
+.post .pic span{position:relative;z-index:1;text-shadow:0 1px 10px #000000a6}
 .post .acts{padding:9px 12px 4px;font-size:1.31rem;letter-spacing:12px}
 .post .cap{padding:0 12px;font-size:.81rem;opacity:.6}
 
@@ -472,7 +486,6 @@ button,textarea,input{font:inherit;color:inherit}
 #video .body{padding:6px 0 8px}
 .vid{padding:0 0 16px;cursor:pointer}
 .vid .th{position:relative;width:100%;aspect-ratio:16/9;display:grid;place-items:center;color:#fff}
-.vid .th .pl{font-size:2.25rem;opacity:.5;text-shadow:0 2px 10px #0009}
 .vid .th em{position:absolute;right:6px;bottom:6px;font-style:normal;font-size:11px;
   padding:1px 5px;border-radius:4px;background:var(--pill-bg);color:var(--pill-fg);font-weight:600}
 /* Красная полоска «досмотрено до» — только у ролика, на котором стоит курсор. */
@@ -490,7 +503,6 @@ button,textarea,input{font:inherit;color:inherit}
 /* «Следующее» — та же карточка, но лежачая: так она и выглядит под плеером. */
 .vid.small{display:flex;gap:10px;padding:10px 0 0}
 .vid.small .th{width:148px;flex:none;border-radius:9px;overflow:hidden}
-.vid.small .th .pl{font-size:1.44rem}
 .vid.small .vrow{flex:1;min-width:0;padding:0}
 .vid.small .ava{display:none}
 .vid.small .ti{font-size:.87rem}
@@ -499,7 +511,9 @@ button,textarea,input{font:inherit;color:inherit}
    на телефоне — это двести пикселей высоты со своей прокруткой, читать там
    нельзя. Текст лежит ниже, в описании. */
 #player .stage{flex:none;position:relative;aspect-ratio:16/9;display:grid;place-items:center;color:#fff}
-#player .stage .pl{font-size:3rem;opacity:.5;text-shadow:0 2px 12px #0009}
+#player .stage .pl{font-size:1.75rem;line-height:1;width:66px;height:66px;border-radius:50%;
+  display:grid;place-items:center;padding-left:5px;background:#00000059;
+  backdrop-filter:blur(2px);box-shadow:0 2px 16px #0006}
 #player .stage .back{position:absolute;left:6px;top:4px;font-size:1.75rem;
   text-shadow:0 2px 8px #000;color:#fff}
 #player .stage .ic{position:absolute;right:10px;top:10px;font-size:1.13rem;cursor:pointer;
@@ -678,7 +692,7 @@ button,textarea,input{font:inherit;color:inherit}
 .sitem{flex:none;width:62px;text-align:center;cursor:default}
 .sitem .ring{width:58px;height:58px;border-radius:50%;padding:2px;display:grid;place-items:center}
 .sitem .ring i{display:block;width:100%;height:100%;border-radius:50%;
-  background:var(--bg);border:2px solid var(--bg)}
+  background-size:cover;background-position:center;box-shadow:0 0 0 2px var(--bg)}
 .sitem span{display:block;margin-top:5px;font-size:.62rem;opacity:.7;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 

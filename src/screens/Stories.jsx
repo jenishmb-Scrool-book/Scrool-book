@@ -5,6 +5,7 @@ import Progress from '../ui/Progress.jsx';
 import useChunks from '../ui/useChunks.js';
 import {SIZE} from '../ui/sizes.js';
 import {grad} from '../ui/visual.js';
+import {FACE, shot} from '../ui/pics.js';
 import {msgTime} from '../lib/fake.js';
 
 // «Истории»: карточка на весь экран, вперёд — тап по правой половине, назад — по левой.
@@ -27,14 +28,14 @@ export default function Stories({go}) {
 
   return (
     <Screen id="stories" bar="#000000">
-      <div className="stage" style={{background: grad(pos)}}>
+      <div className="stage" style={{background: shot(pos, grad(pos))}}>
         <div className="bars">
           {Array.from({length: bars}, (unused, k) => (
             <span key={k} className={base + k <= pos ? 'on' : ''} />
           ))}
         </div>
         <div className="shead">
-          <div className="av sm" style={{background: grad(pos + 5)}}>📖</div>
+          <div className="av sm" style={{background: shot(FACE, grad(pos + 5))}} />
           <b>{current ? current.title : t('stories.title')}</b>
           <i>{msgTime(pos)}</i>
           <span className="ic" onClick={() => go('toc')} role="button" aria-label={t('toc.title')}>☰</span>

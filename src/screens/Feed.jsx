@@ -8,6 +8,7 @@ import useCardWindow from '../ui/useCardWindow.js';
 import useChunks from '../ui/useChunks.js';
 import {SIZE} from '../ui/sizes.js';
 import {grad, marks} from '../ui/visual.js';
+import {FACE, shot} from '../ui/pics.js';
 import {APP_NAMES} from '../ui/skins.js';
 import {NAMES} from '../lib/fake.js';
 
@@ -41,7 +42,9 @@ export default function Feed({go}) {
         <div className="srow">
           {NAMES.slice(0, 6).map((name, k) => (
             <div className="sitem" key={k}>
-              <div className="ring" style={{background: grad(k * 7 + 2)}}><i /></div>
+              <div className="ring" style={{background: grad(k * 7 + 2)}}>
+                <i style={{background: shot(k * 11 + 3, grad(k))}} />
+              </div>
               <span>{k === 0 ? t('feed.your_story') : name}</span>
             </div>
           ))}
@@ -49,10 +52,14 @@ export default function Feed({go}) {
         {items.map(i => (
           <div className="post" key={i} data-i={i}>
             <div className="u">
-              <div className="av" style={{background: grad(i)}} />
+              <div className="av" style={{background: shot(FACE, grad(i))}} />
               {t('feed.author')}
             </div>
-            <div className="pic" style={{background: grad(i + 3)}}>{chunks[i].text}</div>
+            {/* Текст лежит поверх снимка, а не вместо него. Затемнение под ним
+                обязательно: на светлом кадре белые буквы иначе пропадают. */}
+            <div className="pic" style={{background: shot(i, grad(i + 3))}}>
+              <span>{chunks[i].text}</span>
+            </div>
             <div className="acts">♡ ⌯ ↗</div>
             <div className="cap likes">{t('feed.likes', {n: marks(i)})}</div>
             <div className="cap">{t('feed.caption', {marks: marks(i), i: i + 1, n: count})}</div>

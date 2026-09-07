@@ -8,6 +8,7 @@ import useCardWindow from '../ui/useCardWindow.js';
 import useChunks from '../ui/useChunks.js';
 import {SIZE} from '../ui/sizes.js';
 import {grad, likes, comments, shares, views} from '../ui/visual.js';
+import {FACE, shot} from '../ui/pics.js';
 import {APP_NAMES} from '../ui/skins.js';
 import {msgTime} from '../lib/fake.js';
 
@@ -40,7 +41,7 @@ export default function Tweets({go}) {
       <div className="body" ref={boxRef}>
         {items.map(i => (
           <div className="tw" key={i} data-i={i}>
-            <div className="av" style={{background: grad(i)}}>📖</div>
+            <div className="av" style={{background: shot(FACE, grad(i))}} />
             <div className="tb">
               <div className="tu">
                 <b>{t('tw.name')}</b>
