@@ -24,13 +24,19 @@ const DEBOUNCE = 120; // мс, столько ждём тишины после �
  * @param {string} cardSelector  селектор карточки внутри контейнера, например '.reel'
  * @param {boolean} trackPos     двигает ли скролл курсор (в «Видео» — нет)
  * @param {'top'|'bottom'} anchor где стоит «текущая» карточка
+ * @param {number} gap           на сколько не доводить прокрутку до верха
+ *
+ * Про `gap`. Полоса прогресса несёт плашку «страница / осталось», и висит она
+ * поверх содержимого. В списке чатов текущая строка встаёт вплотную под неё, и
+ * плашка накрывает время сообщения — читается это как поломка вёрстки. Запас
+ * в двадцать шесть пикселей решает ровно это и ничего больше.
  *
  * Про `anchor`. В клипах и ленте карточка занимает экран, и текущая — верхняя.
  * В чатах на экран помещается пять-шесть пузырей, и всё, что выше нижнего
  * видимого, уже прочитано. С якорем `top` курсор отставал бы на целый экран, и
  * переход в клипы отбрасывал бы человека на пять фрагментов назад.
  */
-export default function useCardWindow({count, pos, setPos, ahead = 1, cardSelector, trackPos = true, anchor = 'top'}) {
+export default function useCardWindow({count, pos, setPos, ahead = 1, cardSelector, trackPos = true, anchor = 'top', gap = 0}) {
   const boxRef = useRef(null);
 
   // Начало окна фиксируется один раз — на входе на экран. Дальше pos может ехать
@@ -58,7 +64,7 @@ export default function useCardWindow({count, pos, setPos, ahead = 1, cardSelect
     if (!cur) return;
     box.scrollTop = anchor === 'bottom'
       ? cur.offsetTop + cur.offsetHeight - box.clientHeight   // как в мессенджере: свежее внизу
-      : cur.offsetTop;
+      : Math.max(0, cur.offsetTop - gap);
   }, []);
 
   // Курсор может уехать вперёд не скроллом, а действием — кнопкой «отправить»

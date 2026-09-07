@@ -209,20 +209,23 @@ describe('lastApp', () => {
   // Список читалок в сторе обязан совпадать с READERS в App.jsx. Когда на
   // Этапе 1 появились три новых экрана, а сюда они не доехали, setLastApp
   // молча их отбрасывал: «Продолжить» после чтения в чатах открывало клипы.
-  it('принимает все шесть экранов-читалок', async () => {
+  it('принимает все семь экранов-читалок', async () => {
     const h = await mount();
-    for (const id of ['chat', 'reels', 'stories', 'feed', 'video', 'tweets']) {
+    for (const id of ['chats', 'chat', 'reels', 'stories', 'feed', 'video', 'tweets']) {
       act(() => h.result.current.setLastApp(id));
       expect(h.result.current.lastApp, id).toBe(id);
     }
   });
 
-  // Список переписок — не место чтения: продолжать надо в самой переписке.
-  it('не запоминает список чатов', async () => {
+  // На Этапе 6 список переписок сам стал читалкой: строка списка это кусок
+  // книги, а прокрутка двигает курсор. До этого «chats» здесь отбрасывался, и
+  // человека, читавшего список, «Продолжить» уводило внутрь переписки — то
+  // есть в другой способ чтения, а не туда, где он был.
+  it('запоминает список чатов — он тоже читалка', async () => {
     const h = await mount();
     act(() => h.result.current.setLastApp('feed'));
     act(() => h.result.current.setLastApp('chats'));
-    expect(h.result.current.lastApp).toBe('feed');
+    expect(h.result.current.lastApp).toBe('chats');
   });
 
   // «Продолжить» уводит в читалку. Запомнить тут home или library — значит

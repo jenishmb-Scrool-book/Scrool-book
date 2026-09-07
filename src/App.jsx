@@ -4,7 +4,7 @@ import {initNative} from './native.js';
 import {SEED, SEED_TITLE} from './seed.js';
 import {DICT} from './i18n.js';
 import Home from './screens/Home.jsx';
-import Chats, {Chat, Stub} from './screens/Chats.jsx';
+import Chats, {Chat} from './screens/Chats.jsx';
 import Reels from './screens/Reels.jsx';
 import Stories from './screens/Stories.jsx';
 import Feed from './screens/Feed.jsx';
@@ -16,26 +16,28 @@ import Settings from './screens/Settings.jsx';
 
 const SCREENS = {
   home: Home,
-  chats: Chats, chat: Chat, stub: Stub,
+  chats: Chats, chat: Chat,
   reels: Reels, stories: Stories, feed: Feed,
   video: Video, player: Player, tweets: Tweets,
   toc: Chapters, library: Library, settings: Settings
 };
 
-// Куда возвращает «Продолжить». Список чатов сюда не входит намеренно:
-// продолжать чтение надо в самой переписке, а не в её списке.
-const READERS = ['chat', 'reels', 'stories', 'feed', 'video', 'tweets'];
+// Куда возвращает «Продолжить». Список чатов входит сюда наравне с остальными:
+// с Этапа 6 он сам читалка — строка списка это кусок книги, а прокрутка двигает
+// курсор. Раньше «chats» подменялся на «chat», и человека, читавшего список,
+// возврат уводил внутрь переписки, то есть в другой способ чтения.
+const READERS = ['chats', 'chat', 'reels', 'stories', 'feed', 'video', 'tweets'];
 const NO_BOOK_OK = ['home', 'library', 'settings'];       // этим книга не нужна
 
 // Куда ведёт аппаратная «назад». Всё, чего здесь нет, возвращает домой.
-// Без этой таблицы «назад» из плеера или витринного чата выбрасывало на дом,
-// хотя человек пришёл из списка — и терялся ровно тот экран, куда он метил.
-const BACK = {chat: 'chats', stub: 'chats', player: 'video'};
+// Без этой таблицы «назад» из плеера или переписки выбрасывало на дом, хотя
+// человек пришёл из списка — и терялся ровно тот экран, куда он метил.
+const BACK = {chat: 'chats', player: 'video'};
 
 export default function App() {
   const {ready, books, text, ui, lastApp, addBook, setLastApp, error} = useStore();
   const [screen, setScreen] = useState('home');
-  const [arg, setArg] = useState(null);      // параметр экрана: номер витринного чата
+  const [arg, setArg] = useState(null);      // параметр экрана: с какой строки списка вошли
 
   // Тема, кегль и язык живут атрибутами на <html>: токены палитры объявлены
   // на :root, а body красит система вокруг «телефона» — под #phone их не спрятать.
@@ -70,9 +72,7 @@ export default function App() {
   const go = (id, opt) => {
     // Читать нечего — вместо пустого экрана уводим в библиотеку.
     if (!NO_BOOK_OK.includes(id) && !textRef.current.length) id = 'library';
-    // Список чатов запоминаем как саму переписку: продолжить надо чтение.
-    const remember = id === 'chats' ? 'chat' : id;
-    if (READERS.includes(remember)) setLastApp(remember);
+    if (READERS.includes(id)) setLastApp(id);
     setArg(opt && 'arg' in opt ? opt.arg : null);
     setScreen(id);
   };

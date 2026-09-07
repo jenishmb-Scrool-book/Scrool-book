@@ -233,28 +233,35 @@ button,textarea,input{font:inherit;color:inherit}
 .msearch{flex:none;margin:8px 12px;padding:8px 13px;border-radius:20px;
   background:var(--field);border:1px solid var(--field-line);font-size:.81rem;opacity:.6}
 
-/* Строка списка чатов. Разделитель начинается за аватаркой, а не от края:
-   так он лежит во всех мессенджерах, и линия от края сразу выдаёт подделку. */
-#chats .body{padding:0 0 12px}
-.crow{display:flex;align-items:center;gap:12px;padding:9px 14px;cursor:pointer;position:relative}
+/* Строка списка чатов — и она же строка книги.
+   Превью в ДВЕ строки и без многоточия: это не подпись к чату, а сам текст,
+   ради которого сюда пришли. Аватарка поэтому прижата к верху, как в любом
+   мессенджере, где превью длинное.
+   Разделитель начинается за аватаркой, а не от края: так он лежит везде,
+   и линия от края сразу выдаёт подделку. */
+#chats .body{padding:22px 0 12px}   /* сверху пусто под плашку «страница / осталось» */
+.crow{display:flex;align-items:flex-start;gap:12px;padding:10px 14px;cursor:pointer;position:relative}
 .crow::after{content:'';position:absolute;left:78px;right:0;bottom:0;height:1px;background:var(--line-2)}
 .crow:last-child::after{display:none}
-.crow.pin{background:var(--card-sel)}
+/* Три состояния строки — и все три не выдуманы: выше курсора прочитано,
+   на курсоре читаем сейчас, ниже действительно не прочитано. */
+.crow.on{background:var(--card-sel)}
+.crow.seen .ci > span{opacity:.4}
 .crow .av{width:52px;height:52px;border-radius:50%;flex:none;display:grid;place-items:center;
   font-size:1.31rem;color:#fff;font-weight:600}
 .crow .ci{flex:1;min-width:0}
 .crow .ci b{display:block;font-size:.94rem;font-weight:600;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* Строго прямой потомок: значок «закреплено» лежит внутри <b> и под общий
-   селектор превью попадать не должен — иначе он становится блочным и уносит
-   название на вторую строку. */
-.crow .ci > span{display:block;font-size:.81rem;opacity:.55;margin-top:2px;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.crow .ci b .pinned{font-size:.75rem;margin-right:5px}
-.crow .cm{flex:none;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+/* Строго прямой потомок: под общий селектор превью не должно попадать ничего,
+   что лежит внутри <b>, — иначе оно становится блочным и уносит имя на вторую строку. */
+.crow .ci > span{display:block;font-size:.81rem;opacity:.62;margin-top:3px;line-height:1.4;
+  word-break:break-word}
+.crow .cm{flex:none;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;
+  padding-top:2px}
 .crow .cm i{font-style:normal;font-size:.69rem;opacity:.5}
-.crow .cm em{font-style:normal;min-width:20px;padding:1px 6px;border-radius:10px;
-  background:var(--sk);color:#fff;font-size:.69rem;font-weight:700;text-align:center}
+/* Точка вместо числа: сообщений в такой «переписке» ровно одно, и «1» на
+   каждой второй строке читалась бы как счётчик, который сломался. */
+.crow .cm em.dot{display:block;width:9px;height:9px;border-radius:50%;background:var(--sk)}
 
 /* Кнопка «новое сообщение». Её отсутствие заметнее, чем её бездействие:
    в каждом мессенджере она стоит ровно в этом углу. */
@@ -326,6 +333,24 @@ button,textarea,input{font:inherit;color:inherit}
 /* У «фиолетового» пузыри круглые и без хвоста — это его главное отличие. */
 #chat[data-skin="ms"] .msg.tail{border-radius:var(--bub)}
 #chat[data-skin="ms"] .msg.tail::before{display:none}
+
+/* Реакция лежит ВНУТРИ пузыря, в отдельной нижней строке: пузырю с реакцией
+   добавляется запас снизу, и в этой пустой строке слева встаёт значок, справа —
+   время. Вариант «повесить снаружи» пробовали: значок ложился ровно на время,
+   потому что оба прижаты к правому нижнему углу. */
+.msg.hasr{padding-bottom:30px}
+.msg .react{position:absolute;left:9px;bottom:6px;display:flex;align-items:center;gap:3px;
+  padding:1px 7px 2px;border-radius:12px;font-size:12px;line-height:1.35;
+  background:var(--glass);border:1px solid var(--glass-line)}
+.msg .react i{font-style:normal;font-size:10px;opacity:.7;color:inherit}
+
+/* Ответ одним смайликом. Он не в пузыре: так их и шлют — крупным значком
+   прямо на обоях. Ни времени, ни галочек здесь нет намеренно, иначе это уже
+   не реакция, а сообщение из одного символа. */
+.msg.stk{background:none;box-shadow:none;padding:0 4px;min-width:0;
+  font-size:2.19rem;line-height:1.2;margin:4px 0 6px}
+.msg.stk::before{display:none}
+.msg.stk.out{margin-left:auto}
 
 /* «Печатает…»: три точки вместо текста в том же пузыре, 260 мс. Курсор при этом
    уже сдвинут — анимация только оформление, потерять на ней прочитанное нельзя. */

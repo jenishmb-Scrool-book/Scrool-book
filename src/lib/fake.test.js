@@ -1,44 +1,33 @@
 import {describe, it, expect} from 'vitest';
-import {NAMES, contacts, msgTime, unread} from './fake.js';
+import {NAMES, contactAt, msgTime} from './fake.js';
 
-describe('contacts()', () => {
-  it('отдаёт запрошенное количество', () => {
-    expect(contacts(5)).toHaveLength(5);
-    expect(contacts(0)).toHaveLength(0);
+describe('contactAt()', () => {
+  // Это главное свойство всей бутафории: имя, меняющееся при перерендере,
+  // читается не как жизнь, а как поломка.
+  it('детерминирован — два вызова дают одно и то же', () => {
+    expect(contactAt(5)).toEqual(contactAt(5));
+    expect(contactAt(0)).toEqual(contactAt(0));
   });
 
-  // Это главное свойство всей бутафории: числа, меняющиеся при перерендере,
-  // читаются не как жизнь, а как поломка.
-  it('детерминированы — два вызова дают одно и то же', () => {
-    expect(contacts(6)).toEqual(contacts(6));
-  });
-
-  it('имена не повторяются, пока хватает списка', () => {
-    const names = contacts(NAMES.length).map(c => c.name);
+  it('имена идут по кругу и не повторяются, пока хватает списка', () => {
+    const names = Array.from({length: NAMES.length}, (unused, i) => contactAt(i).name);
     expect(new Set(names).size).toBe(NAMES.length);
+    expect(contactAt(NAMES.length).name).toBe(contactAt(0).name);
   });
 
-  it('список кончился — имена идут по кругу, без падения', () => {
-    const many = contacts(NAMES.length + 3);
-    expect(many).toHaveLength(NAMES.length + 3);
-    expect(many[NAMES.length].name).toBe(many[0].name);
-  });
-
-  it('каждый чат несёт всё, что нужно строке списка', () => {
-    for (const c of contacts(6)) {
+  it('несёт всё, что нужно строке списка', () => {
+    for (let i = 0; i < 12; i++) {
+      const c = contactAt(i);
       expect(typeof c.id).toBe('string');
       expect(c.name).toBeTruthy();
       expect(Number.isFinite(c.seed)).toBe(true);
-      expect(c.stub).toBeGreaterThanOrEqual(0);
-      expect(c.stub).toBeLessThan(3);          // ровно три заготовленных реплики
-      expect(c.time).toMatch(/^\d{2}:\d{2}$/);
-      expect(c.unread).toBeGreaterThanOrEqual(0);
     }
   });
 
-  it('id уникальны — иначе React перепутает строки при перерисовке', () => {
-    const ids = contacts(8).map(c => c.id);
-    expect(new Set(ids).size).toBe(8);
+  it('мусор на входе не роняет — отдаёт первого', () => {
+    expect(contactAt(-3).name).toBe(NAMES[0]);
+    expect(contactAt(NaN).name).toBe(NAMES[0]);
+    expect(contactAt(undefined).name).toBe(NAMES[0]);
   });
 });
 
@@ -67,18 +56,5 @@ describe('msgTime()', () => {
     expect(msgTime(-5)).toBe('09:00');
     expect(msgTime(NaN)).toBe('09:00');
     expect(msgTime(undefined)).toBe('09:00');
-  });
-});
-
-describe('unread()', () => {
-  it('никогда не отрицательный и не дробный', () => {
-    for (let i = 0; i < 30; i++) {
-      expect(unread(i)).toBeGreaterThanOrEqual(0);
-      expect(Number.isInteger(unread(i))).toBe(true);
-    }
-  });
-
-  it('детерминирован', () => {
-    expect(unread(7)).toBe(unread(7));
   });
 });

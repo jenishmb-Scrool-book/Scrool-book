@@ -1,4 +1,4 @@
-import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
+import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {useStore} from '../store.jsx';
 import {useT} from '../i18n.js';
 import Screen from '../ui/Screen.jsx';
@@ -8,27 +8,33 @@ import Tabbar from '../ui/Tabbar.jsx';
 import useCardWindow from '../ui/useCardWindow.js';
 import useChunks from '../ui/useChunks.js';
 import {SIZE} from '../ui/sizes.js';
-import {grad} from '../ui/visual.js';
+import {grad, reaction, reactionCount, sticker} from '../ui/visual.js';
 import {skinOf} from '../ui/skins.js';
-import {contacts, msgTime} from '../lib/fake.js';
-import {pageAt, pageCount} from '../lib/pages.js';
+import {contactAt, msgTime} from '../lib/fake.js';
 
-// «Мессенджер» — три экрана на одном движке:
-//   Chats — список переписок,
-//   Chat  — сама книга, приходящая сообщениями,
-//   Stub  — витринный чат, чтобы список не состоял из одной строки.
+// «Мессенджер» — два экрана на одном движке, и ЧИТАТЬ можно на обоих.
 //
-// Вперёд ведёт скролл (как в клипах и ленте); кнопка осталась только в виде
-// «отправить» в поле ввода — то есть выглядит как часть мессенджера.
+//   Chats — список переписок. Каждая строка это кусок книги, подписанный
+//           очередным именем: книга как будто приходит от разных людей.
+//           Прокрутка списка двигает курсор — то есть по контактам можно
+//           просто идти сверху вниз и читать, никуда не заходя.
+//   Chat  — разговор. Тот же текст, но репликами по очереди: одну говорит
+//           собеседник, следующую ты. Между ними — смайлики и реакции.
 //
-// Про скины. Их три, и различаются они не цветом, а СОСТАВОМ экрана: у одного
-// нижняя панель, у другого её нет, у третьего белая шапка и круглые пузыри без
-// хвоста. Состав лежит в `ui/skins.js`, потому что именно он делает три разных
-// приложения из одного кода — палитра этого никогда не делала.
+// Так это устроено по прямой просьбе владельца: «чтобы информация из книги
+// была не внутри чата, а снаружи, — можно было читать, просто проходя по
+// контактам; а когда заходишь внутрь, пусть будет как переписка: сперва
+// один пишет, потом другой, и между ними смайлики смеха или сердечек».
+//
+// Витринных чатов больше нет и не нужно: раньше список состоял из одной живой
+// строки и шести нарисованных, теперь живые все.
 
-const DECOYS = 6;      // столько витринных чатов в списке
 const TYPING = 260;    // мс, столько показывается «печатает…» после отправки
-const GROUP = 4;       // сообщений в «пачке»: хвост рисуется только у первого
+
+// Кто говорит. Строгое чередование: чётные — собеседник, нечётные — ты.
+// Реплики книги длинные, и любая «умная» группировка тут же превращает
+// разговор обратно в монолог, который и просили убрать.
+const isOut = i => i % 2 === 1;
 
 function Avatar({seed, glyph, cls}) {
   return <div className={cls || 'av'} style={{background: grad(seed)}}>{glyph}</div>;
@@ -59,17 +65,22 @@ function ChatHead({skin, onBack, seed, glyph, title, sub, onMenu}) {
   );
 }
 
-function Row({seed, glyph, name, text, time, badge, pin, onClick}) {
+/**
+ * Строка списка. Превью здесь НЕ обрезается многоточием, а показывается в две
+ * строки: это не подпись к чату, это сам текст, и оборвать его на середине
+ * значило бы сломать единственное, зачем экран нужен.
+ */
+function Row({i, name, seed, text, time, state, onClick}) {
   return (
-    <div className={pin ? 'crow pin' : 'crow'} onClick={onClick}>
-      <Avatar seed={seed} glyph={glyph} />
+    <div className={'crow ' + state} data-i={i} onClick={onClick}>
+      <Avatar seed={seed} glyph={name.slice(0, 1)} />
       <div className="ci">
-        <b>{pin ? <span className="pinned">📌</span> : null}{name}</b>
+        <b>{name}</b>
         <span>{text}</span>
       </div>
       <div className="cm">
         <i>{time}</i>
-        {badge ? <em>{badge > 99 ? '99+' : badge}</em> : null}
+        {state === 'new' ? <em className="dot" /> : null}
       </div>
     </div>
   );
@@ -83,28 +94,35 @@ function Row({seed, glyph, name, text, time, badge, pin, onClick}) {
  * текст обтекает его, как в настоящем мессенджере. Это единственный способ
  * получить такое поведение без измерений в JS.
  */
-function Bubble({text, time, out, tail, tick}) {
-  const cls = ['msg', out ? 'out' : '', tail ? 'tail' : ''].filter(Boolean).join(' ');
+function Bubble({text, time, out, tick, react, count}) {
+  const cls = ['msg', out ? 'out' : '', 'tail', react ? 'hasr' : ''].filter(Boolean).join(' ');
   return (
     <div className={cls}>
       {text}
       <span className="sp" />
       <span className="t">{time}{tick ? <i className="tick">✓✓</i> : null}</span>
+      {react ? <span className="react">{react}<i>{count}</i></span> : null}
     </div>
   );
 }
 
 export default function Chats({go}) {
-  const {current, text, offset, ui} = useStore();
+  const {text, offset, ui} = useStore();
   const t = useT();
   const S = skinOf(ui.skin);
-  const list = useMemo(() => contacts(DECOYS), []);
-  const len = text.length;
+  const {chunks, pos, setPos} = useChunks(SIZE.roster);
+  const count = chunks.length;
+  // gap: под плашкой «страница / осталось» нужен запас, иначе она накрывает
+  // время у самой верхней строки.
+  const {boxRef, items} = useCardWindow({count, pos, setPos, ahead: 2, cardSelector: '.crow', gap: 26});
 
-  // Превью и счётчик считаются без нарезки. Чанкер прошёлся бы по всей книге
-  // ради ста символов предпросмотра — на списке чатов это чистая трата.
-  const preview = text.slice(offset, offset + 120).replace(/\s+/g, ' ').trim();
-  const rest = Math.max(0, pageCount(len) - pageAt(offset, len));
+  // Открыть разговор ровно на этой строке. Курсор двигаем здесь, а не внутри
+  // разговора: он общий и в символах, поэтому переписка просто откроется на
+  // том же месте книги — со своим, вдвое более крупным фрагментом.
+  const open = i => {
+    setPos(i);
+    go('chat', {arg: i});
+  };
 
   return (
     <Screen id="chats" skin={ui.skin}>
@@ -118,29 +136,25 @@ export default function Chats({go}) {
         {S.head.map((ic, k) => <span key={k} className="ic">{ic}</span>)}
       </div>
       {S.search ? <div className="msearch">⌕ {t('chats.search')}</div> : null}
-      <div className="body">
-        <Row
-          pin
-          seed={2}
-          glyph="📖"
-          name={current ? current.title : t('chats.title')}
-          text={preview || t('home.empty')}
-          time={msgTime(pageAt(offset, len))}
-          badge={rest}
-          onClick={() => go('chat')}
-        />
-        {list.map((c, k) => (
-          <Row
-            key={c.id}
-            seed={c.seed}
-            glyph={c.name.slice(0, 1)}
-            name={c.name}
-            text={t('chats.stub_' + (c.stub + 1))}
-            time={c.time}
-            badge={c.unread}
-            onClick={() => go('stub', {arg: k})}
-          />
-        ))}
+      <Progress offset={offset} len={text.length} />
+      <div className="body" ref={boxRef}>
+        {items.map(i => {
+          const c = contactAt(i);
+          return (
+            <Row
+              key={i}
+              i={i}
+              name={c.name}
+              seed={c.seed}
+              text={chunks[i].text}
+              time={msgTime(i)}
+              /* Непрочитанное здесь не выдумано: всё, что ниже курсора, ты
+                 действительно ещё не читал. Точка справа — ровно это. */
+              state={i === pos ? 'on' : (i > pos ? 'new' : 'seen')}
+              onClick={() => open(i)}
+            />
+          );
+        })}
       </div>
       {/* Кнопка «новое сообщение». Нерабочая: писать в этом приложении некому.
           Стоит потому, что её отсутствие заметнее, чем её бездействие, — она
@@ -151,8 +165,8 @@ export default function Chats({go}) {
   );
 }
 
-export function Chat({go}) {
-  const {current, text, offset, ui} = useStore();
+export function Chat({go, arg}) {
+  const {text, offset, ui} = useStore();
   const t = useT();
   const {chunks, pos, setPos} = useChunks(SIZE.chats);
   const count = chunks.length;
@@ -164,6 +178,13 @@ export function Chat({go}) {
   const stick = useRef(false);       // просили ли прокрутку вниз после этого рендера
   const last = pos + 1 >= count;
 
+  // Собеседник фиксируется на входе и дальше не меняется. Имя пришло из строки
+  // списка, а если в разговор вошли «Продолжить» — берётся от текущего места.
+  // Меняться посреди переписки оно не должно: человек, превращающийся в
+  // другого человека на середине разговора, это не мессенджер.
+  const person = useRef(arg == null ? pos : Math.max(0, Math.trunc(Number(arg)) || 0));
+  const c = contactAt(person.current);
+
   // Черта «непрочитанные» ставится там, где человек вошёл на экран, и дальше
   // не двигается — как в настоящем мессенджере. Если бы она ехала за курсором,
   // она не значила бы ничего: под ней всегда было бы «всё остальное».
@@ -174,10 +195,14 @@ export function Chat({go}) {
 
   // Курсор двигаем сразу, а «печатает…» — только оформление последнего пузыря.
   // Если бы курсор ждал таймер, уход с экрана в эти 260 мс терял бы фрагмент.
+  //
+  // Точки показываются, только когда следующая реплика чужая: своё сообщение
+  // появляется мгновенно, и «печатает…» над ним читалось бы как ошибка.
   const send = () => {
     if (last) return;
     setPos(pos + 1);
     stick.current = true;
+    if (isOut(pos + 1)) return;
     setTyping(true);
     clearTimeout(timer.current);
     timer.current = setTimeout(() => setTyping(false), TYPING);
@@ -204,27 +229,42 @@ export function Chat({go}) {
       <ChatHead
         skin={ui.skin}
         onBack={() => go('chats')}
-        seed={2}
-        glyph="📖"
-        title={current ? current.title : t('chats.title')}
+        seed={c.seed}
+        glyph={c.name.slice(0, 1)}
+        title={c.name}
         sub={typing ? t('chats.typing') : t('chats.online')}
         onMenu={() => go('toc')}
       />
       <Progress offset={offset} len={text.length} />
       <div className="body" ref={boxRef}>
         <div className="daysep"><span>{t('today')}</span></div>
-        {items.map(i => (
-          <div className="mline" key={i} data-i={i}>
-            {i === unreadAt && i < count ? (
-              <div className="unread"><span>{t('chats.unread')}</span></div>
-            ) : null}
-            {typing && i === pos ? (
-              <div className="msg tail"><span className="dots"><i /><i /><i /></span></div>
-            ) : (
-              <Bubble text={chunks[i].text} time={msgTime(i)} tail={i % GROUP === 0} />
-            )}
-          </div>
-        ))}
+        {items.map(i => {
+          const out = isOut(i);
+          const emo = sticker(i);
+          return (
+            <div className="mline" key={i} data-i={i}>
+              {i === unreadAt && i < count ? (
+                <div className="unread"><span>{t('chats.unread')}</span></div>
+              ) : null}
+              {typing && i === pos ? (
+                <div className="msg tail"><span className="dots"><i /><i /><i /></span></div>
+              ) : (
+                <Bubble
+                  text={chunks[i].text}
+                  time={msgTime(i)}
+                  out={out}
+                  tick={out}
+                  react={reaction(i)}
+                  count={reactionCount(i)}
+                />
+              )}
+              {/* Ответ одним смайликом — с противоположной стороны: так на него
+                  и отвечают. Без этих вставок две длинные реплики подряд снова
+                  читаются как рассылка, а не как разговор. */}
+              {emo ? <div className={out ? 'msg stk' : 'msg stk out'}>{emo}</div> : null}
+            </div>
+          );
+        })}
         {last ? <div className="done">{t('reader.end')}</div> : null}
       </div>
       {/* Поле ввода нерабочее и таким и задумано: отвечать книге некому.
@@ -237,53 +277,6 @@ export function Chat({go}) {
           <span className="ic">⊕</span>
         </div>
         <button className="send" onClick={send} disabled={last} aria-label={t('chats.composer')}>➤</button>
-      </div>
-    </Screen>
-  );
-}
-
-/**
- * Витринный чат. Открывается с любой строки списка, кроме книги.
- *
- * Мог бы вообще не открываться, но список, где шесть строк из семи не нажимаются,
- * ощущается сломанным, а не декоративным. Три реплики и честная подпись стоят
- * дешевле, чем впечатление недоделанного приложения.
- */
-export function Stub({go, arg}) {
-  const {ui} = useStore();
-  const t = useT();
-  const list = useMemo(() => contacts(DECOYS), []);
-  const i = Math.min(Math.max(Math.trunc(Number(arg)) || 0, 0), list.length - 1);
-  const c = list[i];
-
-  return (
-    <Screen id="chat" skin={ui.skin}>
-      <StatusBar />
-      <ChatHead
-        skin={ui.skin}
-        onBack={() => go('chats')}
-        seed={c.seed}
-        glyph={c.name.slice(0, 1)}
-        title={c.name}
-        sub={t('chats.online')}
-      />
-      <div className="body">
-        <div className="daysep"><span>{t('today')}</span></div>
-        {/* Галочки стоят только у своего сообщения: у чужих их не бывает, и
-            именно эта мелочь выдаёт подделку быстрее всего. */}
-        <Bubble text={t('chats.stub_1')} time={msgTime(3)} tail />
-        <Bubble text={t('chats.stub_me')} time={msgTime(4)} out tail tick />
-        <Bubble text={t('chats.stub_3')} time={msgTime(6)} tail />
-        <div className="note">{t('chats.stub_note')}</div>
-        <button className="next" onClick={() => go('chat')}>{t('chats.to_book')}</button>
-      </div>
-      <div className="composer">
-        <div className="cbox">
-          <span className="ic">☺</span>
-          <div className="fld">{t('chats.composer')}</div>
-          <span className="ic">⊕</span>
-        </div>
-        <span className="send off" aria-hidden="true">➤</span>
       </div>
     </Screen>
   );
