@@ -4,10 +4,12 @@ import {useT} from '../i18n.js';
 import Screen from '../ui/Screen.jsx';
 import StatusBar from '../ui/StatusBar.jsx';
 import Progress from '../ui/Progress.jsx';
+import Tabbar from '../ui/Tabbar.jsx';
 import useCardWindow from '../ui/useCardWindow.js';
 import useChunks from '../ui/useChunks.js';
 import {SIZE} from '../ui/sizes.js';
 import {grad} from '../ui/visual.js';
+import {skinOf} from '../ui/skins.js';
 import {contacts, msgTime} from '../lib/fake.js';
 import {pageAt, pageCount} from '../lib/pages.js';
 
@@ -16,27 +18,43 @@ import {pageAt, pageCount} from '../lib/pages.js';
 //   Chat  — сама книга, приходящая сообщениями,
 //   Stub  — витринный чат, чтобы список не состоял из одной строки.
 //
-// Раньше здесь была лента пузырей с кнопкой «Дальше ↓». Владелец сказал прямо:
-// «чтобы выходили чаты, а не просто дальше-дальше». Кнопка и была тем местом,
-// где обман разваливался: в настоящем мессенджере не листают книгу кнопкой.
-// Поэтому вперёд ведёт скролл (как в клипах и ленте), а кнопка осталась только
-// в виде «отправить» в поле ввода — то есть выглядит как часть мессенджера.
+// Вперёд ведёт скролл (как в клипах и ленте); кнопка осталась только в виде
+// «отправить» в поле ввода — то есть выглядит как часть мессенджера.
+//
+// Про скины. Их три, и различаются они не цветом, а СОСТАВОМ экрана: у одного
+// нижняя панель, у другого её нет, у третьего белая шапка и круглые пузыри без
+// хвоста. Состав лежит в `ui/skins.js`, потому что именно он делает три разных
+// приложения из одного кода — палитра этого никогда не делала.
 
 const DECOYS = 6;      // столько витринных чатов в списке
 const TYPING = 260;    // мс, столько показывается «печатает…» после отправки
+const GROUP = 4;       // сообщений в «пачке»: хвост рисуется только у первого
 
-function ChatHead({onBack, seed, glyph, title, sub, onMenu}) {
+function Avatar({seed, glyph, cls}) {
+  return <div className={cls || 'av'} style={{background: grad(seed)}}>{glyph}</div>;
+}
+
+/**
+ * Шапка переписки. Иконки справа берутся у скина: в «зелёном» это камера и
+ * трубка, в «синем» — только трубка. Последняя иконка — единственная живая:
+ * перепрыгнуть по главам в мессенджере больше нечем, а иногда нужно.
+ */
+function ChatHead({skin, onBack, seed, glyph, title, sub, onMenu}) {
+  const S = skinOf(skin);
+  const last = S.chat.length - 1;
   return (
     <div className="chdr">
       <span className="back" onClick={onBack} role="button" aria-label="Назад">‹</span>
-      <div className="av sm" style={{background: grad(seed)}}>{glyph}</div>
+      <Avatar seed={seed} glyph={glyph} cls="av sm" />
       <div className="who">
         <b>{title}</b>
         <span>{sub}</span>
       </div>
-      {/* Единственная работающая кнопка в шапке: перепрыгнуть по главам в
-          мессенджере больше нечем, а иногда нужно. */}
-      <span className="ic" onClick={onMenu} role={onMenu ? 'button' : undefined}>⋮</span>
+      {S.chat.map((ic, k) => (
+        <span key={k} className="ic"
+              onClick={k === last ? onMenu : undefined}
+              role={k === last && onMenu ? 'button' : undefined}>{ic}</span>
+      ))}
     </div>
   );
 }
@@ -44,7 +62,7 @@ function ChatHead({onBack, seed, glyph, title, sub, onMenu}) {
 function Row({seed, glyph, name, text, time, badge, pin, onClick}) {
   return (
     <div className={pin ? 'crow pin' : 'crow'} onClick={onClick}>
-      <div className="av" style={{background: grad(seed)}}>{glyph}</div>
+      <Avatar seed={seed} glyph={glyph} />
       <div className="ci">
         <b>{pin ? <span className="pinned">📌</span> : null}{name}</b>
         <span>{text}</span>
@@ -57,9 +75,29 @@ function Row({seed, glyph, name, text, time, badge, pin, onClick}) {
   );
 }
 
+/**
+ * Пузырь сообщения.
+ *
+ * `sp` — пустая распорка в конце текста шириной под время. Без неё время,
+ * висящее в правом нижнем углу пузыря, ложится поверх последней строки; с ней
+ * текст обтекает его, как в настоящем мессенджере. Это единственный способ
+ * получить такое поведение без измерений в JS.
+ */
+function Bubble({text, time, out, tail, tick}) {
+  const cls = ['msg', out ? 'out' : '', tail ? 'tail' : ''].filter(Boolean).join(' ');
+  return (
+    <div className={cls}>
+      {text}
+      <span className="sp" />
+      <span className="t">{time}{tick ? <i className="tick">✓✓</i> : null}</span>
+    </div>
+  );
+}
+
 export default function Chats({go}) {
   const {current, text, offset, ui} = useStore();
   const t = useT();
+  const S = skinOf(ui.skin);
   const list = useMemo(() => contacts(DECOYS), []);
   const len = text.length;
 
@@ -73,10 +111,13 @@ export default function Chats({go}) {
       <StatusBar />
       <div className="mhdr">
         <span className="back" onClick={() => go('home')} role="button" aria-label={t('back')}>‹</span>
-        <h2>{t('chats.list')}</h2>
-        <span className="ic">✎</span>
+        {/* В шапке списка стоит имя «приложения», а не слово «Чаты»: так это
+            устроено во всех настоящих мессенджерах, и с одного взгляда видно,
+            в каком из трёх ты сейчас. */}
+        <h2>{S.name}</h2>
+        {S.head.map((ic, k) => <span key={k} className="ic">{ic}</span>)}
       </div>
-      <div className="msearch">⌕ {t('chats.search')}</div>
+      {S.search ? <div className="msearch">⌕ {t('chats.search')}</div> : null}
       <div className="body">
         <Row
           pin
@@ -101,6 +142,11 @@ export default function Chats({go}) {
           />
         ))}
       </div>
+      {/* Кнопка «новое сообщение». Нерабочая: писать в этом приложении некому.
+          Стоит потому, что её отсутствие заметнее, чем её бездействие, — она
+          есть в каждом мессенджере ровно в этом углу. */}
+      <div className="fab" aria-hidden="true">{S.fab}</div>
+      {S.tabs ? <Tabbar items={S.tabs} active={0} /> : null}
     </Screen>
   );
 }
@@ -111,12 +157,18 @@ export function Chat({go}) {
   const {chunks, pos, setPos} = useChunks(SIZE.chats);
   const count = chunks.length;
   const {boxRef, items} = useCardWindow({
-    count, pos, setPos, ahead: 8, cardSelector: '.msg', anchor: 'bottom'
+    count, pos, setPos, ahead: 8, cardSelector: '.mline', anchor: 'bottom'
   });
   const [typing, setTyping] = useState(false);
   const timer = useRef(0);
   const stick = useRef(false);       // просили ли прокрутку вниз после этого рендера
   const last = pos + 1 >= count;
+
+  // Черта «непрочитанные» ставится там, где человек вошёл на экран, и дальше
+  // не двигается — как в настоящем мессенджере. Если бы она ехала за курсором,
+  // она не значила бы ничего: под ней всегда было бы «всё остальное».
+  const entry = useRef(pos);
+  const unreadAt = entry.current + 1;
 
   useEffect(() => () => clearTimeout(timer.current), []);
 
@@ -150,6 +202,7 @@ export function Chat({go}) {
     <Screen id="chat" skin={ui.skin}>
       <StatusBar />
       <ChatHead
+        skin={ui.skin}
         onBack={() => go('chats')}
         seed={2}
         glyph="📖"
@@ -159,16 +212,16 @@ export function Chat({go}) {
       />
       <Progress offset={offset} len={text.length} />
       <div className="body" ref={boxRef}>
-        <div className="daysep">{t('today')}</div>
+        <div className="daysep"><span>{t('today')}</span></div>
         {items.map(i => (
-          <div className="msg" key={i} data-i={i}>
+          <div className="mline" key={i} data-i={i}>
+            {i === unreadAt && i < count ? (
+              <div className="unread"><span>{t('chats.unread')}</span></div>
+            ) : null}
             {typing && i === pos ? (
-              <span className="dots"><i /><i /><i /></span>
+              <div className="msg tail"><span className="dots"><i /><i /><i /></span></div>
             ) : (
-              <>
-                {chunks[i].text}
-                <span className="t">{msgTime(i)}</span>
-              </>
+              <Bubble text={chunks[i].text} time={msgTime(i)} tail={i % GROUP === 0} />
             )}
           </div>
         ))}
@@ -178,8 +231,11 @@ export function Chat({go}) {
           Оно здесь потому, что без него экран не читается как мессенджер, —
           а кнопка «отправить» заодно заменила бывшую кнопку «Дальше». */}
       <div className="composer">
-        <span className="ic">☺</span>
-        <div className="fld">{t('chats.composer')}</div>
+        <div className="cbox">
+          <span className="ic">☺</span>
+          <div className="fld">{t('chats.composer')}</div>
+          <span className="ic">⊕</span>
+        </div>
         <button className="send" onClick={send} disabled={last} aria-label={t('chats.composer')}>➤</button>
       </div>
     </Screen>
@@ -204,6 +260,7 @@ export function Stub({go, arg}) {
     <Screen id="chat" skin={ui.skin}>
       <StatusBar />
       <ChatHead
+        skin={ui.skin}
         onBack={() => go('chats')}
         seed={c.seed}
         glyph={c.name.slice(0, 1)}
@@ -211,12 +268,22 @@ export function Stub({go, arg}) {
         sub={t('chats.online')}
       />
       <div className="body">
-        <div className="daysep">{t('today')}</div>
-        <div className="msg">{t('chats.stub_1')}<span className="t">{msgTime(3)}</span></div>
-        <div className="msg out">{t('chats.stub_me')}<span className="t">{msgTime(4)}</span></div>
-        <div className="msg">{t('chats.stub_3')}<span className="t">{msgTime(6)}</span></div>
+        <div className="daysep"><span>{t('today')}</span></div>
+        {/* Галочки стоят только у своего сообщения: у чужих их не бывает, и
+            именно эта мелочь выдаёт подделку быстрее всего. */}
+        <Bubble text={t('chats.stub_1')} time={msgTime(3)} tail />
+        <Bubble text={t('chats.stub_me')} time={msgTime(4)} out tail tick />
+        <Bubble text={t('chats.stub_3')} time={msgTime(6)} tail />
         <div className="note">{t('chats.stub_note')}</div>
         <button className="next" onClick={() => go('chat')}>{t('chats.to_book')}</button>
+      </div>
+      <div className="composer">
+        <div className="cbox">
+          <span className="ic">☺</span>
+          <div className="fld">{t('chats.composer')}</div>
+          <span className="ic">⊕</span>
+        </div>
+        <span className="send off" aria-hidden="true">➤</span>
       </div>
     </Screen>
   );

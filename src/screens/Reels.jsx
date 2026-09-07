@@ -2,10 +2,21 @@ import {useStore} from '../store.jsx';
 import {useT} from '../i18n.js';
 import Screen from '../ui/Screen.jsx';
 import Progress from '../ui/Progress.jsx';
+import Tabbar from '../ui/Tabbar.jsx';
 import useCardWindow from '../ui/useCardWindow.js';
 import useChunks from '../ui/useChunks.js';
 import {SIZE} from '../ui/sizes.js';
 import {grad, likes, comments, shares} from '../ui/visual.js';
+
+// Здесь подписи есть — в оригинале они тоже есть, и панель без них
+// на чёрном фоне выглядит как забытый ряд значков.
+const TABS = [
+  ['⌂', 'reels.tab_home'],
+  ['⊞', 'reels.tab_friends'],
+  ['＋', null],
+  ['✉', 'reels.tab_inbox'],
+  ['☺', 'reels.tab_me']
+];
 
 // «Клипы»: вертикальная лента на весь экран со snap'ом.
 // Карточка ровно height:100% — иначе snap ловит середину и текст режется.
@@ -37,13 +48,14 @@ export default function Reels({go}) {
             <div className="cnt">{t('reels.handle')} · {t('reels.of', {i: i + 1, n: count})}</div>
             <div className="tag">{t('reels.tag')}</div>
             <div className="rail">
-              ❤️<small>{likes(i)}</small>
-              💬<small>{comments(i)}</small>
+              ♥<small>{likes(i)}</small>
+              ↩<small>{comments(i)}</small>
               ↗<small>{shares(i)}</small>
             </div>
           </div>
         ))}
       </div>
+      <Tabbar items={TABS} active={0} />
     </Screen>
   );
 }

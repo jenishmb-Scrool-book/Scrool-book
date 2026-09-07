@@ -5,32 +5,33 @@ import Screen from '../ui/Screen.jsx';
 import StatusBar from '../ui/StatusBar.jsx';
 import {percent} from '../ui/Progress.jsx';
 import {getWallpaper, setWallpaper, shrink} from '../wallpaper.js';
+import {APP_NAMES} from '../ui/skins.js';
 
 // Сетка «как на телефоне»: часть иконок ведёт в те же экраны — это часть обмана.
 //
-// Названия намеренно искажённые. Настоящие бренды здесь нельзя: это чужие
-// товарные знаки, и Google Play такое приложение снимет с публикации.
-// Узнаваемость даёт вёрстка и расположение, а не буквы в названии.
+// Названия лежат в `ui/skins.js` и намеренно искажены. Настоящие бренды здесь
+// нельзя: это чужие товарные знаки, и Google Play такое приложение снимет с
+// публикации. Узнаваемость даёт вёрстка и расположение, а не буквы в названии.
 //
 // Восемь иконок ведут в шесть движков. Три мессенджера — один экран с разными
 // скинами: списки переписок у них устроены одинаково, и три копии одного кода
 // утроили бы цену каждой правки. Различие даёт `skin` (пятый элемент строки).
 const APPS = [
-  ['✈️', 'Telegran', 'chats', 'linear-gradient(145deg,#41b6e6,#1d7fb8)', 'tg'],
-  ['💬', 'Whhatsapp', 'chats', 'linear-gradient(145deg,#4ee07f,#0f7a4d)', 'wa'],
-  ['📷', 'IInstagram', 'feed', 'linear-gradient(145deg,#f9a03f,#d62976 60%,#7c5cff)'],
-  ['🎵', 'TikTak', 'reels', 'linear-gradient(145deg,#ff2d55,#26f4ee 140%)'],
-  ['▶️', 'YuoTube', 'video', 'linear-gradient(145deg,#ff4b4b,#a10f0f)'],
-  ['💌', 'Massenger', 'chats', 'linear-gradient(145deg,#b06cff,#0084ff)', 'ms'],
-  ['👻', 'Snapchart', 'stories', 'linear-gradient(145deg,#fffc00,#e0c000)'],
-  ['🐦', 'Tvitter', 'tweets', 'linear-gradient(145deg,#5aa9e6,#1b6ca8)']
+  ['✈️', APP_NAMES.tg, 'chats', 'linear-gradient(145deg,#41b6e6,#1d7fb8)', 'tg'],
+  ['💬', APP_NAMES.wa, 'chats', 'linear-gradient(145deg,#4ee07f,#0f7a4d)', 'wa'],
+  ['📷', APP_NAMES.feed, 'feed', 'linear-gradient(145deg,#f9a03f,#d62976 60%,#7c5cff)'],
+  ['🎵', APP_NAMES.reels, 'reels', 'linear-gradient(145deg,#ff2d55,#26f4ee 140%)'],
+  ['▶️', APP_NAMES.video, 'video', 'linear-gradient(145deg,#ff4b4b,#a10f0f)'],
+  ['💌', APP_NAMES.ms, 'chats', 'linear-gradient(145deg,#b06cff,#0084ff)', 'ms'],
+  ['👻', APP_NAMES.stories, 'stories', 'linear-gradient(145deg,#fffc00,#e0c000)'],
+  ['🐦', APP_NAMES.tweets, 'tweets', 'linear-gradient(145deg,#5aa9e6,#1b6ca8)']
 ];
 
 // Подписи док-панели переводятся, названия «приложений» — нет: это имена собственные.
 const DOCK = [
   ['📚', 'app.books', 'library', '#2a2a3a'],
-  ['🎵', 'TikTak', 'reels', 'linear-gradient(145deg,#ff2d55,#26f4ee 140%)'],
-  ['💬', 'Whhatsapp', 'chats', 'linear-gradient(145deg,#4ee07f,#0f7a4d)', 'wa'],
+  ['🎵', APP_NAMES.reels, 'reels', 'linear-gradient(145deg,#ff2d55,#26f4ee 140%)'],
+  ['💬', APP_NAMES.wa, 'chats', 'linear-gradient(145deg,#4ee07f,#0f7a4d)', 'wa'],
   ['⚙️', 'app.settings', 'settings', '#33333f']
 ];
 

@@ -197,37 +197,51 @@ button,textarea,input{font:inherit;color:inherit}
   background:var(--glass-2);backdrop-filter:blur(10px)}
 
 /* ===== мессенджеры ===== */
-/* Три «приложения» на одном движке. Отличаются шапкой, фоном переписки и формой
-   пузыря — тем, что узнаётся с одного взгляда.
+/* Три «приложения» на одном движке. Отличаются не палитрой, а СОСТАВОМ экрана:
+   у «синего» нет нижней панели, зато есть поиск; у «зелёного» панель и обои с
+   узором; у «фиолетового» белая шапка и круглые пузыри без хвоста.
+
    Цвета намеренно не фирменные. Похожая раскладка сама по себе безопасна;
    опасно совпадение раскладки, названия и фирменного цвета разом — это уже
    чужой товарный вид. Оттенки взяты из градиентов иконок на домашнем экране. */
 #chats,#chat{
-  --sk:#3282b8;          /* шапка, кнопка отправки, счётчик непрочитанного */
-  --bub:16px 16px 16px 4px;
+  --sk:#3282b8;            /* акцент: шапка, счётчик, кнопка отправки, свой пузырь */
+  --sk-hdr:var(--sk);      /* фон шапки */
+  --sk-fg:#fff;            /* текст и значки на шапке */
+  --bub:15px;              /* радиус пузыря */
 }
-#chats[data-skin="wa"],#chat[data-skin="wa"]{--sk:#1f7a55;--bub:9px 9px 9px 2px}
-#chats[data-skin="ms"],#chat[data-skin="ms"]{--sk:#6d4bd0;--bub:20px}
+#chats[data-skin="wa"],#chat[data-skin="wa"]{--sk:#1f7a55;--bub:9px}
+#chats[data-skin="ms"],#chat[data-skin="ms"]{
+  --sk:#0a7cff;--sk-hdr:var(--hdr);--sk-fg:var(--fg);--bub:19px}
 
 /* Шапка списка и шапка переписки. Белый текст на насыщенной подложке читается
    в обеих темах, поэтому цвет здесь не тема, а скин. */
-.mhdr,.chdr{flex:none;display:flex;align-items:center;gap:10px;padding:10px 12px;
-  background:var(--sk);color:#fff}
-.mhdr h2{margin:0;font-size:1.13rem;font-weight:700;flex:1}
-.mhdr .ic,.chdr .ic{opacity:.85;font-size:1.13rem;padding:2px 4px}
+.mhdr,.chdr{flex:none;display:flex;align-items:center;gap:9px;padding:10px 12px;
+  background:var(--sk-hdr);color:var(--sk-fg)}
+.mhdr h2{margin:0;font-size:1.13rem;font-weight:700;flex:1;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mhdr .ic,.chdr .ic{opacity:.9;font-size:1.06rem;padding:2px 3px;cursor:pointer;user-select:none}
+/* У «фиолетового» шапка белая, поэтому значки на ней должны быть цветными:
+   серый значок на белом читается как отключённый. */
+#chats[data-skin="ms"] .mhdr,#chat[data-skin="ms"] .chdr{border-bottom:1px solid var(--line)}
+#chats[data-skin="ms"] .mhdr .ic,#chat[data-skin="ms"] .chdr .ic{color:var(--sk);opacity:1}
+#chats[data-skin="ms"] .mhdr h2{font-size:1.31rem}
 .chdr .who{flex:1;min-width:0;line-height:1.2}
 .chdr .who b{display:block;font-size:.94rem;font-weight:600;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .chdr .who span{font-size:.72rem;opacity:.8}
-.msearch{flex:none;margin:8px 12px;padding:8px 12px;border-radius:20px;
+.msearch{flex:none;margin:8px 12px;padding:8px 13px;border-radius:20px;
   background:var(--field);border:1px solid var(--field-line);font-size:.81rem;opacity:.6}
 
-/* Строка списка чатов */
+/* Строка списка чатов. Разделитель начинается за аватаркой, а не от края:
+   так он лежит во всех мессенджерах, и линия от края сразу выдаёт подделку. */
 #chats .body{padding:0 0 12px}
-.crow{display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer}
+.crow{display:flex;align-items:center;gap:12px;padding:9px 14px;cursor:pointer;position:relative}
+.crow::after{content:'';position:absolute;left:78px;right:0;bottom:0;height:1px;background:var(--line-2)}
+.crow:last-child::after{display:none}
 .crow.pin{background:var(--card-sel)}
-.crow .av{width:48px;height:48px;border-radius:50%;flex:none;display:grid;place-items:center;
-  font-size:1.25rem;color:#fff;font-weight:600}
+.crow .av{width:52px;height:52px;border-radius:50%;flex:none;display:grid;place-items:center;
+  font-size:1.31rem;color:#fff;font-weight:600}
 .crow .ci{flex:1;min-width:0}
 .crow .ci b{display:block;font-size:.94rem;font-weight:600;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -242,26 +256,80 @@ button,textarea,input{font:inherit;color:inherit}
 .crow .cm em{font-style:normal;min-width:20px;padding:1px 6px;border-radius:10px;
   background:var(--sk);color:#fff;font-size:.69rem;font-weight:700;text-align:center}
 
+/* Кнопка «новое сообщение». Её отсутствие заметнее, чем её бездействие:
+   в каждом мессенджере она стоит ровно в этом углу. */
+#chats .fab{position:absolute;right:16px;bottom:20px;width:54px;height:54px;z-index:6;
+  border-radius:50%;display:grid;place-items:center;font-size:1.38rem;
+  background:var(--sk);color:#fff;box-shadow:0 6px 18px var(--shadow-ic)}
+#chats[data-skin="wa"] .fab{border-radius:17px}
+/* Там, где внизу панель вкладок, кнопка поднимается над ней. */
+#chats[data-skin="wa"] .fab,#chats[data-skin="ms"] .fab{bottom:76px}
+
 /* Переписка */
-#chat .body{padding:4px 12px 8px;background-color:var(--chat-bg)}
-/* Текстура фона у «зелёного» скина: настоящий узор копировать незачем,
-   а ровная заливка не читается как мессенджер. Точки работают в обеих темах. */
+#chat .body{padding:2px 10px 10px;background-color:var(--chat-bg)}
+/* Обои переписки. Настоящий узор копировать незачем, а ровная заливка не
+   читается как мессенджер: пустой цветной прямоугольник — это «карточки». */
+#chat[data-skin="tg"] .body{
+  background-image:radial-gradient(circle at 18% 12%,#7c5cff2e,transparent 55%),
+                   radial-gradient(circle at 84% 48%,#3282b83d,transparent 52%),
+                   radial-gradient(circle at 35% 88%,#2ea36f26,transparent 48%);
+  background-attachment:local}
+/* У «фиолетового» обоев нет вовсе — ровный фон приложения. Три разных
+   подложки на трёх скинах различают их с одного взгляда лучше, чем цвет шапки. */
+#chat[data-skin="ms"] .body{background-color:var(--bg)}
 #chat[data-skin="wa"] .body{
   background-image:radial-gradient(circle at 25% 35%,#8080801f 0 1.5px,transparent 1.5px),
-                   radial-gradient(circle at 75% 80%,#8080801a 0 1.5px,transparent 1.5px);
-  background-size:64px 64px,96px 96px}
-.daysep{text-align:center;margin:10px 0;font-size:.69rem;opacity:.55}
-.daysep::before{content:'';display:inline-block;width:0}
-.msg{max-width:84%;padding:9px 12px 6px;border-radius:var(--bub,16px 16px 16px 4px);margin:8px 0;
-  background:var(--bubble);white-space:pre-wrap;word-break:break-word;animation:pop .18s ease-out;
-  box-shadow:0 1px 2px var(--shadow-ic)}
-.msg.out{margin-left:auto;background:var(--sk);color:#fff;
-  border-radius:16px 16px 4px 16px}
+                   radial-gradient(circle at 75% 80%,#8080801a 0 1.5px,transparent 1.5px),
+                   radial-gradient(circle at 50% 12%,#80808017 0 2px,transparent 2px);
+  background-size:64px 64px,96px 96px,120px 120px}
+
+/* Плашка даты и черта «непрочитанные» — обе висят по центру и обе нужны:
+   первая говорит «когда», вторая — «докуда». */
+.daysep{text-align:center;margin:12px 0 8px}
+.daysep span{display:inline-block;padding:3px 11px;border-radius:12px;
+  background:var(--pill-bg);color:var(--pill-fg);font-size:.69rem;opacity:.8}
+.unread{margin:14px -10px 8px;padding:5px 0;text-align:center;font-size:.69rem;
+  background:var(--bubble);color:var(--fg);opacity:.92;
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+
+.mline{position:relative}
+/* Пузырь. `width:fit-content` обязателен: без него короткая реплика растягивается
+   на 84% ширины и перестаёт быть репликой. */
+.msg{position:relative;max-width:84%;width:fit-content;min-width:96px;
+  padding:7px 11px 8px;border-radius:var(--bub);margin:2px 0;
+  background:var(--bubble);white-space:pre-wrap;word-break:break-word;
+  font-size:.94rem;line-height:1.42;
+  box-shadow:0 1px 1px var(--shadow-ic);animation:pop .18s ease-out}
+/* Распорка в конце текста ровно под время. Без неё время, висящее в правом
+   нижнем углу, ложится поверх последней строки; с ней текст его обтекает —
+   как в настоящем мессенджере, и без единого измерения в JS. */
+.msg .sp{display:inline-block;width:44px;height:1px}
+.msg.out .sp{width:60px}
+.msg .t{position:absolute;right:9px;bottom:6px;font-size:10px;opacity:.5;
+  white-space:nowrap;line-height:1}
+.msg .t .tick{font-style:normal;margin-left:3px;letter-spacing:-2px;color:#53bdeb;opacity:.95}
+.msg.out{margin-left:auto;background:var(--sk);color:#fff}
+/* Галочки на своём пузыре светлее фона: синее по синему не читается, а именно
+   их взгляд ищет первым делом, чтобы понять, «дошло ли». */
+.msg.out .t{opacity:.85}
+.msg.out .t .tick{color:#cdeaff}
 @keyframes pop{from{opacity:0;transform:translateY(6px)}}
-.msg .t{display:block;text-align:right;font-size:10px;opacity:.45;margin-top:3px}
+
+/* Хвост у первого пузыря пачки. Треугольник из границ: элемент нулевого
+   размера, прозрачная нижняя граница и цветная боковая дают ровно тот клин,
+   который отличает пузырь от карточки. */
+.msg.tail{border-top-left-radius:4px}
+.msg.tail::before{content:'';position:absolute;left:-6px;top:0;width:0;height:0;
+  border-bottom:11px solid transparent;border-right:8px solid var(--bubble)}
+.msg.out.tail{border-top-left-radius:var(--bub);border-top-right-radius:4px}
+.msg.out.tail::before{left:auto;right:-6px;border-right:0;border-left:8px solid var(--sk)}
+/* У «фиолетового» пузыри круглые и без хвоста — это его главное отличие. */
+#chat[data-skin="ms"] .msg.tail{border-radius:var(--bub)}
+#chat[data-skin="ms"] .msg.tail::before{display:none}
+
 /* «Печатает…»: три точки вместо текста в том же пузыре, 260 мс. Курсор при этом
    уже сдвинут — анимация только оформление, потерять на ней прочитанное нельзя. */
-.dots{display:inline-flex;gap:4px;padding:2px 0}
+.dots{display:inline-flex;gap:4px;padding:3px 0}
 .dots i{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.35;
   animation:blink 1s infinite}
 .dots i:nth-child(2){animation-delay:.15s}
@@ -272,14 +340,22 @@ button,textarea,input{font:inherit;color:inherit}
 
 /* Поле ввода. Нерабочее намеренно — отвечать книге некому; без него экран
    не читается как мессенджер, а кнопка отправки заменила кнопку «Дальше». */
-.composer{flex:none;display:flex;align-items:center;gap:8px;padding:8px 10px;
+.composer{flex:none;display:flex;align-items:center;gap:8px;padding:7px 9px;
   background:var(--hdr);border-top:1px solid var(--line)}
+.composer .cbox{flex:1;display:flex;align-items:center;gap:8px;min-width:0}
 .composer .ic{opacity:.5;font-size:1.13rem;padding:0 2px}
-.composer .fld{flex:1;padding:9px 14px;border-radius:20px;background:var(--field);
-  border:1px solid var(--field-line);font-size:.87rem;opacity:.45}
-.composer .send{flex:none;width:42px;height:42px;border:0;border-radius:50%;cursor:pointer;
-  background:var(--sk);color:#fff;font-size:1.13rem;line-height:1}
-.composer .send:disabled{opacity:.35;cursor:default}
+.composer .fld{flex:1;min-width:0;padding:9px 6px;font-size:.87rem;opacity:.45;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.composer .send{flex:none;width:44px;height:44px;border:0;border-radius:50%;cursor:pointer;
+  display:grid;place-items:center;background:var(--sk);color:#fff;font-size:1.13rem;line-height:1}
+.composer .send:disabled,.composer .send.off{opacity:.35;cursor:default}
+/* У «зелёного» поле — белая таблетка на фоне обоев, а кнопка отдельным кругом.
+   Это самая узнаваемая деталь всего экрана, и стоит она одной обёртки. */
+#chat[data-skin="wa"] .composer{background:var(--chat-bg);border-top:0;padding:5px 8px 9px}
+#chat[data-skin="wa"] .composer .cbox{background:var(--field);border-radius:22px;
+  padding:0 12px;border:1px solid var(--field-line)}
+#chat[data-skin="tg"] .composer .cbox,#chat[data-skin="ms"] .composer .cbox{
+  background:var(--field);border-radius:22px;padding:0 12px;border:1px solid var(--field-line)}
 
 .next{display:block;margin:16px auto 20px;border:0;border-radius:22px;padding:11px 22px;
   background:var(--ok);color:var(--on-accent);font-weight:600;cursor:pointer}
@@ -294,12 +370,12 @@ button,textarea,input{font:inherit;color:inherit}
 #reels .toc.float{top:14px;right:12px;font-size:1.25rem;cursor:pointer;
   text-shadow:0 2px 8px #000;color:#fff;padding:2px 6px;user-select:none}
 .reel{height:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative;
-  display:flex;flex-direction:column;justify-content:flex-end;padding:56px 74px 44px 20px;
+  display:flex;flex-direction:column;justify-content:flex-end;padding:56px 74px 26px 20px;
   color:#fff}/* карточка всегда на цветном градиенте — текст белый в любой теме */
 .reel .txt{font-size:1.31rem;line-height:1.45;font-weight:600;text-shadow:0 2px 14px #000a;
   max-height:76%;overflow:auto;word-break:break-word}
 .reel .cnt{margin-top:14px;font-size:.75rem;opacity:.65}
-.rail{position:absolute;right:10px;bottom:64px;display:flex;flex-direction:column;
+.rail{position:absolute;right:10px;bottom:46px;display:flex;flex-direction:column;
   gap:20px;align-items:center;font-size:1.56rem;text-shadow:0 2px 8px #000}
 .rail small{display:block;font-size:10px;text-align:center;font-weight:600}
 
@@ -313,17 +389,82 @@ button,textarea,input{font:inherit;color:inherit}
 .post .cap{padding:0 12px;font-size:.81rem;opacity:.6}
 
 /* ===== видео ===== */
-.vid{display:flex;gap:10px;padding:9px 12px;cursor:pointer;align-items:flex-start}
-.vid .th{width:132px;aspect-ratio:16/9;border-radius:9px;flex:none;display:grid;
-  place-items:center;font-size:1.62rem;opacity:.9;color:#fff}
-.vid .ti{font-size:.87rem;font-weight:600;line-height:1.35;
+/* Шапка с именем «приложения»: слово «Видео» не говорит ничего, а красная
+   плашка с треугольником узнаётся мгновенно — и это ровно то, зачем экран. */
+.yhdr{flex:none;display:flex;align-items:center;gap:8px;padding:9px 12px;
+  background:var(--hdr);border-bottom:1px solid var(--line)}
+.ylogo{flex:1;display:flex;align-items:center;gap:6px;
+  font-size:1.13rem;font-weight:700;letter-spacing:-.4px}
+.ylogo i{font-style:normal;display:grid;place-items:center;width:25px;height:18px;
+  border-radius:5px;background:#d33;color:#fff;font-size:.62rem}
+.yhdr .ic{font-size:1.13rem;opacity:.75;padding:2px 4px;cursor:pointer;user-select:none}
+
+/* Карточка ролика во всю ширину. Раньше здесь была строка со срезанным по
+   70 знаков куском текста посреди фразы — список из таких строк не читается
+   как список роликов, потому что у ролика есть название, а не начало текста. */
+#video .body{padding:6px 0 8px}
+.vid{padding:0 0 16px;cursor:pointer}
+.vid .th{position:relative;width:100%;aspect-ratio:16/9;display:grid;place-items:center;color:#fff}
+.vid .th .pl{font-size:2.25rem;opacity:.5;text-shadow:0 2px 10px #0009}
+.vid .th em{position:absolute;right:6px;bottom:6px;font-style:normal;font-size:11px;
+  padding:1px 5px;border-radius:4px;background:var(--pill-bg);color:var(--pill-fg);font-weight:600}
+/* Красная полоска «досмотрено до» — только у ролика, на котором стоит курсор. */
+.vid .th .seen{position:absolute;left:0;bottom:0;height:3px;background:#e33}
+.vid .vrow{display:flex;gap:11px;padding:11px 12px 0}
+.vid .ava{width:36px;height:36px;border-radius:50%;flex:none;display:grid;place-items:center;
+  font-size:1rem;color:#fff}
+.vid .vmeta{flex:1;min-width:0}
+.vid .ti{font-size:.94rem;font-weight:600;line-height:1.32;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.vid .meta{font-size:.75rem;opacity:.55;margin-top:5px}
-#player .stage{flex:none;aspect-ratio:16/9;display:flex;align-items:center;
-  padding:20px;font-size:1rem;line-height:1.5;overflow:auto;word-break:break-word;color:#fff}
-#player .info{padding:14px}
-#player .info h3{margin:0 0 6px;font-size:1rem}
-#player .info .m{font-size:.75rem;opacity:.55;margin-bottom:16px}
+.vid .meta{font-size:.75rem;opacity:.55;margin-top:4px}
+.vid .kebab{flex:none;opacity:.45;padding:0 2px}
+/* «Следующее» — та же карточка, но лежачая: так она и выглядит под плеером. */
+.vid.small{display:flex;gap:10px;padding:10px 0 0}
+.vid.small .th{width:148px;flex:none;border-radius:9px;overflow:hidden}
+.vid.small .th .pl{font-size:1.44rem}
+.vid.small .vrow{flex:1;min-width:0;padding:0}
+.vid.small .ava{display:none}
+.vid.small .ti{font-size:.87rem}
+
+/* Плеер. Внутри него текста НЕТ и быть не должно: 600 знаков в коробке 16:9
+   на телефоне — это двести пикселей высоты со своей прокруткой, читать там
+   нельзя. Текст лежит ниже, в описании. */
+#player .stage{flex:none;position:relative;aspect-ratio:16/9;display:grid;place-items:center;color:#fff}
+#player .stage .pl{font-size:3rem;opacity:.5;text-shadow:0 2px 12px #0009}
+#player .stage .back{position:absolute;left:6px;top:4px;font-size:1.75rem;
+  text-shadow:0 2px 8px #000;color:#fff}
+#player .stage .ic{position:absolute;right:10px;top:10px;font-size:1.13rem;cursor:pointer;
+  text-shadow:0 2px 8px #000;user-select:none}
+#player .ctrl{position:absolute;left:10px;right:10px;bottom:7px;
+  display:flex;align-items:center;gap:9px;font-size:10px}
+#player .ctrl .tm{opacity:.9;text-shadow:0 1px 4px #000}
+#player .ctrl .bar{flex:1;display:block;height:3px;border-radius:2px;background:#ffffff59}
+#player .ctrl .bar b{display:block;height:100%;border-radius:2px;background:#e33}
+#player .ctrl .full{opacity:.9;font-size:.81rem;text-shadow:0 1px 4px #000}
+
+#player .body{padding:0}
+#player .vinfo{padding:26px 14px 22px}   /* сверху пусто под плашку «страница / осталось» */
+#player .vinfo h3{margin:0;font-size:1.06rem;line-height:1.35;font-weight:600}
+#player .vinfo .m{font-size:.75rem;opacity:.55;margin-top:5px}
+#player .vacts{display:flex;gap:8px;overflow-x:auto;margin:13px 0 4px;padding-bottom:3px}
+#player .vacts span{flex:none;padding:7px 13px;border-radius:18px;background:var(--btn-2);
+  font-size:.75rem;white-space:nowrap}
+#player .chan{display:flex;align-items:center;gap:10px;margin-top:10px;padding:11px 0;
+  border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2)}
+#player .chan .ava{width:38px;height:38px;border-radius:50%;flex:none;display:grid;
+  place-items:center;color:#fff}
+#player .chan .ci{flex:1;min-width:0}
+#player .chan .ci b{display:block;font-size:.87rem;font-weight:600}
+#player .chan .ci span{font-size:.72rem;opacity:.55}
+#player .chan .sub{flex:none;border:0;border-radius:18px;padding:8px 16px;cursor:pointer;
+  background:var(--fg);color:var(--bg);font-weight:600;font-size:.81rem}
+/* Описание — единственное место в таком приложении, где длинный текст уместен,
+   и здесь оно и есть читалка. Поэтому кегль тут книжный, а не служебный. */
+#player .desc{margin:14px 0 2px;padding:13px 14px;border-radius:13px;background:var(--card)}
+#player .desc .dh{font-size:.69rem;opacity:.5;margin-bottom:9px;
+  text-transform:uppercase;letter-spacing:.6px}
+#player .desc .dtxt{font-size:1rem;line-height:1.62;white-space:pre-wrap;word-break:break-word}
+#player .upnext{font-size:.87rem;font-weight:600;margin:18px 0 0}
 
 /* ===== библиотека и настройки ===== */
 #library .body,#settings .body{padding:14px}
@@ -453,9 +594,6 @@ button,textarea,input{font:inherit;color:inherit}
 .chips span{flex:none;padding:6px 14px;border-radius:9px;background:var(--btn-2);
   font-size:.75rem;opacity:.8}
 .chips span.on{background:var(--fg);color:var(--bg);opacity:1;font-weight:600}
-.vid .th{position:relative}
-.vid .th em{position:absolute;right:5px;bottom:5px;font-style:normal;font-size:10px;
-  padding:1px 5px;border-radius:4px;background:var(--pill-bg);color:var(--pill-fg);font-weight:600}
 .post .cap.likes{font-size:.81rem;opacity:.9;font-weight:600;padding-bottom:3px}
 
 /* ===== оглавление ===== */
@@ -474,3 +612,25 @@ button,textarea,input{font:inherit;color:inherit}
 #toc .hint{padding:24px 18px;line-height:1.5}
 /* Правая вставка шапки: счётчик глав и кнопка «☰» на экранах-читалках. */
 .hdr .ic{font-size:.81rem;opacity:.6;white-space:nowrap;padding:2px 4px;cursor:pointer}
+
+/* ===== нижняя панель навигации ===== */
+/* Самая дешёвая узнаваемость из всех: без неё любой экран читается как
+   «страница с карточками», а не как приложение. Нерабочая — вести ей некуда,
+   раздел внутри «приложения» ровно один. */
+.tabbar{flex:none;display:flex;justify-content:space-around;align-items:center;
+  padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));
+  background:var(--hdr);border-top:1px solid var(--line)}
+.tabbar span{display:flex;flex-direction:column;align-items:center;gap:3px;
+  opacity:.45;font-size:.6rem;line-height:1}
+.tabbar span.on{opacity:1}
+.tabbar b{font-size:1.25rem;font-weight:400;line-height:1}
+.tabbar i{font-style:normal}
+/* На клипах панель чёрная в любой теме: экран под ней всегда тёмный. */
+#reels .tabbar{background:#000;border-top-color:#ffffff1f;color:#fff}
+
+/* ===== шапка ленты ===== */
+.fhdr{flex:none;display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:var(--hdr);border-bottom:1px solid var(--line)}
+.flogo{flex:1;font-size:1.19rem;font-weight:700;font-style:italic;letter-spacing:-.3px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fhdr .ic{font-size:1.13rem;opacity:.75;padding:2px 4px;cursor:pointer;user-select:none}

@@ -3,11 +3,15 @@ import {useT} from '../i18n.js';
 import Screen from '../ui/Screen.jsx';
 import StatusBar from '../ui/StatusBar.jsx';
 import Progress from '../ui/Progress.jsx';
+import Tabbar from '../ui/Tabbar.jsx';
 import useCardWindow from '../ui/useCardWindow.js';
 import useChunks from '../ui/useChunks.js';
 import {SIZE} from '../ui/sizes.js';
 import {grad, likes, comments, shares, views} from '../ui/visual.js';
+import {APP_NAMES} from '../ui/skins.js';
 import {msgTime} from '../lib/fake.js';
+
+const TABS = [['⌂', null], ['⌕', null], ['⊞', null], ['✉', null], ['☺', null]];
 
 // «Короткие посты»: самый мелкий фрагмент из всех движков.
 // Здесь книга выглядит как лента реплик — по паре предложений на пост, и
@@ -24,8 +28,9 @@ export default function Tweets({go}) {
       <StatusBar />
       <div className="thdr">
         <span className="back" onClick={() => go('home')} role="button" aria-label={t('back')}>‹</span>
-        <h2>{t('tw.title')}</h2>
-        <span className="ic" onClick={() => go('toc')} role="button">☰</span>
+        <h2>{APP_NAMES.tweets}</h2>
+        <span className="ic" onClick={() => go('toc')} role="button"
+              aria-label={t('toc.title')}>☰</span>
       </div>
       <div className="tabs">
         <span className="on">{t('tw.tab_feed')}</span>
@@ -43,15 +48,16 @@ export default function Tweets({go}) {
               </div>
               <div className="tt">{chunks[i].text}</div>
               <div className="ta">
-                <span>💬 {comments(i)}</span>
-                <span>🔁 {shares(i)}</span>
+                <span>↩ {comments(i)}</span>
+                <span>⇄ {shares(i)}</span>
                 <span>♡ {likes(i)}</span>
-                <span>📊 {t('tw.views', {n: views(i)})}</span>
+                <span>▤ {t('tw.views', {n: views(i)})}</span>
               </div>
             </div>
           </div>
         ))}
       </div>
+      <Tabbar items={TABS} active={0} />
     </Screen>
   );
 }

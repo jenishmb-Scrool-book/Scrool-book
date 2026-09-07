@@ -2,13 +2,18 @@ import {useStore} from '../store.jsx';
 import {useT} from '../i18n.js';
 import Screen from '../ui/Screen.jsx';
 import StatusBar from '../ui/StatusBar.jsx';
-import Header from '../ui/Header.jsx';
 import Progress from '../ui/Progress.jsx';
+import Tabbar from '../ui/Tabbar.jsx';
 import useCardWindow from '../ui/useCardWindow.js';
 import useChunks from '../ui/useChunks.js';
 import {SIZE} from '../ui/sizes.js';
 import {grad, marks} from '../ui/visual.js';
+import {APP_NAMES} from '../ui/skins.js';
 import {NAMES} from '../lib/fake.js';
+
+// Нижняя панель. Подписей нет — их нет и в оригинале, а панель с лишними
+// словами читается как чужая.
+const TABS = [['⌂', null], ['⌕', null], ['＋', null], ['♡', null], ['☺', null]];
 
 // «Лента»: те же куски постами. Текст лежит ровно на месте картинки —
 // в этом весь фокус, картинки тут нет вообще.
@@ -22,8 +27,13 @@ export default function Feed({go}) {
   return (
     <Screen id="feed">
       <StatusBar />
-      <Header onBack={() => go('home')} title={t('feed.title')}
-              right={<span className="ic" onClick={() => go('toc')} role="button">☰</span>} />
+      <div className="fhdr">
+        <span className="back" onClick={() => go('home')} role="button" aria-label={t('back')}>‹</span>
+        <b className="flogo">{APP_NAMES.feed}</b>
+        <span className="ic">♡</span>
+        <span className="ic" onClick={() => go('toc')} role="button"
+              aria-label={t('toc.title')}>☰</span>
+      </div>
       <Progress offset={offset} len={text.length} />
       <div className="body" ref={boxRef}>
         {/* Полоса «историй» над лентой. Она декоративна и не нажимается: её
@@ -49,6 +59,7 @@ export default function Feed({go}) {
           </div>
         ))}
       </div>
+      <Tabbar items={TABS} active={0} />
     </Screen>
   );
 }
