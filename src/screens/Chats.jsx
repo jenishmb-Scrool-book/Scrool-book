@@ -40,7 +40,7 @@ const isOut = i => i % 2 === 1;
 // Аватарка со снимком. Буква на цветном кружке — это как выглядит контакт БЕЗ
 // фотографии, и когда без фотографии весь список, он читается как пустой.
 function Avatar({seed, cls}) {
-  return <div className={cls || 'av'} style={{background: shot(seed, grad(seed))}} />;
+  return <div className={cls || 'av'} style={{background: shot('face', seed, grad(seed))}} />;
 }
 
 /**

@@ -44,7 +44,7 @@ export default function Reels({go}) {
       </div>
       <div className="body" ref={boxRef}>
         {items.map(i => (
-          <div className="reel" key={i} data-i={i} style={{background: shot(i, grad(i))}}>
+          <div className="reel" key={i} data-i={i} style={{background: shot('tall', i, grad(i))}}>
             <div className="txt">{chunks[i].text}</div>
             <div className="cnt">{t('reels.handle')} · {t('reels.of', {i: i + 1, n: count})}</div>
             <div className="tag">{t('reels.tag')}</div>

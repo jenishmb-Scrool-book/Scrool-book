@@ -69,12 +69,12 @@ function Card({i, title, here, onPlay, small}) {
   const t = useT();
   return (
     <div className={small ? 'vid small' : 'vid'} data-i={i} onClick={onPlay}>
-      <div className="th" style={{background: shot(i, grad(i))}}>
+      <div className="th" style={{background: shot('wide', i, grad(i))}}>
         <em>{dur(i)}</em>
         {here ? <b className="seen" style={{width: seen(i) + '%'}} /> : null}
       </div>
       <div className="vrow">
-        <div className="ava" style={{background: shot(FACE, grad(i + 3))}} />
+        <div className="ava" style={{background: shot('face', FACE, grad(i + 3))}} />
         <div className="vmeta">
           <div className="ti">{title}</div>
           <div className="meta">
@@ -137,7 +137,7 @@ function Comment({i, at, text}) {
   const emo = commentEmo(i);
   return (
     <div className="cmt" data-at={at}>
-      <div className="cav" style={{background: shot(i + 5, grad(i + 5))}} />
+      <div className="cav" style={{background: shot('face', i + 5, grad(i + 5))}} />
       <div className="cb">
         <div className="cu">{c.name}<span>{t('video.ago', {n: i % 8 + 1})}</span></div>
         <div className="ct">{text}</div>
@@ -223,7 +223,7 @@ export function Player({go}) {
   return (
     <Screen id="player" bar="#000000">
       <StatusBar />
-      <div className="stage" style={{background: shot(at, grad(at))}}>
+      <div className="stage" style={{background: shot('wide', at, grad(at))}}>
         <span className="back" onClick={() => go('video')} role="button" aria-label={t('back')}>‹</span>
         <span className="ic" onClick={() => go('toc')} role="button" aria-label={t('toc.title')}>☰</span>
         <span className="pl">▶</span>
@@ -245,7 +245,7 @@ export function Player({go}) {
             <span>⤓ {t('video.save')}</span>
           </div>
           <div className="chan">
-            <div className="ava" style={{background: shot(FACE, grad(at + 3))}} />
+            <div className="ava" style={{background: shot('face', FACE, grad(at + 3))}} />
             <div className="ci">
               <b>{t('video.channel')}</b>
               <span>{t('video.subs')}</span>

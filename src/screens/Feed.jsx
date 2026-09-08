@@ -43,7 +43,7 @@ export default function Feed({go}) {
           {NAMES.slice(0, 6).map((name, k) => (
             <div className="sitem" key={k}>
               <div className="ring" style={{background: grad(k * 7 + 2)}}>
-                <i style={{background: shot(k * 11 + 3, grad(k))}} />
+                <i style={{background: shot('face', k * 11 + 3, grad(k))}} />
               </div>
               <span>{k === 0 ? t('feed.your_story') : name}</span>
             </div>
@@ -52,12 +52,12 @@ export default function Feed({go}) {
         {items.map(i => (
           <div className="post" key={i} data-i={i}>
             <div className="u">
-              <div className="av" style={{background: shot(FACE, grad(i))}} />
+              <div className="av" style={{background: shot('face', FACE, grad(i))}} />
               {t('feed.author')}
             </div>
             {/* Текст лежит поверх снимка, а не вместо него. Затемнение под ним
                 обязательно: на светлом кадре белые буквы иначе пропадают. */}
-            <div className="pic" style={{background: shot(i, grad(i + 3))}}>
+            <div className="pic" style={{background: shot('post', i, grad(i + 3))}}>
               <span>{chunks[i].text}</span>
             </div>
             <div className="acts">♡ ⌯ ↗</div>

@@ -28,14 +28,14 @@ export default function Stories({go}) {
 
   return (
     <Screen id="stories" bar="#000000">
-      <div className="stage" style={{background: shot(pos, grad(pos))}}>
+      <div className="stage" style={{background: shot('tall', pos, grad(pos))}}>
         <div className="bars">
           {Array.from({length: bars}, (unused, k) => (
             <span key={k} className={base + k <= pos ? 'on' : ''} />
           ))}
         </div>
         <div className="shead">
-          <div className="av sm" style={{background: shot(FACE, grad(pos + 5))}} />
+          <div className="av sm" style={{background: shot('face', FACE, grad(pos + 5))}} />
           <b>{current ? current.title : t('stories.title')}</b>
           <i>{msgTime(pos)}</i>
           <span className="ic" onClick={() => go('toc')} role="button" aria-label={t('toc.title')}>☰</span>

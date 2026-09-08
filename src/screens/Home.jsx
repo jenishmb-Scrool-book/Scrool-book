@@ -19,21 +19,21 @@ import AppIcon from '../ui/AppIcon.jsx';
 // скинами: списки переписок у них устроены одинаково, и три копии одного кода
 // утроили бы цену каждой правки. Различие даёт `skin` (пятый элемент строки).
 const APPS = [
-  ['send', APP_NAMES.tg, 'chats', 'linear-gradient(145deg,#41b6e6,#1d7fb8)', 'tg'],
-  ['bubble', APP_NAMES.wa, 'chats', 'linear-gradient(145deg,#4ee07f,#0f7a4d)', 'wa'],
-  ['photo', APP_NAMES.feed, 'feed', 'linear-gradient(145deg,#f9a03f,#d62976 60%,#7c5cff)'],
-  ['note', APP_NAMES.reels, 'reels', 'linear-gradient(145deg,#ff2d55,#26f4ee 140%)'],
+  ['plane', APP_NAMES.tg, 'chats', 'linear-gradient(145deg,#41b6e6,#1d7fb8)', 'tg'],
+  ['phone', APP_NAMES.wa, 'chats', 'linear-gradient(145deg,#4ee07f,#0f7a4d)', 'wa'],
+  ['camera', APP_NAMES.feed, 'feed', 'linear-gradient(145deg,#f9a03f,#d62976 58%,#7c5cff)'],
+  ['note', APP_NAMES.reels, 'reels', 'linear-gradient(150deg,#33333d,#0a0a0f)'],
   ['play', APP_NAMES.video, 'video', 'linear-gradient(145deg,#ff4b4b,#a10f0f)'],
-  ['chats', APP_NAMES.ms, 'chats', 'linear-gradient(145deg,#b06cff,#0084ff)', 'ms'],
-  ['ring', APP_NAMES.stories, 'stories', 'linear-gradient(145deg,#ffd93b,#e0a000)'],
-  ['hash', APP_NAMES.tweets, 'tweets', 'linear-gradient(145deg,#5aa9e6,#1b6ca8)']
+  ['bolt', APP_NAMES.ms, 'chats', 'linear-gradient(145deg,#b06cff,#0084ff)', 'ms'],
+  ['snap', APP_NAMES.stories, 'stories', 'linear-gradient(145deg,#ffd93b,#e0a000)'],
+  ['bird', APP_NAMES.tweets, 'tweets', 'linear-gradient(145deg,#5aa9e6,#1b6ca8)']
 ];
 
 // Подписи док-панели переводятся, названия «приложений» — нет: это имена собственные.
 const DOCK = [
   ['books', 'app.books', 'library', 'linear-gradient(145deg,#5b5b6e,#2a2a3a)'],
-  ['note', APP_NAMES.reels, 'reels', 'linear-gradient(145deg,#ff2d55,#26f4ee 140%)'],
-  ['bubble', APP_NAMES.wa, 'chats', 'linear-gradient(145deg,#4ee07f,#0f7a4d)', 'wa'],
+  ['note', APP_NAMES.reels, 'reels', 'linear-gradient(150deg,#33333d,#0a0a0f)'],
+  ['phone', APP_NAMES.wa, 'chats', 'linear-gradient(145deg,#4ee07f,#0f7a4d)', 'wa'],
   ['gear', 'app.settings', 'settings', 'linear-gradient(145deg,#4a4a58,#33333f)']
 ];
 
