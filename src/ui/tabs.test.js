@@ -1,6 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {SCREENS} from '../App.jsx';
 import {LOCAL, TAB} from './actions.js';
+import {has as hasGlyph} from './Glyph.jsx';
 import {SKINS} from './skins.js';
 import {TABS} from './tabs.js';
 import {DICT} from '../i18n.js';
@@ -40,6 +41,17 @@ describe('кнопки', () => {
     }
   });
 
+  it('каждый значок нарисован', () => {
+    // Значок — имя из `ui/Glyph.jsx`, а не символ. Опечатка в имени не роняет
+    // экран и не видна в разметке: Glyph просто отдаёт null, и на месте кнопки
+    // остаётся пустое место с рабочим нажатием. Ловится только так.
+    for (const [where, items] of everyButton()) {
+      for (const [glyph] of items) {
+        expect(hasGlyph(glyph), where + ' → ' + glyph).toBe(true);
+      }
+    }
+  });
+
   it('каждое назначение существует', () => {
     for (const [where, items] of everyButton()) {
       for (const [glyph, , action] of items) {
@@ -70,11 +82,11 @@ describe('кнопки', () => {
 
 describe('нижние панели', () => {
   it('у каждого движка своя, и все по пять кнопок', () => {
-    // Пять — это форма, по которой панель узнаётся: четыре значка и «＋»
+    // Пять — это форма, по которой панель узнаётся: четыре значка и «плюс»
     // посередине. Шесть уже не читаются как панель телефона.
     for (const [name, items] of Object.entries(TABS)) {
       expect(items.length, name).toBe(5);
-      expect(items[2][0], name + ': середина').toBe('＋');
+      expect(items[2][0], name + ': середина').toBe('plus');
     }
   });
 

@@ -13,6 +13,7 @@ import {grad, reaction, reactionCount, sticker} from '../ui/visual.js';
 import {shot} from '../ui/pics.js';
 import {skinOf, tabIndex} from '../ui/skins.js';
 import {NAMES, callAt, contactAt, groupAt, msgTime} from '../lib/fake.js';
+import Glyph from '../ui/Glyph.jsx';
 
 // «Мессенджер» — один движок и четыре вкладки, и ЧИТАТЬ можно на двух из них.
 //
@@ -62,7 +63,7 @@ function ChatHead({skin, onBack, seed, title, sub, onAct}) {
   const S = skinOf(skin);
   return (
     <div className="chdr">
-      <span className="back" onClick={onBack} role="button" aria-label="Назад">‹</span>
+      <span className="back" onClick={onBack} role="button" aria-label="Назад"><Glyph name="back" /></span>
       <Avatar seed={seed} cls="av sm" />
       <div className="who">
         <b>{title}</b>
@@ -142,7 +143,7 @@ function Roster({mode, chunks, pos, setPos, onOpen}) {
 function CallList({onOpen}) {
   const t = useT();
   const rows = NAMES.length * 3;   // хватает на экран с запасом, без бесконечности
-  const ARROW = {in: '↙', out: '↗', missed: '↙'};
+  const ARROW = {in: 'callIn', out: 'callOut', missed: 'callIn'};
   return (
     <div className="body">
       {Array.from({length: rows}, (unused, i) => {
@@ -153,10 +154,10 @@ function CallList({onOpen}) {
             <div className="ci">
               <b>{c.name}</b>
               <span className={c.kind === 'missed' ? 'miss' : ''}>
-                {ARROW[c.kind]} {t('chats.call_' + c.kind)} · {c.time}
+                <Glyph name={ARROW[c.kind]} /> {t('chats.call_' + c.kind)} · {c.time}
               </span>
             </div>
-            <span className="ic">{c.video ? '▷' : '☏'}</span>
+            <span className="ic"><Glyph name={c.video ? 'videocam' : 'phone'} /></span>
           </div>
         );
       })}
@@ -178,7 +179,7 @@ function PeopleList({onOpen}) {
               <b>{c.name}</b>
               <span>{t('chats.online')}</span>
             </div>
-            <span className="ic">✉</span>
+            <span className="ic"><Glyph name="mail" /></span>
           </div>
         );
       })}
@@ -227,17 +228,17 @@ export default function Chats({go, back, arg}) {
     <Screen id="chats" skin={ui.skin}>
       <StatusBar />
       <div className="mhdr">
-        <span className="back" onClick={back} role="button" aria-label={t('back')}>‹</span>
+        <span className="back" onClick={back} role="button" aria-label={t('back')}><Glyph name="back" /></span>
         {/* В шапке списка стоит имя «приложения», а не слово «Чаты»: так это
             устроено во всех настоящих мессенджерах, и с одного взгляда видно,
             в каком из трёх ты сейчас. */}
         <h2>{S.name}</h2>
         {S.head.map(([ic, , action], k) => (
-          <span key={k} className="ic" role="button" onClick={() => act(action)}>{ic}</span>
+          <span key={k} className="ic" role="button" onClick={() => act(action)}><Glyph name={ic} /></span>
         ))}
       </div>
       {S.search ? (
-        <div className="msearch" onClick={() => go('toc')} role="button">⌕ {t('chats.search')}</div>
+        <div className="msearch" onClick={() => go('toc')} role="button"><Glyph name="search" /> {t('chats.search')}</div>
       ) : null}
       {/* Полоса чтения — только там, где читают. На вкладке звонков она
           показывала бы прогресс по книге над списком, в котором книги нет. */}
@@ -252,7 +253,7 @@ export default function Chats({go, back, arg}) {
       {/* «Новое сообщение» открывает переписку на том месте, где читаешь.
           Писать в этом приложении действительно некому, но кнопка в этом углу
           есть у каждого мессенджера, и увести её некуда, кроме как в чат. */}
-      <div className="fab" onClick={() => openAt(pos)} role="button">{S.fab}</div>
+      <div className="fab" onClick={() => openAt(pos)} role="button"><Glyph name={S.fab} /></div>
       {S.tabs ? <Tabbar items={S.tabs} active={tabIndex(ui.skin, tab)} onPick={act} /> : null}
     </Screen>
   );
@@ -392,11 +393,11 @@ export function Chat({go, back, arg}) {
           экране быть не должно, а других значений у них здесь нет. */}
       <div className="composer">
         <div className="cbox" onClick={send} role="button">
-          <span className="ic">☺</span>
+          <span className="ic"><Glyph name="smile" /></span>
           <div className="fld">{t('chats.composer')}</div>
-          <span className="ic">⊕</span>
+          <span className="ic"><Glyph name="attach" /></span>
         </div>
-        <button className="send" onClick={send} disabled={last} aria-label={t('chats.composer')}>➤</button>
+        <button className="send" onClick={send} disabled={last} aria-label={t('chats.composer')}><Glyph name="send" /></button>
       </div>
     </Screen>
   );

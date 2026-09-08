@@ -15,6 +15,7 @@ import {commentEmo, dur, grad, likes, videoTitle, views} from '../ui/visual.js';
 import {FACE, shot} from '../ui/pics.js';
 import {contactAt} from '../lib/fake.js';
 import {indexAt} from '../lib/chunk.js';
+import Glyph from '../ui/Glyph.jsx';
 
 // «Видео» — три места, где читается одна и та же книга.
 //
@@ -77,7 +78,7 @@ function Card({i, title, here, onPlay, onMenu, small}) {
         {/* Меню карточки. Останавливаем всплытие: клик по самой карточке
             открывает ролик, и без этого «⋮» открывал бы его тоже. */}
         <span className="kebab" role="button"
-              onClick={e => { e.stopPropagation(); if (onMenu) onMenu(); }}>⋮</span>
+              onClick={e => { e.stopPropagation(); if (onMenu) onMenu(); }}><Glyph name="more" /></span>
       </div>
     </div>
   );
@@ -103,12 +104,12 @@ export default function Video({go, back}) {
     <Screen id="video">
       <StatusBar />
       <div className="yhdr">
-        <span className="back" onClick={back} role="button" aria-label={t('back')}>‹</span>
-        <b className="ylogo"><i>▶</i>{APP_NAMES.video}</b>
+        <span className="back" onClick={back} role="button" aria-label={t('back')}><Glyph name="back" /></span>
+        <b className="ylogo"><i><Glyph name="play" /></i>{APP_NAMES.video}</b>
         <span className="ic" onClick={() => go('toc')} role="button"
-              aria-label={t('video.search')}>⌕</span>
+              aria-label={t('video.search')}><Glyph name="search" /></span>
         <span className="ic" onClick={() => go('toc')} role="button"
-              aria-label={t('toc.title')}>☰</span>
+              aria-label={t('toc.title')}><Glyph name="menu" /></span>
       </div>
       {/* Чипсы фильтров. Фильтровать в книге нечего, но у каждого нашлось
           своё честное дело: «Все» — к началу списка, «Новое» — туда, где
@@ -152,11 +153,11 @@ function Comment({i, at, text, onReply}) {
         <div className="ct">{text}</div>
         <div className="ca">
           <span className={liked ? 'lk on' : 'lk'} role="button"
-                onClick={() => setLiked(v => !v)}>{liked ? '♥' : '♡'} {likes(i) + (liked ? 1 : 0)}</span>
+                onClick={() => setLiked(v => !v)}><Glyph name={liked ? 'heartFill' : 'heart'} /> {likes(i) + (liked ? 1 : 0)}</span>
           <span className="rep" role="button" onClick={onReply}>{t('video.reply')}</span>
           {/* Сердечко от автора канала — деталь, которую узнаёт каждый, кто
               вообще заглядывал в комментарии под роликами. */}
-          {i % 5 === 2 ? <span className="heart">♥</span> : null}
+          {i % 5 === 2 ? <span className="heart"><Glyph name="heartFill" /></span> : null}
           {emo ? <span className="cre">{emo}</span> : null}
         </div>
       </div>
@@ -239,17 +240,17 @@ export function Player({go, back}) {
     <Screen id="player" bar="#000000">
       <StatusBar />
       <div className="stage" style={{background: shot('wide', at, grad(at))}}>
-        <span className="back" onClick={back} role="button" aria-label={t('back')}>‹</span>
-        <span className="ic" onClick={() => go('toc')} role="button" aria-label={t('toc.title')}>☰</span>
+        <span className="back" onClick={back} role="button" aria-label={t('back')}><Glyph name="back" /></span>
+        <span className="ic" onClick={() => go('toc')} role="button" aria-label={t('toc.title')}><Glyph name="menu" /></span>
         {/* Играть здесь нечему, но у обеих кнопок есть точный смысл в наших
             понятиях: «play» — читать дальше (следующая страница), «на весь
             экран» — та же книга в полноэкранной ленте клипов. Курсор общий,
             поэтому переход продолжает то же самое место. */}
-        <span className="pl" role="button" onClick={next}>▶</span>
+        <span className="pl" role="button" onClick={next}><Glyph name="play" /></span>
         <div className="ctrl">
           <span className="tm">{elapsed(at)} / {dur(at)}</span>
           <i className="bar"><b style={{width: seen(at) + '%'}} /></i>
-          <span className="full" role="button" onClick={() => go('reels')}>⛶</span>
+          <span className="full" role="button" onClick={() => go('reels')}><Glyph name="full" /></span>
         </div>
       </div>
       <Progress offset={offset} len={text.length} />
@@ -264,10 +265,10 @@ export function Player({go, back}) {
           <div className="vacts">
             <span className={mark === 1 ? 'on' : ''} role="button"
                   onClick={() => setMark(v => (v === 1 ? 0 : 1))}>
-              👍 {likes(at) + (mark === 1 ? 1 : 0)}
+              <Glyph name="up" /> {likes(at) + (mark === 1 ? 1 : 0)}
             </span>
             <span className={mark === -1 ? 'on' : ''} role="button"
-                  onClick={() => setMark(v => (v === -1 ? 0 : -1))}>👎</span>
+                  onClick={() => setMark(v => (v === -1 ? 0 : -1))}><Glyph name="down" /></span>
           </div>
           <div className="chan">
             <div className="ava" style={{background: shot('face', FACE, grad(at + 3))}} />
@@ -294,7 +295,7 @@ export function Player({go, back}) {
               {/* Написать комментарий здесь нечем и некому — строка ведёт
                   туда, где в этом приложении «пишут»: в переписку. */}
               <div className="cadd" role="button" onClick={() => go('chat')}>
-                <div className="cav me">☺</div>
+                <div className="cav me"><Glyph name="smile" /></div>
                 <span>{t('video.add_comment')}</span>
               </div>
               {list.map(k => (

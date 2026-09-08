@@ -10,6 +10,7 @@ import {run} from '../ui/actions.js';
 import {TABS} from '../ui/tabs.js';
 import {grad, likes, comments, shares} from '../ui/visual.js';
 import {shot} from '../ui/pics.js';
+import Glyph from '../ui/Glyph.jsx';
 
 // «Клипы»: вертикальная лента на весь экран со snap'ом.
 // Карточка ровно height:100% — иначе snap ловит середину и текст режется.
@@ -24,11 +25,11 @@ export default function Reels({go, back}) {
   return (
     <Screen id="reels" bar="#000000">
       <Progress offset={offset} len={text.length} float />
-      <span className="back float" onClick={back} role="button" aria-label={t('back')}>‹</span>
+      <span className="back float" onClick={back} role="button" aria-label={t('back')}><Glyph name="back" /></span>
       {/* Оглавление есть на всех шести движках, включая полноэкранные: прыжок
           через сорок страниц нужен ровно там, где книгу читают не подряд, и
           зависеть это не должно от того, какую обёртку человек выбрал. */}
-      <span className="toc float" onClick={() => go('toc')} role="button" aria-label={t('toc.title')}>☰</span>
+      <span className="toc float" onClick={() => go('toc')} role="button" aria-label={t('toc.title')}><Glyph name="menu" /></span>
       {/* Вкладки сверху: «Подписки» — выбрать, что смотреть, то есть
           оглавление; «Рекомендации» — вернуться туда, где читаешь. */}
       <div className="rtabs">
@@ -42,9 +43,9 @@ export default function Reels({go, back}) {
             <div className="cnt">{t('reels.handle')} · {t('reels.of', {i: i + 1, n: count})}</div>
             <div className="tag">{t('reels.tag')}</div>
             <div className="rail">
-              ♥<small>{likes(i)}</small>
-              ↩<small>{comments(i)}</small>
-              ↗<small>{shares(i)}</small>
+              <span><Glyph name="heartFill" /><small>{likes(i)}</small></span>
+              <span><Glyph name="comment" /><small>{comments(i)}</small></span>
+              <span><Glyph name="share" /><small>{shares(i)}</small></span>
             </div>
           </div>
         ))}

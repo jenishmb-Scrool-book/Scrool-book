@@ -60,6 +60,11 @@ export default function useCardWindow({count, pos, setPos, ahead = 1, cardSelect
   useLayoutEffect(() => {
     const box = boxRef.current;
     if (!box) return;
+    // В начале книги восстанавливать нечего, а прокрутка к нулевой карточке
+    // прячет всё, что стоит НАД списком: полосу историй в ленте, чипсы в
+    // видео. Открыть ленту и ни разу не увидеть полосу историй — это ровно та
+    // мелочь, из-за которой экран перестаёт быть похожим на оригинал.
+    if (anchor === 'top' && live.current.pos === 0) return;
     const cur = box.querySelector('[data-i="' + live.current.pos + '"]');
     if (!cur) return;
     box.scrollTop = anchor === 'bottom'

@@ -3,11 +3,13 @@ import {useStore} from '../store.jsx';
 import {useT} from '../i18n.js';
 import Screen from '../ui/Screen.jsx';
 import StatusBar from '../ui/StatusBar.jsx';
-import {percent} from '../ui/Progress.jsx';
+import {percent, useLeft} from '../ui/Progress.jsx';
 import {getWallpaper, setWallpaper, shrink} from '../wallpaper.js';
 import {APP_NAMES} from '../ui/skins.js';
 import {dayLine, hhmm, useNow} from '../ui/clock.js';
+import {pic} from '../ui/pics.js';
 import AppIcon from '../ui/AppIcon.jsx';
+import Glyph from '../ui/Glyph.jsx';
 
 // Сетка «как на телефоне»: часть иконок ведёт в те же экраны — это часть обмана.
 //
@@ -18,28 +20,47 @@ import AppIcon from '../ui/AppIcon.jsx';
 // Восемь иконок ведут в шесть движков. Три мессенджера — один экран с разными
 // скинами: списки переписок у них устроены одинаково, и три копии одного кода
 // утроили бы цену каждой правки. Различие даёт `skin` (пятый элемент строки).
+//
+// Шестой элемент — круглая плитка. На настоящем телефоне значки разной формы:
+// мессенджеры круглые, остальные — скруглённый квадрат. Одна форма на всё
+// выдаёт нарисованный экран быстрее, чем любая другая мелочь: ряд одинаковых
+// квадратов не встречается ни на одном живом телефоне.
 const APPS = [
-  ['plane', APP_NAMES.tg, 'chats', 'linear-gradient(145deg,#41b6e6,#1d7fb8)', 'tg'],
-  ['phone', APP_NAMES.wa, 'chats', 'linear-gradient(145deg,#4ee07f,#0f7a4d)', 'wa'],
+  ['plane', APP_NAMES.tg, 'chats', 'linear-gradient(145deg,#41b6e6,#1d7fb8)', 'tg', true],
+  ['phone', APP_NAMES.wa, 'chats', 'linear-gradient(145deg,#4ee07f,#0f7a4d)', 'wa', true],
   ['camera', APP_NAMES.feed, 'feed', 'linear-gradient(145deg,#f9a03f,#d62976 58%,#7c5cff)'],
   ['note', APP_NAMES.reels, 'reels', 'linear-gradient(150deg,#33333d,#0a0a0f)'],
   ['play', APP_NAMES.video, 'video', 'linear-gradient(145deg,#ff4b4b,#a10f0f)'],
-  ['bolt', APP_NAMES.ms, 'chats', 'linear-gradient(145deg,#b06cff,#0084ff)', 'ms'],
+  ['bolt', APP_NAMES.ms, 'chats', 'linear-gradient(145deg,#b06cff,#0084ff)', 'ms', true],
   ['snap', APP_NAMES.stories, 'stories', 'linear-gradient(145deg,#ffd93b,#e0a000)'],
-  ['bird', APP_NAMES.tweets, 'tweets', 'linear-gradient(145deg,#5aa9e6,#1b6ca8)']
+  ['bird', APP_NAMES.tweets, 'tweets', 'linear-gradient(145deg,#5aa9e6,#1b6ca8)', null, true]
 ];
 
+// Док — наши собственные экраны, сетка — «приложения».
+//
+// Раньше док повторял две иконки из сетки, и это единственное место экрана, где
+// повторение видно: на живом телефоне в доке стоит то, чего в сетке нет. Заодно
+// нашлось место «Обоям»: просьба поставить обои висела отдельной плашкой
+// посреди экрана — а плашки посреди рабочего стола не бывает ни на одном
+// телефоне, и именно она сильнее всего выдавала, что экран нарисован.
 // Подписи док-панели переводятся, названия «приложений» — нет: это имена собственные.
 const DOCK = [
-  ['books', 'app.books', 'library', 'linear-gradient(145deg,#5b5b6e,#2a2a3a)'],
-  ['note', APP_NAMES.reels, 'reels', 'linear-gradient(150deg,#33333d,#0a0a0f)'],
-  ['phone', APP_NAMES.wa, 'chats', 'linear-gradient(145deg,#4ee07f,#0f7a4d)', 'wa'],
-  ['gear', 'app.settings', 'settings', 'linear-gradient(145deg,#4a4a58,#33333f)']
+  ['books', 'app.books', 'library', 'linear-gradient(145deg,#6f6f86,#33334a)'],
+  ['list', 'app.chapters', 'toc', 'linear-gradient(145deg,#4fb0a5,#1c6f68)'],
+  ['image', 'app.wall', null, 'linear-gradient(145deg,#e0699a,#8a3f7a)'],
+  ['gear', 'app.settings', 'settings', 'linear-gradient(145deg,#5a5a6a,#33333f)']
 ];
 
-function Icon({glyph, label, background, onClick}) {
+// Обои по умолчанию — снимок из тех же, которыми набиты ленты.
+//
+// До этого фоном был градиент, гаснущий книзу в цвет приложения, и от этого
+// пустое место под иконками читалось как незаполненный блок, а не как обои.
+// Настоящий домашний экран тоже наполовину пустой — но там пустота это фотография.
+const WALL = pic('tall', 38);
+
+function Icon({glyph, label, background, round, onClick}) {
   return (
-    <div className="icon" onClick={onClick}>
+    <div className={round ? 'icon rnd' : 'icon'} onClick={onClick} role="button">
       <AppIcon name={glyph} background={background} />
       <span>{label}</span>
     </div>
@@ -51,7 +72,8 @@ export default function Home({go}) {
   const t = useT();
   const [wall, setWall] = useState('');
   const now = useNow();
-  const width = percent(offset, text.length).toFixed(1) + '%';
+  const read = percent(offset, text.length) / 100;
+  const left = useLeft(offset, text.length);
 
   // Обои читаются один раз за сессию — дальше отдаёт кеш в wallpaper.js.
   useEffect(() => {
@@ -73,22 +95,22 @@ export default function Home({go}) {
   // Обои предлагаем прямо здесь, а не только в настройках: подтянуть настоящие
   // обои телефона нельзя (с Android 14 система их приложениям не отдаёт совсем),
   // поэтому единственный способ получить «свой» экран — попросить картинку.
-  // На домашнем экране это один тап вместо трёх, и просьба видна там, где
-  // сразу понятно, что она изменит.
+  // Иконка в доке для этого честнее плашки: она подписана, стоит там же, где
+  // остальные наши экраны, и не занимает половину рабочего стола.
   const pickWall = e => {
     const f = e.target.files && e.target.files[0];
     e.target.value = '';
     if (!f) return;
     shrink(f)
       .then(uri => setWallpaper(uri).then(() => setWall(uri)))
-      .catch(() => setUi({wallTip: 'off'}));   // не смогли — молча убираем просьбу
+      .catch(() => {});      // не смогли разобрать картинку — остаются прежние обои
   };
 
   return (
     <Screen id="home">
-      {/* Затемняющая накладка обязательна: обои — произвольное фото пользователя,
-          и без неё белые подписи иконок на светлой картинке пропадают. */}
-      {wall ? <div className="wall" style={{backgroundImage: `url(${wall})`}} /> : null}
+      {/* Затемняющая накладка обязательна: обои — произвольное фото, своё или
+          наше, и без неё белые подписи иконок на светлом кадре пропадают. */}
+      <div className="wall" style={{backgroundImage: `url(${wall || WALL})`}} />
       <StatusBar />
       {/* Часы с датой в левом верхнем углу — то, по чему домашний экран Android
           узнаётся раньше всего остального, раньше даже иконок. */}
@@ -97,47 +119,53 @@ export default function Home({go}) {
         <span>{dayLine(now, ui.lang)}</span>
       </div>
       <div className="widget">
-        <div className="t">{t('home.now')}</div>
-        <div className="n">{current ? current.title : t('home.empty')}</div>
-        <div className="bar"><i style={{width}} /></div>
+        <div className="wt">
+          <div className="ti">
+            <div className="t">{t('home.now')}</div>
+            <div className="n">{current ? current.title : t('home.empty')}</div>
+          </div>
+          {/* «Осталось» — то же число, что и в плашке над каждым списком.
+              На домашнем экране оно отвечает на вопрос, ради которого туда и
+              смотрят: успею ли я сейчас. */}
+          {text.length ? <div className="lf">{left}</div> : null}
+        </div>
+        <div className="bar"><i style={{transform: `scaleX(${read.toFixed(4)})`}} /></div>
         <button onClick={cont}>{t('home.continue')}</button>
       </div>
-      {!wall && ui.wallTip === 'on' ? (
-        <div className="walltip">
-          <span>{t('home.wall_tip')}</span>
-          <label className="pick">
-            {t('home.wall_pick')}
-            <input type="file" accept="image/*" onChange={pickWall} />
-          </label>
-          <span className="x" onClick={() => setUi({wallTip: 'off'})}
-                role="button" aria-label={t('dismiss')}>✕</span>
-        </div>
-      ) : null}
       <div className="grid">
-        {APPS.map(([glyph, label, to, background, skin], k) => (
-          <Icon key={k} glyph={glyph} label={label} background={background}
+        {APPS.map(([glyph, label, to, background, skin, round], k) => (
+          <Icon key={k} glyph={glyph} label={label} background={background} round={round}
                 onClick={() => open(to, skin)} />
         ))}
       </div>
-      {/* Точки страниц и строка поиска не работают и работать не должны:
-          экранов у «рабочего стола» один, а искать в приложении нечего.
-          Стоят они потому, что без них это не домашний экран телефона, а
-          сетка иконок, — и переход из настоящей системы в такую сетку
-          чувствуется как выход из телефона, а не как открытие приложения. */}
+      {/* Точки страниц не работают и работать не должны: экран у «рабочего
+          стола» один. Стоят они потому, что без них это не домашний экран
+          телефона, а сетка иконок, — и переход из настоящей системы в такую
+          сетку чувствуется как выход из телефона, а не как открытие приложения. */}
       <div className="dots" aria-hidden="true"><i className="on" /><i /><i /></div>
       <div className="dock">
-        {DOCK.map(([glyph, label, to, background, skin], k) => (
-          <Icon key={k} glyph={glyph} label={label.includes('.') ? t(label) : label}
-                background={background} onClick={() => open(to, skin)} />
-        ))}
+        {DOCK.map(([glyph, label, to, background], k) =>
+          to ? (
+            <Icon key={k} glyph={glyph} label={t(label)} background={background}
+                  onClick={() => open(to)} />
+          ) : (
+            // «Обои» — не переход, а выбор файла, поэтому это <label> с
+            // input внутри: нативный выбор картинки открывает сам WebView.
+            <label className="icon" key={k}>
+              <AppIcon name={glyph} background={background} />
+              <span>{t(label)}</span>
+              <input type="file" accept="image/*" onChange={pickWall} />
+            </label>
+          )
+        )}
       </div>
       {/* Строка поиска ведёт в оглавление: искать в этом приложении можно
-          ровно одно — место в книге. Точки страниц выше остаются указателем,
-          а не кнопкой: на настоящем домашнем экране они тоже не нажимаются. */}
+          ровно одно — место в книге. */}
       <div className="qsearch" role="button" onClick={() => go('toc')}>
-        <span className="g">⌕</span>
+        <Glyph name="search" />
         <span className="q">{t('home.search')}</span>
-        <span className="m">◉</span>
+        <Glyph name="mic" />
+        <Glyph name="lens" />
       </div>
     </Screen>
   );

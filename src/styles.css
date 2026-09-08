@@ -40,9 +40,6 @@
   --pill-fg:    #ffffff;
   --err-bg:     #5a1730;
   --err-line:   #ff2d5559;
-  --home-1:     #22325c;    /* градиент дома, когда обоев нет */
-  --home-2:     #3b2050;
-  --home-3:     #0b0b12;
   --shadow:     #000000;
   --shadow-ic:  #00000088;  /* тень под иконками */
 
@@ -81,9 +78,6 @@
     --pill-fg:    #ffffff;
     --err-bg:     #ffe0e8;
     --err-line:   #ff2d5559;
-    --home-1:     #7d96d8;
-    --home-2:     #a68ac9;
-    --home-3:     #f4f4f7;
     --shadow:     #6b6b7a;
     --shadow-ic:  #0000002e;
   }
@@ -118,9 +112,6 @@
   --pill-fg:    #ffffff;
   --err-bg:     #ffe0e8;
   --err-line:   #ff2d5559;
-  --home-1:     #7d96d8;
-  --home-2:     #a68ac9;
-  --home-3:     #f4f4f7;
   --shadow:     #6b6b7a;
   --shadow-ic:  #0000002e;
 }
@@ -134,6 +125,9 @@
 html,body{margin:0;height:100%;background:var(--bg-outer);color:var(--fg);
   font:var(--fs)/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
 button,textarea,input{font:inherit;color:inherit}
+/* Значки (ui/Glyph.jsx). Размер берётся от кегля родителя, цвет наследуется —
+   один и тот же значок годится и в шапку, и в панель, и поверх снимка. */
+.gl{width:1.15em;height:1.15em;display:inline-block;vertical-align:-.24em;flex:none}
 
 #phone{position:relative;width:100%;max-width:440px;height:100dvh;margin:0 auto;
   overflow:hidden;background:var(--bg);box-shadow:0 0 60px var(--shadow)}
@@ -161,85 +155,139 @@ button,textarea,input{font:inherit;color:inherit}
 .hdr{flex:none;display:flex;align-items:center;gap:10px;padding:10px 14px;
   background:var(--hdr);border-bottom:1px solid var(--line)}
 .hdr h2{margin:0;font-size:1rem;font-weight:600;flex:1}
-.back{cursor:pointer;font-size:1.5rem;line-height:1;padding:2px 8px;opacity:.9;user-select:none}
+.back{cursor:pointer;font-size:1.28rem;line-height:1;padding:2px 8px;opacity:.9;user-select:none}
 .body{flex:1;overflow-y:auto;overscroll-behavior:contain;position:relative}/* offsetParent для карточек */
 .prog{flex:none;height:3px;background:var(--track);position:relative;z-index:6}
 /* Маленький индикатор страницы: висит поверх контента, кликам не мешает. */
-.prog .counter{position:absolute;right:8px;top:7px;font-size:10px;font-weight:600;
-  letter-spacing:.3px;white-space:nowrap;padding:2px 8px;border-radius:9px;
-  background:var(--pill-bg);color:var(--pill-fg);opacity:.9;pointer-events:none}
-.prog i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+/* Плашка «страница / осталось» лежит поверх содержимого, поэтому она тише
+   всего остального на экране: это справка, а не заголовок. */
+.prog .counter{position:absolute;right:8px;top:6px;font-size:9.5px;font-weight:600;
+  letter-spacing:.2px;white-space:nowrap;padding:2px 8px;border-radius:9px;
+  background:#00000073;backdrop-filter:blur(6px);color:#fff;opacity:.78;pointer-events:none}
+/* Цвет полосы — цвет «приложения», а не общий акцент: фиолетовая нитка поперёк
+   зелёного мессенджера или красного видео сразу выдаёт, что экран чужой. */
+/* Растягиваем трансформом, а не шириной: полоса едет на каждой остановке
+   прокрутки, а ширина — это пересчёт раскладки, тогда как scaleX считает
+   композитор. */
+.prog i{display:block;height:100%;width:100%;transform-origin:left;transform:scaleX(0);
+  background:var(--pr,var(--accent));transition:transform .2s}
 .float{position:absolute;z-index:5}
 
 /* ===== дом ===== */
-#home{background:linear-gradient(165deg,var(--home-1) 0%,var(--home-2) 45%,var(--home-3) 100%)}
-/* Обои пользователя. Затемнение сверху — иначе на светлом фото пропадают белые подписи. */
-.wall{position:absolute;inset:0;background-size:cover;background-position:center;z-index:0}
-.wall::after{content:'';position:absolute;inset:0;
-  background:linear-gradient(180deg,#00000059,#000000a6)}
+/* Домашний экран — единственный экран, который должен читаться не как
+   приложение, а как система: с него начинается обман, и если он выглядит
+   сеткой кнопок на градиенте, дальше не помогает уже ничто.
+   Под затемнением обоев здесь всё белое при любой теме, поэтому цвета заданы
+   прямо, а не токенами: токен светлой темы дал бы чёрные подписи на фото. */
+#home{background:#0d0d14;color:#fff}
+/* Обои. По умолчанию — снимок из тех же, которыми набиты ленты: под градиентом,
+   гаснущим книзу в цвет приложения, пустое место читалось как незаполненный
+   блок, под фотографией — как обои. Затемнение обязательно: кадр произвольный,
+   свой или наш, а подписи иконок белые всегда. */
 /* Всё, кроме самих обоев, лежит над затемнением. Селектор общий намеренно:
    следующий добавленный блок иначе молча уехал бы под обои. */
 #home > *{position:relative;z-index:1}
-#home > .wall{z-index:0}
-/* Просьба поставить обои: живёт на доме, потому что там сразу видно, что она изменит.
-   Настоящие обои телефона приложению недоступны — с Android 14 система их не отдаёт. */
-.walltip{flex:none;display:flex;align-items:center;gap:10px;margin:0 16px;padding:8px 12px;
-  border-radius:14px;background:var(--glass);border:1px solid var(--glass-line)}
-.walltip > span:first-child{flex:1;font-size:.75rem;opacity:.85;line-height:1.35}
-.walltip .pick{flex:none;border-radius:9px;padding:7px 12px;cursor:pointer;
-  background:var(--accent);color:var(--on-accent);font-size:.75rem;font-weight:600}
-.walltip .pick input{display:none}
-.walltip .x{flex:none;opacity:.5;padding:2px 4px;cursor:pointer;font-size:.87rem}
-/* Поверх обоев всегда лежит затемнение, поэтому подписи там белые при любой теме. */
-#home:has(.wall) .icon span,#home:has(.wall) .widget{color:#fff}
+/* Сами обои — под ним, и селектор здесь ТОЙ ЖЕ силы, что общий.
+   Это не украшательство: `.wall` слабее, чем `#home > *`, поэтому обои
+   получали position:relative, схлопывались в нулевую высоту и не появлялись
+   вообще. В браузере это было не видно — обоев там ни у кого не стояло. */
+#home > .wall{position:absolute;inset:0;z-index:0;
+  background-size:cover;background-position:center}
+#home > .wall::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,#0000008f 0%,#00000052 34%,#000000b8 100%)}
+
 /* Часы с датой в левом верхнем углу: по ним домашний экран Android узнаётся
    раньше, чем по иконкам. Настоящих системных часов у нас две штуки не будет —
    в статус-баре время рисуется только в браузере. */
-.glance{margin:14px 20px 2px;line-height:1.1}
-.glance b{display:block;font-size:2.5rem;font-weight:400;letter-spacing:-1px}
-.glance span{display:block;font-size:.81rem;opacity:.75;text-transform:lowercase}
+.glance{margin:16px 20px 2px;line-height:1.04;text-shadow:0 1px 3px #000000b3,0 2px 18px #000000a6}
+.glance b{display:block;font-size:2.9rem;font-weight:300;letter-spacing:-1.6px}
+.glance span{display:block;margin-top:3px;font-size:.81rem;opacity:.82;text-transform:lowercase}
 .glance span::first-letter{text-transform:uppercase}
-#home:has(.wall) .glance{color:#fff;text-shadow:0 2px 12px #0009}
 
-/* Точки страниц и строка поиска — то, без чего сетка иконок остаётся сеткой
-   иконок, а не рабочим столом. Обе нерабочие: страница одна, искать нечего. */
-.dots{flex:none;display:flex;justify-content:center;gap:6px;padding:2px 0 8px}
-.dots i{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.3}
-.dots i.on{opacity:.85}
-#home:has(.wall) .dots{color:#fff}
-.qsearch{cursor:pointer;flex:none;display:flex;align-items:center;gap:12px;margin:0 16px 16px;
-  padding:12px 18px;border-radius:26px;font-size:.87rem;
-  background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--glass-line)}
-.qsearch .q{flex:1;opacity:.6}
-.qsearch .g,.qsearch .m{opacity:.75;font-size:1.06rem}
-#home:has(.wall) .qsearch{color:#fff}
-
-.widget{margin:14px 16px 6px;padding:14px 16px;border-radius:18px;
-  background:var(--glass);backdrop-filter:blur(8px);border:1px solid var(--glass-line)}
-.widget .t{font-size:.8rem;opacity:.7}
-.widget .n{font-size:1.06rem;font-weight:600;margin:2px 0 10px;
+/* Виджет «читаешь сейчас». Именно виджет, а не карточка: у виджета на Android
+   скругление крупнее, чем у иконок, подложка полупрозрачная, а внутри — строка
+   и действие. «Осталось» стоит справа от названия, потому что отвечает на тот
+   же вопрос, ради которого сюда и смотрят: успею ли я сейчас. */
+/* Подложка тёмная, а не белая: обои выбирает человек, и на светлом снимке
+   белая полупрозрачная плашка даёт белый текст на белом. Тёмная читается на
+   любом кадре — так эти плашки и рисует система. */
+.widget{margin:16px 16px 2px;padding:14px 16px 15px;border-radius:26px;
+  background:#00000047;backdrop-filter:blur(20px) saturate(1.3);
+  border:1px solid #ffffff26;box-shadow:0 10px 30px #00000038}
+.widget .wt{display:flex;align-items:flex-end;gap:12px}
+.widget .ti{flex:1;min-width:0}
+.widget .t{font-size:.69rem;opacity:.72;letter-spacing:.4px;text-transform:uppercase}
+.widget .n{font-size:1.06rem;font-weight:600;margin-top:3px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.widget .bar{height:5px;border-radius:3px;background:var(--track-2);overflow:hidden;margin-bottom:12px}
-.widget .bar i{display:block;height:100%;background:var(--accent-2);transition:width .2s}
-.widget button{width:100%;border:0;border-radius:12px;padding:11px;
-  background:var(--accent);color:var(--on-accent);font-weight:600;cursor:pointer}
+.widget .lf{flex:none;font-size:.72rem;opacity:.78;padding-bottom:2px;white-space:nowrap}
+.widget .bar{height:4px;border-radius:2px;background:#ffffff47;overflow:hidden;margin:12px 0 13px}
+.widget .bar i{display:block;height:100%;width:100%;border-radius:2px;background:#fff;
+  transform-origin:left;transform:scaleX(0);transition:transform .2s}
+.widget button{width:100%;border:0;border-radius:14px;padding:11px;cursor:pointer;
+  background:#fffffff0;color:#17171f;font-weight:600;font-size:.94rem}
+.widget button:active{background:#ffffffc7}
+
 /* Сетка забирает остаток высоты и при нехватке места прокручивается сама.
-   Без этого на коротком экране (360x640) док выдавливается за границу: колонка
-   фиксированной высоты, а содержимого над доком становится больше — например,
-   когда появляется просьба про обои или прибавляется иконок. */
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px 6px;padding:22px 14px;
-  flex:1 1 auto;min-height:0;overflow-y:auto;align-content:start}
-.icon{display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer}
+   Без этого на коротком экране (360x640) док выдавливается за границу. */
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px 4px;padding:18px 10px 6px;
+  flex:1 1 auto;min-height:0;overflow-y:auto;align-content:start;margin-bottom:auto}
+.icon{display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;transition:transform .12s cubic-bezier(.2,.7,.3,1)}
+.icon:active{transform:scale(.92)}
 /* Плитка значка. Глиф рисуется разметкой и занимает больше половины плитки —
-   как в настоящих иконках; эмодзи внутри цветной плитки читалась как наклейка. */
-.icon b{width:58px;height:58px;border-radius:17px;display:grid;place-items:center;
-  box-shadow:0 8px 18px var(--shadow-ic);color:#fff;overflow:hidden}
-.icon b svg{width:56%;height:56%;display:block;filter:drop-shadow(0 1px 2px #0003)}
-.icon span{font-size:.69rem;opacity:.92;text-align:center}
-.dock{flex:none;display:flex;justify-content:space-around;padding:6px 18px 12px}
-/* Сетка забирает остаток высоты, поэтому «прижать вниз» делает она, а не док:
-   между ними теперь стоят точки страниц. */
-.grid{margin-bottom:auto}
+   как в настоящих иконках; эмодзи внутри цветной плитки читалась как наклейка.
+   Тень мягкая и со смещением: значок ЛЕЖИТ на обоях, а не светится над ними. */
+.icon b{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;
+  box-shadow:0 5px 12px #0000004a;color:#fff;overflow:hidden}
+/* Круглые плитки у мессенджеров. Одна форма на все иконки не встречается ни на
+   одном живом телефоне, и ряд одинаковых квадратов выдаёт нарисованный экран
+   быстрее любой другой мелочи. */
+.icon.rnd b{border-radius:50%}
+.icon b svg{width:58%;height:58%;display:block}
+.icon span{font-size:.7rem;line-height:1.25;text-align:center;
+  text-shadow:0 1px 3px #000000c4,0 0 10px #0000008a;
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.icon input{display:none}
+
+/* Точки страниц: указатель, а не кнопка — на настоящем домашнем экране они
+   тоже не нажимаются. Активная вытянута в чёрточку, как в свежих лаунчерах. */
+.dots{flex:none;display:flex;justify-content:center;align-items:center;gap:6px;padding:4px 0 10px}
+.dots i{width:6px;height:6px;border-radius:3px;background:#fff;opacity:.34;
+  box-shadow:0 1px 3px #0006}
+.dots i.on{opacity:.95;width:17px}
+
+/* Док. Своя полупрозрачная подложка — так его и рисует система, и она же
+   отделяет НАШИ экраны от «приложений» в сетке: в доке нет ни одной иконки,
+   которая повторяла бы сетку, потому что на живом телефоне так не бывает. */
+.dock{flex:none;display:flex;justify-content:space-around;gap:4px;margin:0 10px;
+  padding:11px 6px;border-radius:28px;
+  background:#00000040;backdrop-filter:blur(20px);border:1px solid #ffffff1f}
+
+/* Строка поиска ведёт в оглавление: искать в этом приложении можно ровно
+   одно — место в книге. Стоит она ПОД доком, как на свежих лаунчерах. */
+.qsearch{cursor:pointer;flex:none;display:flex;align-items:center;gap:12px;
+  margin:11px 16px calc(14px + env(safe-area-inset-bottom,0px));
+  padding:11px 16px;border-radius:26px;font-size:.87rem;
+  background:#00000047;backdrop-filter:blur(20px);border:1px solid #ffffff26}
+.qsearch:active{background:#0000005c}
+.qsearch .q{flex:1;opacity:.74}
+.qsearch .gl{opacity:.85;width:1.25em;height:1.25em}
+
+/* Короткий экран — 360x640 и такие же. Всё то же самое, но плотнее: иначе
+   вторая строка иконок уезжает под точки страниц, а обрезанный ряд подписей
+   читается как поломка вёрстки, хотя сетка и прокручивается. */
+@media (max-height:700px){
+  .glance{margin:8px 20px 0}
+  .glance b{font-size:2.2rem;letter-spacing:-1.2px}
+  .widget{margin:10px 14px 0;padding:11px 14px 12px;border-radius:22px}
+  .widget .bar{margin:9px 0 10px}
+  .widget button{padding:9px;border-radius:12px}
+  .grid{gap:12px 4px;padding:12px 10px 4px}
+  .icon b{width:50px;height:50px;border-radius:14px}
+  .dots{padding:2px 0 7px}
+  .dock{padding:8px 6px}
+  .qsearch{margin:8px 14px calc(10px + env(safe-area-inset-bottom,0px));padding:9px 14px}
+}
 
 /* ===== мессенджеры ===== */
 /* Три «приложения» на одном движке. Отличаются не палитрой, а СОСТАВОМ экрана:
@@ -254,7 +302,13 @@ button,textarea,input{font:inherit;color:inherit}
   --sk-hdr:var(--sk);      /* фон шапки */
   --sk-fg:#fff;            /* текст и значки на шапке */
   --bub:15px;              /* радиус пузыря */
+  --pr:var(--sk);          /* полоса чтения — цветом приложения */
 }
+#feed{--pr:#d62976}
+#video,#player{--pr:#d3312b}
+#reels{--pr:#fff}
+#tweets{--pr:#3282b8}
+#stories{--pr:#e0a000}
 #chats[data-skin="wa"],#chat[data-skin="wa"]{--sk:#1f7a55;--bub:9px}
 #chats[data-skin="ms"],#chat[data-skin="ms"]{
   --sk:#0a7cff;--sk-hdr:var(--hdr);--sk-fg:var(--fg);--bub:19px}
@@ -275,7 +329,8 @@ button,textarea,input{font:inherit;color:inherit}
 .chdr .who b{display:block;font-size:.94rem;font-weight:600;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .chdr .who span{font-size:.72rem;opacity:.8}
-.msearch{cursor:pointer;flex:none;margin:8px 12px;padding:8px 13px;border-radius:20px;
+.msearch{cursor:pointer;flex:none;display:flex;align-items:center;gap:7px;
+  margin:8px 12px;padding:8px 13px;border-radius:20px;
   background:var(--field);border:1px solid var(--field-line);font-size:.81rem;opacity:.6}
 
 /* Строка списка чатов — и она же строка книги.
@@ -321,6 +376,7 @@ button,textarea,input{font:inherit;color:inherit}
 #chats .fab{position:absolute;right:16px;bottom:20px;width:54px;height:54px;z-index:6;
   border-radius:50%;display:grid;place-items:center;font-size:1.38rem;
   background:var(--sk);color:#fff;box-shadow:0 6px 18px var(--shadow-ic)}
+#chats .fab .gl{width:24px;height:24px;vertical-align:0}
 #chats[data-skin="wa"] .fab{border-radius:17px}
 /* Там, где внизу панель вкладок, кнопка поднимается над ней. */
 #chats[data-skin="wa"] .fab,#chats[data-skin="ms"] .fab{bottom:76px}
@@ -427,6 +483,7 @@ button,textarea,input{font:inherit;color:inherit}
 .composer .send{flex:none;width:44px;height:44px;border:0;border-radius:50%;cursor:pointer;
   display:grid;place-items:center;background:var(--sk);color:#fff;font-size:1.13rem;line-height:1}
 .composer .send:disabled,.composer .send.off{opacity:.35;cursor:default}
+.composer .send .gl{width:20px;height:20px;vertical-align:0;margin-left:-2px}
 /* У «зелёного» поле — белая таблетка на фоне обоев, а кнопка отдельным кругом.
    Это самая узнаваемая деталь всего экрана, и стоит она одной обёртки. */
 #chat[data-skin="wa"] .composer{background:var(--chat-bg);border-top:0;padding:5px 8px 9px}
@@ -449,20 +506,26 @@ button,textarea,input{font:inherit;color:inherit}
   background:linear-gradient(180deg,#0000008c 0%,#00000033 24%,#00000047 56%,#000000bf 100%)}
 
 #reels .body{padding:0;scroll-snap-type:y mandatory}
-#reels .float.back{top:10px;left:8px;font-size:1.75rem;text-shadow:0 2px 8px #000;color:#fff}
-#reels .prog.float{top:0;left:0;right:0;background:var(--track-3)}
+#reels .float.back{top:10px;left:8px;font-size:1.5rem;color:#fff;
+  filter:drop-shadow(0 2px 6px #000)}
+#reels .prog.float{top:0;left:0;right:0;background:#ffffff2e}
+/* Ниже верхних вкладок и «☰»: наверху справа плашка легла бы прямо на них. */
+#reels .prog .counter{top:46px}
 /* Зеркально кнопке «назад»: на полноэкранной ленте шапки нет, а оглавление
    нужно ровно так же, как на экранах с шапкой. */
 #reels .toc.float{top:14px;right:12px;font-size:1.25rem;cursor:pointer;
-  text-shadow:0 2px 8px #000;color:#fff;padding:2px 6px;user-select:none}
+  color:#fff;padding:2px 6px;user-select:none;filter:drop-shadow(0 2px 6px #000)}
 .reel{height:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative;
   display:flex;flex-direction:column;justify-content:flex-end;padding:56px 74px 26px 20px;
   color:#fff}/* карточка всегда на цветном градиенте — текст белый в любой теме */
 .reel .txt{font-size:1.31rem;line-height:1.45;font-weight:600;text-shadow:0 2px 14px #000a;
   max-height:76%;overflow:auto;word-break:break-word}
 .reel .cnt{margin-top:14px;font-size:.75rem;opacity:.65}
-.rail{position:absolute;right:10px;bottom:46px;display:flex;flex-direction:column;
-  gap:20px;align-items:center;font-size:1.56rem;text-shadow:0 2px 8px #000}
+.rail{position:absolute;right:8px;bottom:46px;display:flex;flex-direction:column;
+  gap:18px;align-items:center;font-size:1.56rem}
+.rail span{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:default;
+  filter:drop-shadow(0 2px 5px #000c)}
+.rail .gl{vertical-align:0}
 .rail small{display:block;font-size:10px;text-align:center;font-weight:600}
 
 /* ===== лента ===== */
@@ -473,7 +536,8 @@ button,textarea,input{font:inherit;color:inherit}
   font-size:1.06rem;line-height:1.5;font-weight:500;overflow:auto;word-break:break-word;color:#fff}
 .post .pic::before{content:'';position:absolute;inset:0;background:#00000085}
 .post .pic span{position:relative;z-index:1;text-shadow:0 1px 10px #000000a6}
-.post .acts{padding:9px 12px 4px;font-size:1.31rem;letter-spacing:12px}
+.post .acts{display:flex;align-items:center;gap:17px;padding:10px 12px 4px;font-size:1.31rem}
+.post .acts .gl{vertical-align:0;cursor:pointer}
 .post .cap{padding:0 12px;font-size:.81rem;opacity:.6}
 
 /* ===== видео ===== */
@@ -483,8 +547,9 @@ button,textarea,input{font:inherit;color:inherit}
   background:var(--hdr);border-bottom:1px solid var(--line)}
 .ylogo{flex:1;display:flex;align-items:center;gap:6px;
   font-size:1.13rem;font-weight:700;letter-spacing:-.4px}
-.ylogo i{font-style:normal;display:grid;place-items:center;width:25px;height:18px;
-  border-radius:5px;background:#d33;color:#fff;font-size:.62rem}
+.ylogo i{font-style:normal;display:grid;place-items:center;width:26px;height:18px;
+  border-radius:5px;background:#d33;color:#fff}
+.ylogo i .gl{width:11px;height:11px;vertical-align:0;margin-left:1px}
 .yhdr .ic{font-size:1.13rem;opacity:.75;padding:2px 4px;cursor:pointer;user-select:none}
 
 /* Карточка ролика во всю ширину. Раньше здесь была строка со срезанным по
@@ -519,7 +584,7 @@ button,textarea,input{font:inherit;color:inherit}
    нельзя. Текст лежит ниже, в описании. */
 #player .stage{flex:none;position:relative;aspect-ratio:16/9;display:grid;place-items:center;color:#fff}
 #player .stage .pl{font-size:1.75rem;line-height:1;width:66px;height:66px;border-radius:50%;
-  display:grid;place-items:center;padding-left:5px;background:#00000059;
+  display:grid;place-items:center;padding-left:4px;background:#00000059;
   backdrop-filter:blur(2px);box-shadow:0 2px 16px #0006}
 #player .stage .back{position:absolute;left:6px;top:4px;font-size:1.75rem;
   text-shadow:0 2px 8px #000;color:#fff}
@@ -530,7 +595,11 @@ button,textarea,input{font:inherit;color:inherit}
 #player .ctrl .tm{opacity:.9;text-shadow:0 1px 4px #000}
 #player .ctrl .bar{flex:1;display:block;height:3px;border-radius:2px;background:#ffffff59}
 #player .ctrl .bar b{display:block;height:100%;border-radius:2px;background:#e33}
-#player .ctrl .full{opacity:.9;font-size:.81rem;text-shadow:0 1px 4px #000}
+#player .ctrl .full{opacity:.9;font-size:.81rem;cursor:pointer;
+  filter:drop-shadow(0 1px 4px #000)}
+#player .ctrl .full .gl{width:17px;height:17px;vertical-align:0}
+#player .stage .pl .gl,#player .stage .back .gl,#player .stage .ic .gl{vertical-align:0}
+#player .stage .back,#player .stage .ic{filter:drop-shadow(0 2px 6px #000)}
 
 #player .body{padding:0}
 #player .vinfo{padding:26px 14px 22px}   /* сверху пусто под плашку «страница / осталось» */
@@ -576,6 +645,7 @@ button,textarea,input{font:inherit;color:inherit}
 .cav{width:32px;height:32px;border-radius:50%;flex:none;display:grid;place-items:center;
   font-size:.87rem;font-weight:600;color:#fff}
 .cav.me{background:var(--btn-2);color:var(--fg)}
+.cav.me .gl{width:19px;height:19px;vertical-align:0;opacity:.6}
 .cmt .cb{flex:1;min-width:0}
 .cmt .cu{font-size:.75rem;font-weight:600;margin-bottom:4px}
 .cmt .cu span{font-weight:400;opacity:.5;margin-left:6px}
@@ -683,7 +753,11 @@ button,textarea,input{font:inherit;color:inherit}
 .thdr h2{margin:0;font-size:1.06rem;font-weight:700;flex:1}
 .tabs{flex:none;display:flex;background:var(--hdr);border-bottom:1px solid var(--line)}
 .tabs span{flex:1;text-align:center;padding:10px 0;font-size:.87rem;opacity:.5}
-.tabs span.on{opacity:1;font-weight:600;box-shadow:inset 0 -2px 0 var(--accent)}
+/* Подчёркивание активной вкладки — цветом приложения, а не общим акцентом:
+   фиолетовая черта в синем «твиттере» видна так же, как фиолетовая полоса
+   чтения в зелёном мессенджере. */
+.tabs span.on{opacity:1;font-weight:600;box-shadow:inset 0 -2.5px 0 var(--pr,var(--accent))}
+.tabs span{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .tw{display:flex;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line-2)}
 .tw .av{width:40px;height:40px;border-radius:50%;flex:none;display:grid;place-items:center;
   font-size:1.06rem;color:#fff}
@@ -693,6 +767,8 @@ button,textarea,input{font:inherit;color:inherit}
 .tw .tu span{opacity:.5;margin-left:5px}
 .tw .tt{font-size:.94rem;line-height:1.45;word-break:break-word;white-space:pre-wrap}
 .tw .ta{display:flex;justify-content:space-between;margin-top:10px;font-size:.72rem;opacity:.5}
+.tw .ta span{display:flex;align-items:center;gap:5px}
+.tw .ta .gl{width:15px;height:15px;vertical-align:0}
 
 /* ===== узнаваемость остальных движков ===== */
 /* Вкладки поверх клипа: без них экран читается как «карточки», а не как лента. */
@@ -706,9 +782,12 @@ button,textarea,input{font:inherit;color:inherit}
 .srow{display:flex;gap:14px;overflow-x:auto;padding:12px 12px 10px;
   border-bottom:1px solid var(--line-2)}
 .sitem{flex:none;width:62px;text-align:center;cursor:default}
-.sitem .ring{width:58px;height:58px;border-radius:50%;padding:2px;display:grid;place-items:center}
+/* Кольцо истории. Три пикселя, а не два: при двух градиент кольца целиком
+   уходил под белую обводку внутреннего кружка, и полоса читалась как ряд
+   обычных аватарок — то есть узнаваемая деталь просто не работала. */
+.sitem .ring{width:58px;height:58px;border-radius:50%;padding:3px;display:grid;place-items:center}
 .sitem .ring i{display:block;width:100%;height:100%;border-radius:50%;
-  background-size:cover;background-position:center;box-shadow:0 0 0 2px var(--bg)}
+  background-size:cover;background-position:center;box-shadow:0 0 0 1.5px var(--bg)}
 .sitem span{display:block;margin-top:5px;font-size:.62rem;opacity:.7;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
@@ -734,6 +813,7 @@ button,textarea,input{font:inherit;color:inherit}
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ch .ct span{display:block;font-size:.75rem;opacity:.55;margin-top:3px}
 .ch i{flex:none;font-style:normal;opacity:.35;font-size:1.25rem}
+.ch i .gl{width:17px;height:17px;vertical-align:0}
 #toc .hint{padding:24px 18px;line-height:1.5}
 /* Правая вставка шапки: счётчик глав и кнопка «☰» на экранах-читалках. */
 .hdr .ic{font-size:.81rem;opacity:.6;white-space:nowrap;padding:2px 4px;cursor:pointer}
@@ -753,7 +833,12 @@ button,textarea,input{font:inherit;color:inherit}
   -webkit-tap-highlight-color:transparent;transition:background .12s}
 .tabbar span:active{background:var(--btn-2)}
 .tabbar span.on{opacity:1}
-.tabbar b{font-size:1.25rem;font-weight:400;line-height:1}
+.tabbar b{font-size:1.3rem;line-height:0}
+.tabbar b .gl{vertical-align:0}
+/* Активная вкладка не просто ярче — у неё ТОЛЩЕ линия, как в настоящей
+   панели. Символом шрифта этого было не сделать, разметкой — одна строка. */
+.tabbar span.on .gl *{stroke-width:2.4}
+.tabbar span.on i{font-weight:600}
 .tabbar i{font-style:normal}
 /* На клипах панель чёрная в любой теме: экран под ней всегда тёмный. */
 #reels .tabbar{background:#000;border-top-color:#ffffff1f;color:#fff}

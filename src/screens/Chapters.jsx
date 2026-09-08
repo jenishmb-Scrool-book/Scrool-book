@@ -6,6 +6,7 @@ import StatusBar from '../ui/StatusBar.jsx';
 import Header from '../ui/Header.jsx';
 import Progress from '../ui/Progress.jsx';
 import {pageAt} from '../lib/pages.js';
+import Glyph from '../ui/Glyph.jsx';
 
 // Оглавление — единственный экран, который не притворяется чужим приложением.
 // И правильно: перепрыгнуть на сорок страниц вперёд в мессенджере нечем, а
@@ -53,7 +54,7 @@ export default function Chapters({go, back}) {
                 {i === here ? ' · ' + t('toc.here') : ''}
               </span>
             </div>
-            <i>›</i>
+            <i><Glyph name="next" /></i>
           </div>
         )) : (
           <div className="hint">{t('toc.empty')}</div>

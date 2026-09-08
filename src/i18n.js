@@ -27,10 +27,10 @@ const ru = {
   'home.now': 'Читаешь сейчас',
   'home.empty': 'Нет текста — добавь в библиотеке',
   'home.continue': 'Продолжить',
-  'home.wall_tip': 'Поставь свои обои — экран станет как твой настоящий',
-  'home.wall_pick': 'Выбрать',
   'home.search': 'Поиск',
   'app.books': 'Книги',
+  'app.chapters': 'Главы',
+  'app.wall': 'Обои',
   'app.settings': 'Настройки',
 
   // ===== мессенджеры =====
@@ -181,10 +181,10 @@ const en = {
   'home.now': 'Currently reading',
   'home.empty': 'No text yet — add one in the library',
   'home.continue': 'Continue',
-  'home.wall_tip': 'Set your own wallpaper — the screen will look like your real one',
-  'home.wall_pick': 'Choose',
   'home.search': 'Search',
   'app.books': 'Books',
+  'app.chapters': 'Chapters',
+  'app.wall': 'Wallpaper',
   'app.settings': 'Settings',
 
   'chats.search': 'Search',

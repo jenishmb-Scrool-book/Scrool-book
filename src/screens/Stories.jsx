@@ -7,6 +7,7 @@ import {SIZE} from '../ui/sizes.js';
 import {grad} from '../ui/visual.js';
 import {FACE, shot} from '../ui/pics.js';
 import {msgTime} from '../lib/fake.js';
+import Glyph from '../ui/Glyph.jsx';
 
 // «Истории»: карточка на весь экран, вперёд — тап по правой половине, назад — по левой.
 //
@@ -38,7 +39,7 @@ export default function Stories({go, back}) {
           <div className="av sm" style={{background: shot('face', FACE, grad(pos + 5))}} />
           <b>{current ? current.title : t('stories.title')}</b>
           <i>{msgTime(pos)}</i>
-          <span className="ic" onClick={() => go('toc')} role="button" aria-label={t('toc.title')}>☰</span>
+          <span className="ic" onClick={() => go('toc')} role="button" aria-label={t('toc.title')}><Glyph name="menu" /></span>
           <span className="back" onClick={back} role="button" aria-label={t('back')}>✕</span>
         </div>
         <div className="stxt">{cur ? cur.text : ''}</div>

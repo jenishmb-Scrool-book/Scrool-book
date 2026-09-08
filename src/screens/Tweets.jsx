@@ -13,6 +13,7 @@ import {grad, likes, comments, shares, views} from '../ui/visual.js';
 import {FACE, shot} from '../ui/pics.js';
 import {APP_NAMES} from '../ui/skins.js';
 import {msgTime} from '../lib/fake.js';
+import Glyph from '../ui/Glyph.jsx';
 
 // «Короткие посты»: самый мелкий фрагмент из всех движков.
 // Здесь книга выглядит как лента реплик — по паре предложений на пост, и
@@ -29,10 +30,10 @@ export default function Tweets({go, back}) {
     <Screen id="tweets">
       <StatusBar />
       <div className="thdr">
-        <span className="back" onClick={back} role="button" aria-label={t('back')}>‹</span>
+        <span className="back" onClick={back} role="button" aria-label={t('back')}><Glyph name="back" /></span>
         <h2>{APP_NAMES.tweets}</h2>
         <span className="ic" onClick={() => go('toc')} role="button"
-              aria-label={t('toc.title')}>☰</span>
+              aria-label={t('toc.title')}><Glyph name="menu" /></span>
       </div>
       {/* «Для вас» — к тому месту, где читаешь; «Подписки» — оглавление. */}
       <div className="tabs">
@@ -51,10 +52,10 @@ export default function Tweets({go, back}) {
               </div>
               <div className="tt">{chunks[i].text}</div>
               <div className="ta">
-                <span>↩ {comments(i)}</span>
-                <span>⇄ {shares(i)}</span>
-                <span>♡ {likes(i)}</span>
-                <span>▤ {t('tw.views', {n: views(i)})}</span>
+                <span><Glyph name="comment" /> {comments(i)}</span>
+                <span><Glyph name="repost" /> {shares(i)}</span>
+                <span><Glyph name="heart" /> {likes(i)}</span>
+                <span><Glyph name="views" /> {t('tw.views', {n: views(i)})}</span>
               </div>
             </div>
           </div>

@@ -13,6 +13,7 @@ import {grad, marks} from '../ui/visual.js';
 import {FACE, shot} from '../ui/pics.js';
 import {APP_NAMES} from '../ui/skins.js';
 import {NAMES} from '../lib/fake.js';
+import Glyph from '../ui/Glyph.jsx';
 
 // «Лента»: те же куски постами. Текст лежит ровно на месте картинки —
 // в этом весь фокус, картинки тут нет вообще.
@@ -28,12 +29,12 @@ export default function Feed({go, back}) {
     <Screen id="feed">
       <StatusBar />
       <div className="fhdr">
-        <span className="back" onClick={back} role="button" aria-label={t('back')}>‹</span>
+        <span className="back" onClick={back} role="button" aria-label={t('back')}><Glyph name="back" /></span>
         <b className="flogo">{APP_NAMES.feed}</b>
         <span className="ic" onClick={() => go('chats')} role="button"
-              aria-label={t('feed.direct')}>✉</span>
+              aria-label={t('feed.direct')}><Glyph name="mail" /></span>
         <span className="ic" onClick={() => go('toc')} role="button"
-              aria-label={t('toc.title')}>☰</span>
+              aria-label={t('toc.title')}><Glyph name="menu" /></span>
       </div>
       <Progress offset={offset} len={text.length} />
       <div className="body" ref={boxRef}>
@@ -61,7 +62,7 @@ export default function Feed({go, back}) {
             <div className="pic" style={{background: shot('post', i, grad(i + 3))}}>
               <span>{chunks[i].text}</span>
             </div>
-            <div className="acts">♡ ⌯ ↗</div>
+            <div className="acts"><Glyph name="heart" /><Glyph name="comment" /><Glyph name="share" /></div>
             <div className="cap likes">{t('feed.likes', {n: marks(i)})}</div>
             <div className="cap">{t('feed.caption', {marks: marks(i), i: i + 1, n: count})}</div>
           </div>

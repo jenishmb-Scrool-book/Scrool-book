@@ -4,8 +4,10 @@
 // см. `tabs.test.js`. Пока панели лежали по четырём файлам локальными
 // константами, «нерабочая кнопка» была не ошибкой, а невидимкой.
 //
-// Формат: [значок, ключ подписи или null, действие]. Куда ведёт каждое
-// действие и почему именно туда — в `ui/actions.js`.
+// Формат: [значок, ключ подписи или null, действие]. Значок — имя из
+// `ui/Glyph.jsx`, а не символ: юникодные символы рисуются шрифтом системы,
+// то есть разной толщиной, разного размера и на каждом телефоне по-своему.
+// Куда ведёт каждое действие и почему именно туда — в `ui/actions.js`.
 //
 // Подписи есть не везде намеренно: в «ленте» их нет и в оригинале, а панель с
 // лишними словами читается как чужая.
@@ -14,38 +16,38 @@ export const TABS = {
   // Видео. «Клипы» ведут в клипы буквально: это тот же раздел, и курсор общий,
   // поэтому чтение продолжается с того же места.
   video: [
-    ['⌂', 'video.tab_home', 'top'],
-    ['⊳', 'video.tab_shorts', 'reels'],
-    ['＋', null, 'library'],
-    ['⊞', 'video.tab_subs', 'toc'],
-    ['☺', 'video.tab_you', 'settings']
+    ['home', 'video.tab_home', 'top'],
+    ['shorts', 'video.tab_shorts', 'reels'],
+    ['plus', null, 'library'],
+    ['grid', 'video.tab_subs', 'toc'],
+    ['person', 'video.tab_you', 'settings']
   ],
 
   // Лента. Сердечко («уведомления») заменено конвертом: уведомлять здесь не о
   // чем, а сообщения есть — и это ровно тот значок, что стоит в шапке оригинала.
   feed: [
-    ['⌂', null, 'top'],
-    ['⌕', null, 'toc'],
-    ['＋', null, 'library'],
-    ['✉', null, 'chats'],
-    ['☺', null, 'settings']
+    ['home', null, 'top'],
+    ['search', null, 'toc'],
+    ['plus', null, 'library'],
+    ['mail', null, 'chats'],
+    ['person', null, 'settings']
   ],
 
   // Клипы.
   reels: [
-    ['⌂', 'reels.tab_home', 'top'],
-    ['⊞', 'reels.tab_subs', 'toc'],
-    ['＋', null, 'library'],
-    ['✉', 'reels.tab_inbox', 'chats'],
-    ['☺', 'reels.tab_me', 'settings']
+    ['home', 'reels.tab_home', 'top'],
+    ['grid', 'reels.tab_subs', 'toc'],
+    ['plus', null, 'library'],
+    ['mail', 'reels.tab_inbox', 'chats'],
+    ['person', 'reels.tab_me', 'settings']
   ],
 
   // Короткие посты.
   tweets: [
-    ['⌂', null, 'top'],
-    ['⌕', null, 'toc'],
-    ['＋', null, 'library'],
-    ['✉', null, 'chats'],
-    ['☺', null, 'settings']
+    ['home', null, 'top'],
+    ['search', null, 'toc'],
+    ['plus', null, 'library'],
+    ['mail', null, 'chats'],
+    ['person', null, 'settings']
   ]
 };

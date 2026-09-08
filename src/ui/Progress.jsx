@@ -28,7 +28,7 @@ export default function Progress({offset, len, float}) {
   const left = useLeft(offset, len);
   return (
     <div className={float ? 'prog float' : 'prog'}>
-      <i style={{width: p.toFixed(1) + '%'}} />
+      <i style={{transform: 'scaleX(' + (p / 100).toFixed(4) + ')'}} />
       {/* Считаем условными страницами, а не фрагментами: у каждого экрана своя
           нарезка, и номер фрагмента прыгал бы при переключении приложений.
           Рядом — оставшееся время: «далеко ли я» отвечает на другой вопрос,
