@@ -119,7 +119,7 @@ export default function Video({go, back}) {
         <span onClick={() => act('here')} role="button">{t('video.chip_new')}</span>
         <span onClick={() => go('toc')} role="button">{t('video.channel')}</span>
       </div>
-      <Progress offset={offset} len={text.length} />
+      <Progress offset={offset} len={text.length} go={go} />
       <div className="body" ref={boxRef}>
         {items.map(i => (
           <Card key={i} i={i} title={chunks[i].text} here={i === pos}
@@ -253,7 +253,7 @@ export function Player({go, back}) {
           <span className="full" role="button" onClick={() => go('reels')}><Glyph name="full" /></span>
         </div>
       </div>
-      <Progress offset={offset} len={text.length} />
+      <Progress offset={offset} len={text.length} go={go} />
       <div className="body" ref={boxRef}>
         <div className="vinfo">
           <h3>{desc ? videoTitle(desc.text, 90) : ''}</h3>

@@ -164,6 +164,10 @@ button,textarea,input{font:inherit;color:inherit}
 .prog .counter{position:absolute;right:8px;top:6px;font-size:9.5px;font-weight:600;
   letter-spacing:.2px;white-space:nowrap;padding:2px 8px;border-radius:9px;
   background:#00000073;backdrop-filter:blur(6px);color:#fff;opacity:.78;pointer-events:none}
+/* Плашка нажимается там, где ей есть куда вести: показывает, где ты в книге, —
+   значит с неё же это место и меняют. */
+.prog .counter.tap{pointer-events:auto;cursor:pointer}
+.prog .counter.tap:active{opacity:1}
 /* Цвет полосы — цвет «приложения», а не общий акцент: фиолетовая нитка поперёк
    зелёного мессенджера или красного видео сразу выдаёт, что экран чужой. */
 /* Растягиваем трансформом, а не шириной: полоса едет на каждой остановке
@@ -249,17 +253,10 @@ button,textarea,input{font:inherit;color:inherit}
   max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .icon input{display:none}
 
-/* Точки страниц: указатель, а не кнопка — на настоящем домашнем экране они
-   тоже не нажимаются. Активная вытянута в чёрточку, как в свежих лаунчерах. */
-.dots{flex:none;display:flex;justify-content:center;align-items:center;gap:6px;padding:4px 0 10px}
-.dots i{width:6px;height:6px;border-radius:3px;background:#fff;opacity:.34;
-  box-shadow:0 1px 3px #0006}
-.dots i.on{opacity:.95;width:17px}
-
 /* Док. Своя полупрозрачная подложка — так его и рисует система, и она же
    отделяет НАШИ экраны от «приложений» в сетке: в доке нет ни одной иконки,
    которая повторяла бы сетку, потому что на живом телефоне так не бывает. */
-.dock{flex:none;display:flex;justify-content:space-around;gap:4px;margin:0 10px;
+.dock{flex:none;display:flex;justify-content:space-around;gap:4px;margin:10px 10px 0;
   padding:11px 6px;border-radius:28px;
   background:#00000040;backdrop-filter:blur(20px);border:1px solid #ffffff1f}
 
@@ -284,7 +281,6 @@ button,textarea,input{font:inherit;color:inherit}
   .widget button{padding:9px;border-radius:12px}
   .grid{gap:12px 4px;padding:12px 10px 4px}
   .icon b{width:50px;height:50px;border-radius:14px}
-  .dots{padding:2px 0 7px}
   .dock{padding:8px 6px}
   .qsearch{margin:8px 14px calc(10px + env(safe-area-inset-bottom,0px));padding:9px 14px}
 }
@@ -309,6 +305,10 @@ button,textarea,input{font:inherit;color:inherit}
 #reels{--pr:#fff}
 #tweets{--pr:#3282b8}
 #stories{--pr:#e0a000}
+/* На оглавлении полоса чтения идёт сразу под вкладками, и обе линии были
+   акцентными: левый край полосы читался как подчёркивание вкладки «Главы».
+   Здесь у полосы свой спокойный цвет — она сообщает про книгу, а не про вкладку. */
+#toc{--pr:#8f8f9e}
 #chats[data-skin="wa"],#chat[data-skin="wa"]{--sk:#1f7a55;--bub:9px}
 #chats[data-skin="ms"],#chat[data-skin="ms"]{
   --sk:#0a7cff;--sk-hdr:var(--hdr);--sk-fg:var(--fg);--bub:19px}
@@ -804,14 +804,18 @@ button,textarea,input{font:inherit;color:inherit}
 /* Единственный экран, не притворяющийся чужим приложением: перепрыгнуть на
    сорок страниц вперёд в мессенджере нечем, а нужно это ровно тогда, когда
    книгу читают не подряд. */
-#toc .body{padding:2px 0 16px}
+#toc .body{padding:22px 0 16px}   /* сверху пусто под плашку «страница / осталось» */
 .ch{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;
   border-bottom:1px solid var(--line-2)}
 .ch.on{background:var(--card-sel)}
 .ch .ct{flex:1;min-width:0}
-.ch .ct b{display:block;font-size:.94rem;font-weight:600;line-height:1.35;
+.ch .ct b{display:flex;align-items:baseline;gap:8px;font-size:.94rem;font-weight:600;
+  line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Процент рядом с номером страницы: человек приходит сюда с плашки, где стоит
+   ровно это число, и должен узнать его в списке. */
+.ch .ct b i{font-style:normal;font-weight:500;font-size:.72rem;opacity:.45}
+.ch .ct span{display:block;font-size:.75rem;opacity:.55;margin-top:3px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ch .ct span{display:block;font-size:.75rem;opacity:.55;margin-top:3px}
 .ch i{flex:none;font-style:normal;opacity:.35;font-size:1.25rem}
 .ch i .gl{width:17px;height:17px;vertical-align:0}
 #toc .hint{padding:24px 18px;line-height:1.5}

@@ -108,6 +108,9 @@ const ru = {
   'toc.count.many': '{n} глав',
   'toc.count.other': '{n} главы',
   'toc.page': 'стр. {n}',
+  'toc.page_n': 'Страница {n}',
+  'toc.tab_chapters': 'Главы',
+  'toc.tab_pages': 'Страницы',
   'toc.here': 'читаешь',
   'toc.empty': 'В этом тексте глав не нашлось. Они есть в файлах .fb2 и .epub, а в обычном тексте распознаются заголовки вида «Глава 5», «ЧАСТЬ ВТОРАЯ» или римские цифры отдельной строкой.',
 
@@ -255,6 +258,9 @@ const en = {
   'toc.count.many': '{n} chapters',
   'toc.count.other': '{n} chapters',
   'toc.page': 'p. {n}',
+  'toc.page_n': 'Page {n}',
+  'toc.tab_chapters': 'Chapters',
+  'toc.tab_pages': 'Pages',
   'toc.here': 'reading',
   'toc.empty': 'No chapters found in this text. They come with .fb2 and .epub files; in plain text the app recognises headings like “Chapter 5”, “PART TWO” or a roman numeral on its own line.',
 

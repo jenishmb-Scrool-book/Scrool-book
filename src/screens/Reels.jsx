@@ -24,7 +24,7 @@ export default function Reels({go, back}) {
 
   return (
     <Screen id="reels" bar="#000000">
-      <Progress offset={offset} len={text.length} float />
+      <Progress offset={offset} len={text.length} go={go} float />
       <span className="back float" onClick={back} role="button" aria-label={t('back')}><Glyph name="back" /></span>
       {/* Оглавление есть на всех шести движках, включая полноэкранные: прыжок
           через сорок страниц нужен ровно там, где книгу читают не подряд, и

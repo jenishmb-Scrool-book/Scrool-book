@@ -242,7 +242,7 @@ export default function Chats({go, back, arg}) {
       ) : null}
       {/* Полоса чтения — только там, где читают. На вкладке звонков она
           показывала бы прогресс по книге над списком, в котором книги нет. */}
-      {READ_TABS.includes(tab) ? <Progress offset={offset} len={text.length} /> : null}
+      {READ_TABS.includes(tab) ? <Progress offset={offset} len={text.length} go={go} /> : null}
       {READ_TABS.includes(tab) ? (
         <Roster key={tab} mode={tab} chunks={chunks} pos={pos} setPos={setPos} onOpen={openAt} />
       ) : tab === 'calls' ? (
@@ -355,7 +355,7 @@ export function Chat({go, back, arg}) {
         sub={typing ? t('chats.typing') : t('chats.online')}
         onAct={act}
       />
-      <Progress offset={offset} len={text.length} />
+      <Progress offset={offset} len={text.length} go={go} />
       <div className="body" ref={boxRef}>
         <div className="daysep"><span>{t('today')}</span></div>
         {items.map(i => {

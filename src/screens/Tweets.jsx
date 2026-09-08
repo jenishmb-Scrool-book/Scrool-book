@@ -40,7 +40,7 @@ export default function Tweets({go, back}) {
         <span className="on" role="button" onClick={() => act('here')}>{t('tw.tab_feed')}</span>
         <span role="button" onClick={() => go('toc')}>{t('tw.tab_subs')}</span>
       </div>
-      <Progress offset={offset} len={text.length} />
+      <Progress offset={offset} len={text.length} go={go} />
       <div className="body" ref={boxRef}>
         {items.map(i => (
           <div className="tw" key={i} data-i={i}>

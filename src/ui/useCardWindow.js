@@ -7,8 +7,18 @@ const DEBOUNCE = 120; // мс, столько ждём тишины после �
 /**
  * Окно рендера + перенос курсора по скроллу. Один хук на «Клипы», «Ленту» и «Видео».
  *
- * Не виртуализация: окно начинается на `pos - ahead`, растёт вниз и сбрасывается
- * при входе на экран. Книгу на 3000 кусков целиком не рендерим никогда.
+ * Не виртуализация: окно начинается на `pos - ahead` и сбрасывается при входе
+ * на экран. Книгу на 3000 кусков целиком не рендерим никогда.
+ *
+ * Растёт окно в ОБЕ стороны. Вниз — чтобы читать дальше; вверх — чтобы
+ * вернуться к прочитанному. Второе не роскошь: переключив «приложение», человек
+ * попадает на то же место книги, но нарезанное иначе, и первое, что он делает,
+ * — листает вверх, чтобы узнать, где он. Пока окно начиналось на `pos - 2`,
+ * листать было некуда: над курсором стояли две карточки и пустота.
+ *
+ * При росте вверх содержимое над видимой областью прибавляется, и без поправки
+ * `scrollTop` экран прыгнул бы на двадцать карточек назад. Поправка считается в
+ * `useLayoutEffect` — до того, как браузер нарисует кадр.
  *
  * Два свойства, на которых прототип уже спотыкался:
  *  1) Контейнер (`.body`) обязан быть `position:relative` — иначе offsetParent карточки
@@ -39,22 +49,24 @@ const DEBOUNCE = 120; // мс, столько ждём тишины после �
 export default function useCardWindow({count, pos, setPos, ahead = 1, cardSelector, trackPos = true, anchor = 'top', gap = 0}) {
   const boxRef = useRef(null);
 
-  // Начало окна фиксируется один раз — на входе на экран. Дальше pos может ехать
-  // от скролла, но окно от этого не должно перескакивать под пальцем.
-  const startRef = useRef(null);
-  if (startRef.current === null) {
+  // Начало окна ставится один раз — на входе на экран, — и дальше двигается
+  // только прокруткой вверх. От движения курсора оно не зависит: иначе окно
+  // перескакивало бы под пальцем.
+  const [start, setStart] = useState(() => {
     const at = Math.max(0, Math.min(pos, count - 1));
-    startRef.current = Math.max(0, at - ahead);
-  }
-  const start = startRef.current;
+    return Math.max(0, at - ahead);
+  });
 
   const [end, setEnd] = useState(() => Math.min(count, start + WINDOW));
+
+  // Что было на экране до того, как сверху добавились карточки.
+  const keep = useRef(null);
 
   // Всё изменчивое кладём в реф: обработчик скролла вешается ровно один раз за
   // монтирование. Если бы он пересоздавался на каждый рендер, чужая перерисовка
   // в середине дебаунса гасила бы ещё не сработавший таймер.
   const live = useRef(null);
-  live.current = {count, setPos, trackPos, cardSelector, pos, anchor};
+  live.current = {count, setPos, trackPos, cardSelector, pos, anchor, start};
 
   // Стартовая прокрутка к текущему куску.
   useLayoutEffect(() => {
@@ -71,6 +83,17 @@ export default function useCardWindow({count, pos, setPos, ahead = 1, cardSelect
       ? cur.offsetTop + cur.offsetHeight - box.clientHeight   // как в мессенджере: свежее внизу
       : Math.max(0, cur.offsetTop - gap);
   }, []);
+
+  // Поправка прокрутки после того, как сверху прибавились карточки. Именно
+  // layout-эффект: в обычном `useEffect` браузер успевает нарисовать кадр со
+  // скачком, и это видно.
+  useLayoutEffect(() => {
+    const box = boxRef.current;
+    const k = keep.current;
+    if (!box || !k) return;
+    keep.current = null;
+    box.scrollTop = k.top + (box.scrollHeight - k.height);
+  }, [start]);
 
   // Курсор может уехать вперёд не скроллом, а действием — кнопкой «отправить»
   // в чате. Окно обязано его догнать, иначе рендерить будет нечего.
@@ -107,6 +130,12 @@ export default function useCardWindow({count, pos, setPos, ahead = 1, cardSelect
         }
         if (box.scrollTop + box.clientHeight * 2 > box.scrollHeight)
           setEnd(e => Math.min(s.count, e + STEP));
+        // Подошли к началу окна, а книга выше ещё есть — доращиваем вверх.
+        // Замеры снимаем здесь, до перерисовки: после неё старой высоты уже нет.
+        if (box.scrollTop < box.clientHeight && s.start > 0 && !keep.current) {
+          keep.current = {height: box.scrollHeight, top: box.scrollTop};
+          setStart(v => Math.max(0, v - STEP));
+        }
       }, DEBOUNCE);
     };
     box.addEventListener('scroll', onScroll, {passive: true});

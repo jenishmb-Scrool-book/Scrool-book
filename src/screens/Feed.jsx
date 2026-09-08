@@ -36,7 +36,7 @@ export default function Feed({go, back}) {
         <span className="ic" onClick={() => go('toc')} role="button"
               aria-label={t('toc.title')}><Glyph name="menu" /></span>
       </div>
-      <Progress offset={offset} len={text.length} />
+      <Progress offset={offset} len={text.length} go={go} />
       <div className="body" ref={boxRef}>
         {/* Полоса «историй» над лентой. Открывает истории — тот самый движок,
             который в оригинале за ней и стоит. Курсор общий, поэтому история

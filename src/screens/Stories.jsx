@@ -52,7 +52,7 @@ export default function Stories({go, back}) {
         <div className="zone left" onClick={() => setPos(pos - 1)} />
         <div className="zone right" onClick={() => setPos(pos + 1)} />
       </div>
-      <Progress offset={offset} len={text.length} float />
+      <Progress offset={offset} len={text.length} go={go} float />
     </Screen>
   );
 }

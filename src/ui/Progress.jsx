@@ -22,7 +22,13 @@ export function useLeft(offset, len) {
   return m ? t('pace.hm', {h, m}) : t('pace.h', {h});
 }
 
-export default function Progress({offset, len, float}) {
+/**
+ * @param {(id: string, opt?: object) => void} [go] если передан — плашка
+ *   «страница / осталось» становится кнопкой и ведёт к выбору места в книге.
+ *   Так и должно быть: место, где показано, где ты, — самое очевидное место,
+ *   чтобы это «где» поменять.
+ */
+export default function Progress({offset, len, float, go}) {
   const p = percent(offset, len);
   const total = pageCount(len);
   const left = useLeft(offset, len);
@@ -34,7 +40,11 @@ export default function Progress({offset, len, float}) {
           Рядом — оставшееся время: «далеко ли я» отвечает на другой вопрос,
           чем «успею ли я сейчас», а приложение сделано под второй. */}
       {total ? (
-        <span className="counter">{pageAt(offset, len)} / {total} · {left}</span>
+        <span className={go ? 'counter tap' : 'counter'}
+              role={go ? 'button' : undefined}
+              onClick={go ? () => go('toc', {arg: 'pages'}) : undefined}>
+          {pageAt(offset, len)} / {total} · {left}
+        </span>
       ) : null}
     </div>
   );
