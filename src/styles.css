@@ -168,6 +168,20 @@ button,textarea,input{font:inherit;color:inherit}
    значит с неё же это место и меняют. */
 .prog .counter.tap{pointer-events:auto;cursor:pointer}
 .prog .counter.tap:active{opacity:1}
+
+/* «Вернуться к месту». Появляется, только когда листают назад: курсор туда не
+   едет — место сохраняется, — и без этой кнопки возврат означал бы пролистать
+   те же тридцать карточек руками. Цвет берётся у «приложения», как и полоса. */
+.resume{position:absolute;left:50%;bottom:74px;z-index:7;transform:translateX(-50%);
+  display:flex;align-items:center;gap:6px;border:0;cursor:pointer;
+  padding:9px 15px 9px 12px;border-radius:20px;font-size:.81rem;font-weight:600;
+  background:var(--pr,var(--accent));color:#fff;box-shadow:0 6px 18px #00000059;
+  animation:resumein .16s}
+@keyframes resumein{from{opacity:0}}
+.resume .gl{transform:rotate(90deg)}
+.resume:active{filter:brightness(.9)}
+/* В клипах цвет полосы белый — на белой кнопке нужен тёмный текст. */
+#reels .resume{color:#15151f}
 /* Цвет полосы — цвет «приложения», а не общий акцент: фиолетовая нитка поперёк
    зелёного мессенджера или красного видео сразу выдаёт, что экран чужой. */
 /* Растягиваем трансформом, а не шириной: полоса едет на каждой остановке

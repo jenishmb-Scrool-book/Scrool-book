@@ -16,6 +16,7 @@ import {FACE, shot} from '../ui/pics.js';
 import {contactAt} from '../lib/fake.js';
 import {indexAt} from '../lib/chunk.js';
 import Glyph from '../ui/Glyph.jsx';
+import Resume from '../ui/Resume.jsx';
 
 // «Видео» — три места, где читается одна и та же книга.
 //
@@ -92,7 +93,7 @@ export default function Video({go, back}) {
   // Прокрутка списка двигает курсор: список названий сам стал способом читать.
   // До этого здесь стояло `trackPos: false` с доводом «листать список ≠ читать» —
   // он был верен ровно до того дня, когда в названиях появился текст книги.
-  const {boxRef, items} = useCardWindow({count, pos, setPos, ahead: 1, cardSelector: '.vid'});
+  const {boxRef, items, away, toPos} = useCardWindow({count, pos, setPos, ahead: 1, cardSelector: '.vid'});
 
   const play = i => {
     setPos(i);
@@ -126,6 +127,7 @@ export default function Video({go, back}) {
                 onPlay={() => play(i)} onMenu={() => go('toc')} />
         ))}
       </div>
+      <Resume away={away} onClick={toPos} />
       <Tabbar items={TABS.video} active={0} onPick={act} />
     </Screen>
   );

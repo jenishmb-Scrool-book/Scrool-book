@@ -14,6 +14,7 @@ import {FACE, shot} from '../ui/pics.js';
 import {APP_NAMES} from '../ui/skins.js';
 import {msgTime} from '../lib/fake.js';
 import Glyph from '../ui/Glyph.jsx';
+import Resume from '../ui/Resume.jsx';
 
 // «Короткие посты»: самый мелкий фрагмент из всех движков.
 // Здесь книга выглядит как лента реплик — по паре предложений на пост, и
@@ -23,7 +24,7 @@ export default function Tweets({go, back}) {
   const t = useT();
   const {chunks, pos, setPos} = useChunks(SIZE.tweets);
   const count = chunks.length;
-  const {boxRef, items} = useCardWindow({count, pos, setPos, ahead: 1, cardSelector: '.tw'});
+  const {boxRef, items, away, toPos} = useCardWindow({count, pos, setPos, ahead: 1, cardSelector: '.tw'});
   const act = action => run(action, {go, boxRef, pos});
 
   return (
@@ -61,6 +62,7 @@ export default function Tweets({go, back}) {
           </div>
         ))}
       </div>
+      <Resume away={away} onClick={toPos} />
       <Tabbar items={TABS.tweets} active={0} onPick={act} />
     </Screen>
   );

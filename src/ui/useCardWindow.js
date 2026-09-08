@@ -16,6 +16,17 @@ const DEBOUNCE = 120; // мс, столько ждём тишины после �
  * — листает вверх, чтобы узнать, где он. Пока окно начиналось на `pos - 2`,
  * листать было некуда: над курсором стояли две карточки и пустота.
  *
+ * Курсор при этом двигается ТОЛЬКО ВПЕРЁД. Иначе листание назад — а его затем и
+ * добавляли — стирало бы место: вернулся на десять карточек посмотреть, ушёл в
+ * другое «приложение», и продолжаешь оттуда, откуда уже читал. Назад место
+ * переносится только руками — со страницы или главы в оглавлении, то есть
+ * тогда, когда человек этого прямо попросил.
+ *
+ * Пока видимое место отстаёт от курсора, хук отдаёт `away: true` — по нему
+ * экраны показывают кнопку «вернуться к месту». Без неё листание назад
+ * оказывается ловушкой: обратно те же тридцать карточек пришлось бы листать
+ * руками.
+ *
  * При росте вверх содержимое над видимой областью прибавляется, и без поправки
  * `scrollTop` экран прыгнул бы на двадцать карточек назад. Поправка считается в
  * `useLayoutEffect` — до того, как браузер нарисует кадр.
@@ -35,6 +46,7 @@ const DEBOUNCE = 120; // мс, столько ждём тишины после �
  * @param {boolean} trackPos     двигает ли скролл курсор (в «Видео» — нет)
  * @param {'top'|'bottom'} anchor где стоит «текущая» карточка
  * @param {number} gap           на сколько не доводить прокрутку до верха
+ * @returns {{boxRef, items: number[], away: boolean, toPos: () => void}}
  *
  * Про `gap`. Полоса прогресса несёт плашку «страница / осталось», и висит она
  * поверх содержимого. В списке чатов текущая строка встаёт вплотную под неё, и
@@ -61,6 +73,9 @@ export default function useCardWindow({count, pos, setPos, ahead = 1, cardSelect
 
   // Что было на экране до того, как сверху добавились карточки.
   const keep = useRef(null);
+
+  // Видимое место отстало от курсора — человек листает назад.
+  const [away, setAway] = useState(false);
 
   // Всё изменчивое кладём в реф: обработчик скролла вешается ровно один раз за
   // монтирование. Если бы он пересоздавался на каждый рендер, чужая перерисовка
@@ -109,6 +124,7 @@ export default function useCardWindow({count, pos, setPos, ahead = 1, cardSelect
       clearTimeout(timer);
       timer = setTimeout(() => {
         const s = live.current;
+        let at = null;
         if (s.trackPos && s.anchor === 'bottom') {
           // Последняя карточка, начавшаяся выше нижней кромки, — та, которую
           // человек читает сейчас; всё, что над ней, уже позади.
@@ -117,16 +133,21 @@ export default function useCardWindow({count, pos, setPos, ahead = 1, cardSelect
             if (el.offsetTop < box.scrollTop + box.clientHeight - 40) last = el;
             else break;
           }
-          if (last) s.setPos(Number(last.dataset.i));
+          if (last) at = Number(last.dataset.i);
         } else if (s.trackPos) {
           // Первая карточка, чей низ ещё ниже верхней кромки контейнера, — та,
           // которую человек сейчас видит сверху.
           for (const el of box.querySelectorAll(s.cardSelector)) {
             if (el.offsetTop + el.offsetHeight > box.scrollTop + 40) {
-              s.setPos(Number(el.dataset.i));
+              at = Number(el.dataset.i);
               break;
             }
           }
+        }
+        if (at !== null) {
+          // Только вперёд. Назад курсор переносит оглавление, а не палец.
+          if (at > s.pos) s.setPos(at);
+          setAway(at < s.pos - 1);
         }
         if (box.scrollTop + box.clientHeight * 2 > box.scrollHeight)
           setEnd(e => Math.min(s.count, e + STEP));
@@ -145,7 +166,21 @@ export default function useCardWindow({count, pos, setPos, ahead = 1, cardSelect
     };
   }, []);
 
+  /** Вернуться к месту, на котором остановились. */
+  const toPos = () => {
+    const box = boxRef.current;
+    const el = box && box.querySelector('[data-i="' + live.current.pos + '"]');
+    if (!box || !el) return;
+    box.scrollTo({
+      top: anchor === 'bottom'
+        ? Math.max(0, el.offsetTop + el.offsetHeight - box.clientHeight)
+        : Math.max(0, el.offsetTop - gap),
+      behavior: 'smooth'
+    });
+    setAway(false);
+  };
+
   const items = [];
   for (let i = start; i < end; i++) items.push(i);
-  return {boxRef, items};
+  return {boxRef, items, away, toPos};
 }

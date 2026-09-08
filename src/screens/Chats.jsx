@@ -14,6 +14,7 @@ import {shot} from '../ui/pics.js';
 import {skinOf, tabIndex} from '../ui/skins.js';
 import {NAMES, callAt, contactAt, groupAt, msgTime} from '../lib/fake.js';
 import Glyph from '../ui/Glyph.jsx';
+import Resume from '../ui/Resume.jsx';
 
 // «Мессенджер» — один движок и четыре вкладки, и ЧИТАТЬ можно на двух из них.
 //
@@ -71,7 +72,7 @@ function ChatHead({skin, onBack, seed, title, sub, onAct}) {
       </div>
       {S.chat.map(([ic, , action], k) => (
         <span key={k} className="ic" role="button"
-              onClick={() => onAct(action)}>{ic}</span>
+              onClick={() => onAct(action)}><Glyph name={ic} /></span>
       ))}
     </div>
   );
@@ -111,31 +112,34 @@ function Roster({mode, chunks, pos, setPos, onOpen}) {
   const count = chunks.length;
   // gap: под плашкой «страница / осталось» нужен запас, иначе она накрывает
   // время у самой верхней строки.
-  const {boxRef, items} = useCardWindow({count, pos, setPos, ahead: 2, cardSelector: '.crow', gap: 26});
+  const {boxRef, items, away, toPos} = useCardWindow({count, pos, setPos, ahead: 2, cardSelector: '.crow', gap: 26});
 
   return (
-    <div className="body" ref={boxRef}>
-      {items.map(i => {
-        const g = mode === 'groups';
-        const c = g ? groupAt(i) : contactAt(i);
-        return (
-          <Row
-            key={i}
-            i={i}
-            name={c.name}
-            seed={c.seed}
-            /* В группе превью всегда подписано отправителем — без этого
-               вкладка «Группы» ничем не отличалась бы от вкладки «Чаты». */
-            text={g ? c.from + ': ' + chunks[i].text : chunks[i].text}
-            time={msgTime(i)}
-            /* Непрочитанное здесь не выдумано: всё, что ниже курсора, ты
-               действительно ещё не читал. Точка справа — ровно это. */
-            state={i === pos ? 'on' : (i > pos ? 'new' : 'seen')}
-            onClick={() => onOpen(i)}
-          />
-        );
-      })}
-    </div>
+    <>
+      <div className="body" ref={boxRef}>
+        {items.map(i => {
+          const g = mode === 'groups';
+          const c = g ? groupAt(i) : contactAt(i);
+          return (
+            <Row
+              key={i}
+              i={i}
+              name={c.name}
+              seed={c.seed}
+              /* В группе превью всегда подписано отправителем — без этого
+                 вкладка «Группы» ничем не отличалась бы от вкладки «Чаты». */
+              text={g ? c.from + ': ' + chunks[i].text : chunks[i].text}
+              time={msgTime(i)}
+              /* Непрочитанное здесь не выдумано: всё, что ниже курсора, ты
+                 действительно ещё не читал. Точка справа — ровно это. */
+              state={i === pos ? 'on' : (i > pos ? 'new' : 'seen')}
+              onClick={() => onOpen(i)}
+            />
+          );
+        })}
+      </div>
+      <Resume away={away} onClick={toPos} />
+    </>
   );
 }
 
@@ -284,7 +288,7 @@ export function Chat({go, back, arg}) {
   const t = useT();
   const {chunks, pos, setPos} = useChunks(SIZE.chats);
   const count = chunks.length;
-  const {boxRef, items} = useCardWindow({
+  const {boxRef, items, away, toPos} = useCardWindow({
     count, pos, setPos, ahead: 8, cardSelector: '.mline', anchor: 'bottom'
   });
   const [typing, setTyping] = useState(false);
@@ -387,6 +391,7 @@ export function Chat({go, back, arg}) {
         })}
         {last ? <div className="done">{t('reader.end')}</div> : null}
       </div>
+      <Resume away={away} onClick={toPos} />
       {/* Поле ввода не принимает текст и не должно: отвечать книге некому.
           Но нажимается всё — и поле, и оба значка: любое касание внизу
           продвигает разговор, как и кнопка «отправить». Мёртвых кнопок на

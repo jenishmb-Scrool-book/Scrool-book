@@ -11,6 +11,7 @@ import {TABS} from '../ui/tabs.js';
 import {grad, likes, comments, shares} from '../ui/visual.js';
 import {shot} from '../ui/pics.js';
 import Glyph from '../ui/Glyph.jsx';
+import Resume from '../ui/Resume.jsx';
 
 // «Клипы»: вертикальная лента на весь экран со snap'ом.
 // Карточка ровно height:100% — иначе snap ловит середину и текст режется.
@@ -19,7 +20,7 @@ export default function Reels({go, back}) {
   const t = useT();
   const {chunks, pos, setPos} = useChunks(SIZE.reels);
   const count = chunks.length;
-  const {boxRef, items} = useCardWindow({count, pos, setPos, ahead: 2, cardSelector: '.reel'});
+  const {boxRef, items, away, toPos} = useCardWindow({count, pos, setPos, ahead: 2, cardSelector: '.reel'});
   const act = action => run(action, {go, boxRef, pos});
 
   return (
@@ -50,6 +51,7 @@ export default function Reels({go, back}) {
           </div>
         ))}
       </div>
+      <Resume away={away} onClick={toPos} />
       <Tabbar items={TABS.reels} active={0} onPick={act} />
     </Screen>
   );

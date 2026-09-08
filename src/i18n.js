@@ -48,6 +48,7 @@ const ru = {
   'chats.tab_calls': 'Звонки',
   'chats.tab_people': 'Люди',
   'reader.end': 'Конец текста',
+  'reader.resume': 'Вернуться к месту',
 
   // ===== клипы =====
   'reels.handle': '@книга',
@@ -204,6 +205,7 @@ const en = {
   'chats.tab_calls': 'Calls',
   'chats.tab_people': 'People',
   'reader.end': 'End of text',
+  'reader.resume': 'Back to your place',
 
   'reels.handle': '@book',
   'reels.of': '{i} of {n}',

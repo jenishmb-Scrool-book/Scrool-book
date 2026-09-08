@@ -14,6 +14,7 @@ import {FACE, shot} from '../ui/pics.js';
 import {APP_NAMES} from '../ui/skins.js';
 import {NAMES} from '../lib/fake.js';
 import Glyph from '../ui/Glyph.jsx';
+import Resume from '../ui/Resume.jsx';
 
 // «Лента»: те же куски постами. Текст лежит ровно на месте картинки —
 // в этом весь фокус, картинки тут нет вообще.
@@ -22,7 +23,7 @@ export default function Feed({go, back}) {
   const t = useT();
   const {chunks, pos, setPos} = useChunks(SIZE.feed);
   const count = chunks.length;
-  const {boxRef, items} = useCardWindow({count, pos, setPos, ahead: 1, cardSelector: '.post'});
+  const {boxRef, items, away, toPos} = useCardWindow({count, pos, setPos, ahead: 1, cardSelector: '.post'});
   const act = action => run(action, {go, boxRef, pos});
 
   return (
@@ -68,6 +69,7 @@ export default function Feed({go, back}) {
           </div>
         ))}
       </div>
+      <Resume away={away} onClick={toPos} />
       <Tabbar items={TABS.feed} active={0} onPick={act} />
     </Screen>
   );
