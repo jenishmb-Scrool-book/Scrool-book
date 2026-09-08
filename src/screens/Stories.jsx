@@ -16,7 +16,7 @@ import {msgTime} from '../lib/fake.js';
 // быстрее, и рука не занята.
 const SEGS = 6;   // столько полосок сверху, как в одной «серии» историй
 
-export default function Stories({go}) {
+export default function Stories({go, back}) {
   const {current, text, offset} = useStore();
   const t = useT();
   const {chunks, pos, setPos} = useChunks(SIZE.stories);
@@ -39,7 +39,7 @@ export default function Stories({go}) {
           <b>{current ? current.title : t('stories.title')}</b>
           <i>{msgTime(pos)}</i>
           <span className="ic" onClick={() => go('toc')} role="button" aria-label={t('toc.title')}>☰</span>
-          <span className="back" onClick={() => go('home')} role="button" aria-label={t('back')}>✕</span>
+          <span className="back" onClick={back} role="button" aria-label={t('back')}>✕</span>
         </div>
         <div className="stxt">{cur ? cur.text : ''}</div>
         <div className="sfoot">

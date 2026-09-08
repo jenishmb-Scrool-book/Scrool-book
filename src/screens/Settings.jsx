@@ -46,7 +46,7 @@ function details(info, ui, len) {
   ].filter(Boolean).join('\n');
 }
 
-export default function Settings({go}) {
+export default function Settings({go, back}) {
   const {ui, setUi, current, offset, text} = useStore();
   const t = useT();
   const [wall, setWall] = useState('');
@@ -124,7 +124,7 @@ export default function Settings({go}) {
   return (
     <Screen id="settings">
       <StatusBar />
-      <Header onBack={() => go('library')} title={t('set.title')} />
+      <Header onBack={back} title={t('set.title')} />
       <div className="body">
         <div className="sect">{t('set.theme')}</div>
         <Seg

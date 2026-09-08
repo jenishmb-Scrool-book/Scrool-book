@@ -13,7 +13,7 @@ import {pageAt} from '../lib/pages.js';
 //
 // Переход ставит курсор на начало главы, и дальше он общий, как везде: прыгнул
 // из оглавления — и продолжаешь в клипах ровно оттуда.
-export default function Chapters({go}) {
+export default function Chapters({go, back}) {
   const {chapters, text, offset, setOffset, lastApp} = useStore();
   const t = useT();
   const len = text.length;
@@ -38,7 +38,7 @@ export default function Chapters({go}) {
     <Screen id="toc">
       <StatusBar />
       <Header
-        onBack={() => go(backTo)}
+        onBack={back}
         title={t('toc.title')}
         right={chapters.length ? <span className="ic">{t('toc.count', {n: chapters.length})}</span> : null}
       />

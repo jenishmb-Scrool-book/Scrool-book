@@ -131,7 +131,10 @@ export default function Home({go}) {
                 background={background} onClick={() => open(to, skin)} />
         ))}
       </div>
-      <div className="qsearch" aria-hidden="true">
+      {/* Строка поиска ведёт в оглавление: искать в этом приложении можно
+          ровно одно — место в книге. Точки страниц выше остаются указателем,
+          а не кнопкой: на настоящем домашнем экране они тоже не нажимаются. */}
+      <div className="qsearch" role="button" onClick={() => go('toc')}>
         <span className="g">⌕</span>
         <span className="q">{t('home.search')}</span>
         <span className="m">◉</span>

@@ -7,35 +7,37 @@ import Tabbar from '../ui/Tabbar.jsx';
 import useCardWindow from '../ui/useCardWindow.js';
 import useChunks from '../ui/useChunks.js';
 import {SIZE} from '../ui/sizes.js';
+import {run} from '../ui/actions.js';
+import {TABS} from '../ui/tabs.js';
 import {grad, likes, comments, shares, views} from '../ui/visual.js';
 import {FACE, shot} from '../ui/pics.js';
 import {APP_NAMES} from '../ui/skins.js';
 import {msgTime} from '../lib/fake.js';
 
-const TABS = [['⌂', null], ['⌕', null], ['⊞', null], ['✉', null], ['☺', null]];
-
 // «Короткие посты»: самый мелкий фрагмент из всех движков.
 // Здесь книга выглядит как лента реплик — по паре предложений на пост, и
 // пролистывается заметно быстрее, чем та же книга в «видео» с кусками по 600.
-export default function Tweets({go}) {
+export default function Tweets({go, back}) {
   const {text, offset} = useStore();
   const t = useT();
   const {chunks, pos, setPos} = useChunks(SIZE.tweets);
   const count = chunks.length;
   const {boxRef, items} = useCardWindow({count, pos, setPos, ahead: 1, cardSelector: '.tw'});
+  const act = action => run(action, {go, boxRef, pos});
 
   return (
     <Screen id="tweets">
       <StatusBar />
       <div className="thdr">
-        <span className="back" onClick={() => go('home')} role="button" aria-label={t('back')}>‹</span>
+        <span className="back" onClick={back} role="button" aria-label={t('back')}>‹</span>
         <h2>{APP_NAMES.tweets}</h2>
         <span className="ic" onClick={() => go('toc')} role="button"
               aria-label={t('toc.title')}>☰</span>
       </div>
+      {/* «Для вас» — к тому месту, где читаешь; «Подписки» — оглавление. */}
       <div className="tabs">
-        <span className="on">{t('tw.tab_feed')}</span>
-        <span>{t('tw.tab_subs')}</span>
+        <span className="on" role="button" onClick={() => act('here')}>{t('tw.tab_feed')}</span>
+        <span role="button" onClick={() => go('toc')}>{t('tw.tab_subs')}</span>
       </div>
       <Progress offset={offset} len={text.length} />
       <div className="body" ref={boxRef}>
@@ -58,7 +60,7 @@ export default function Tweets({go}) {
           </div>
         ))}
       </div>
-      <Tabbar items={TABS} active={0} />
+      <Tabbar items={TABS.tweets} active={0} onPick={act} />
     </Screen>
   );
 }

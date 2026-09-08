@@ -1,5 +1,5 @@
 import {describe, it, expect} from 'vitest';
-import {NAMES, contactAt, msgTime} from './fake.js';
+import {GROUPS, NAMES, callAt, contactAt, groupAt, msgTime} from './fake.js';
 
 describe('contactAt()', () => {
   // Это главное свойство всей бутафории: имя, меняющееся при перерендере,
@@ -56,5 +56,61 @@ describe('msgTime()', () => {
     expect(msgTime(-5)).toBe('09:00');
     expect(msgTime(NaN)).toBe('09:00');
     expect(msgTime(undefined)).toBe('09:00');
+  });
+});
+
+describe('groupAt()', () => {
+  it('несёт имя группы и отправителя — без второго вкладка «Группы» копия «Чатов»', () => {
+    const g = groupAt(3);
+    expect(GROUPS).toContain(g.name);
+    expect(NAMES).toContain(g.from);
+    expect(g.from).toBe(contactAt(3).name);
+    expect(typeof g.seed).toBe('number');
+  });
+
+  it('детерминирован и идёт по кругу', () => {
+    expect(groupAt(2)).toEqual(groupAt(2));
+    expect(groupAt(GROUPS.length).name).toBe(groupAt(0).name);
+  });
+
+  it('группа и отправитель меняются с разным шагом', () => {
+    // Иначе за каждой группой всегда стоял бы один и тот же человек, и список
+    // читался бы как восемь одинаковых строк.
+    const pairs = new Set();
+    for (let i = 0; i < 40; i++) pairs.add(groupAt(i).name + '/' + groupAt(i).from);
+    expect(pairs.size).toBeGreaterThan(GROUPS.length);
+  });
+
+  it('мусор на входе не роняет', () => {
+    for (const bad of [undefined, null, NaN, -5, 'что-то']) {
+      expect(GROUPS).toContain(groupAt(bad).name);
+    }
+  });
+});
+
+describe('callAt()', () => {
+  it('несёт всё, из чего состоит строка журнала', () => {
+    const c = callAt(1);
+    expect(NAMES).toContain(c.name);
+    expect(['in', 'out', 'missed']).toContain(c.kind);
+    expect(typeof c.video).toBe('boolean');
+    expect(c.time).toMatch(/^\d{2}:\d{2}$/);
+  });
+
+  it('встречаются все три вида вызова', () => {
+    // Журнал, где всё пропущено или не пропущено ничего, выглядит нарисованным.
+    const kinds = new Set();
+    for (let i = 0; i < 12; i++) kinds.add(callAt(i).kind);
+    expect(kinds).toEqual(new Set(['in', 'out', 'missed']));
+  });
+
+  it('детерминирован', () => {
+    expect(callAt(7)).toEqual(callAt(7));
+  });
+
+  it('мусор на входе не роняет', () => {
+    for (const bad of [undefined, null, NaN, -3, {}]) {
+      expect(NAMES).toContain(callAt(bad).name);
+    }
   });
 });

@@ -207,7 +207,7 @@ button,textarea,input{font:inherit;color:inherit}
 .dots i{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.3}
 .dots i.on{opacity:.85}
 #home:has(.wall) .dots{color:#fff}
-.qsearch{flex:none;display:flex;align-items:center;gap:12px;margin:0 16px 16px;
+.qsearch{cursor:pointer;flex:none;display:flex;align-items:center;gap:12px;margin:0 16px 16px;
   padding:12px 18px;border-radius:26px;font-size:.87rem;
   background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--glass-line)}
 .qsearch .q{flex:1;opacity:.6}
@@ -275,7 +275,7 @@ button,textarea,input{font:inherit;color:inherit}
 .chdr .who b{display:block;font-size:.94rem;font-weight:600;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .chdr .who span{font-size:.72rem;opacity:.8}
-.msearch{flex:none;margin:8px 12px;padding:8px 13px;border-radius:20px;
+.msearch{cursor:pointer;flex:none;margin:8px 12px;padding:8px 13px;border-radius:20px;
   background:var(--field);border:1px solid var(--field-line);font-size:.81rem;opacity:.6}
 
 /* Строка списка чатов — и она же строка книги.
@@ -308,6 +308,13 @@ button,textarea,input{font:inherit;color:inherit}
 /* Точка вместо числа: сообщений в такой «переписке» ровно одно, и «1» на
    каждой второй строке читалась бы как счётчик, который сломался. */
 .crow .cm em.dot{display:block;width:9px;height:9px;border-radius:50%;background:var(--sk)}
+/* Журнал вызовов и список людей: те же строки, но подпись одна и справа не
+   время, а значок «позвонить». Текста книги здесь нет — в журнал звонков его
+   некуда положить так, чтобы это выглядело журналом звонков. */
+.crow.call{align-items:center}
+.crow.call .ci > span{opacity:.55;margin-top:2px}
+.crow.call .ci > span.miss{color:#e5484d;opacity:.9}
+.crow.call .ic{flex:none;font-size:1.19rem;opacity:.6;padding:6px;cursor:pointer}
 
 /* Кнопка «новое сообщение». Её отсутствие заметнее, чем её бездействие:
    в каждом мессенджере она стоит ровно в этом углу. */
@@ -531,7 +538,11 @@ button,textarea,input{font:inherit;color:inherit}
 #player .vinfo .m{font-size:.75rem;opacity:.55;margin-top:5px}
 #player .vacts{display:flex;gap:8px;overflow-x:auto;margin:13px 0 4px;padding-bottom:3px}
 #player .vacts span{flex:none;padding:7px 13px;border-radius:18px;background:var(--btn-2);
-  font-size:.75rem;white-space:nowrap}
+  font-size:.75rem;white-space:nowrap;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;transition:background .12s}
+/* Нажатая отметка обязана быть видна: иначе кнопка, которая «сработала»,
+   и кнопка, которая не работает, выглядят одинаково. */
+#player .vacts span.on{background:var(--sk);color:#fff}
 #player .chan{display:flex;align-items:center;gap:10px;margin-top:10px;padding:11px 0;
   border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2)}
 #player .chan .ava{width:38px;height:38px;border-radius:50%;flex:none;display:grid;
@@ -541,6 +552,9 @@ button,textarea,input{font:inherit;color:inherit}
 #player .chan .ci span{font-size:.72rem;opacity:.55}
 #player .chan .sub{flex:none;border:0;border-radius:18px;padding:8px 16px;cursor:pointer;
   background:var(--fg);color:var(--bg);font-weight:600;font-size:.81rem}
+/* «Вы подписаны» — приглушённая кнопка, как в оригинале: подписка сделана,
+   и звать второй раз незачем. */
+#player .chan .sub.on{background:var(--btn-2);color:var(--fg);font-weight:500}
 /* Описание — единственное место в таком приложении, где длинный текст уместен,
    и здесь оно и есть читалка. Поэтому кегль тут книжный, а не служебный. */
 #player .desc{margin:14px 0 2px;padding:13px 14px;border-radius:13px;background:var(--card)}
@@ -567,7 +581,9 @@ button,textarea,input{font:inherit;color:inherit}
 .cmt .cu span{font-weight:400;opacity:.5;margin-left:6px}
 .cmt .ct{font-size:.94rem;line-height:1.55;word-break:break-word;white-space:pre-wrap}
 .cmt .ca{display:flex;align-items:center;gap:16px;margin-top:8px;font-size:.75rem;opacity:.6}
-.cmt .ca .rep{font-weight:600;opacity:.85}
+.cmt .ca .lk{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.cmt .ca .lk.on{color:#e2497a;opacity:1}
+.cmt .ca .rep{font-weight:600;opacity:.85;cursor:pointer}
 .cmt .ca .heart{color:#e2497a;opacity:1;font-size:.87rem;margin-left:-8px}
 /* Реакция под комментарием — такая же плашка, как в переписке: одна привычка
    на всё приложение дешевле, чем два разных способа показать одно и то же. */
@@ -700,7 +716,8 @@ button,textarea,input{font:inherit;color:inherit}
 .chips{flex:none;display:flex;gap:8px;padding:9px 12px;overflow-x:auto;
   border-bottom:1px solid var(--line-2)}
 .chips span{flex:none;padding:6px 14px;border-radius:9px;background:var(--btn-2);
-  font-size:.75rem;opacity:.8}
+  font-size:.75rem;opacity:.8;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.chips span:active{opacity:.55}
 .chips span.on{background:var(--fg);color:var(--bg);opacity:1;font-weight:600}
 .post .cap.likes{font-size:.81rem;opacity:.9;font-weight:600;padding-bottom:3px}
 
@@ -723,13 +740,18 @@ button,textarea,input{font:inherit;color:inherit}
 
 /* ===== нижняя панель навигации ===== */
 /* Самая дешёвая узнаваемость из всех: без неё любой экран читается как
-   «страница с карточками», а не как приложение. Нерабочая — вести ей некуда,
-   раздел внутри «приложения» ровно один. */
+   «страница с карточками», а не как приложение. Каждая вкладка ведёт в свой
+   раздел — куда именно и почему, в `ui/actions.js`. */
 .tabbar{flex:none;display:flex;justify-content:space-around;align-items:center;
   padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));
   background:var(--hdr);border-top:1px solid var(--line)}
 .tabbar span{display:flex;flex-direction:column;align-items:center;gap:3px;
-  opacity:.45;font-size:.6rem;line-height:1}
+  opacity:.45;font-size:.6rem;line-height:1;cursor:pointer;
+  padding:4px 10px;border-radius:12px;
+  /* Подсветка нажатия. На телефоне это единственный признак, что кнопка
+     сработала: экран под пальцем не виден, а переход бывает мгновенным. */
+  -webkit-tap-highlight-color:transparent;transition:background .12s}
+.tabbar span:active{background:var(--btn-2)}
 .tabbar span.on{opacity:1}
 .tabbar b{font-size:1.25rem;font-weight:400;line-height:1}
 .tabbar i{font-style:normal}

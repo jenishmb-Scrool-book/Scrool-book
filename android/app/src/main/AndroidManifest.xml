@@ -1,8 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!--
+        enableOnBackInvokedCallback="false" — про аппаратную кнопку «назад».
+
+        С targetSdk 35 и выше Android включает «предсказуемый назад» сам, по
+        умолчанию, и старый путь onBackPressed() при этом не вызывается:
+        система закрывает окно мимо приложения. Наш обработчик висит именно
+        на старом пути (плагин @capacitor/app, событие backButton), поэтому
+        «назад» переставал возвращать на предыдущий экран и просто выкидывал
+        из приложения — ровно то, на что пожаловался владелец.
+
+        Флаг возвращает старое поведение. Цена — нет системной анимации
+        «предсказуемого назад». Снимать флаг можно будет тогда, когда есть на
+        чём проверить: здесь Gradle не запускается, а менять поведение кнопки
+        вслепую нельзя — это единственная кнопка, которой пользуются не глядя.
+    -->
+
     <application
         android:allowBackup="true"
+        android:enableOnBackInvokedCallback="false"
         android:fullBackupContent="@xml/backup_rules"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"

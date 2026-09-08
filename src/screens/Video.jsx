@@ -8,6 +8,8 @@ import Tabbar from '../ui/Tabbar.jsx';
 import useCardWindow from '../ui/useCardWindow.js';
 import useChunks from '../ui/useChunks.js';
 import {SIZE} from '../ui/sizes.js';
+import {run} from '../ui/actions.js';
+import {TABS} from '../ui/tabs.js';
 import {APP_NAMES} from '../ui/skins.js';
 import {commentEmo, dur, grad, likes, videoTitle, views} from '../ui/visual.js';
 import {FACE, shot} from '../ui/pics.js';
@@ -29,15 +31,6 @@ import {indexAt} from '../lib/chunk.js';
 // Плеер остаётся пустым. Внутри коробки 16:9 на телефоне двести пикселей
 // высоты — читать там нельзя, и попытка засунуть туда текст была тем, что
 // владелец назвал «плохо работает».
-
-// Нижняя панель. Значки декоративны, как чипсы фильтров.
-const TABS = [
-  ['⌂', 'video.tab_home'],
-  ['⊳', 'video.tab_shorts'],
-  ['＋', null],
-  ['⊞', 'video.tab_subs'],
-  ['☺', 'video.tab_you']
-];
 
 // Столько комментариев под роликом. Шесть по 200 знаков плюс описание на 600 —
 // это ровно 1800, то есть условная страница из `lib/pages.js`. Один «ролик»
@@ -65,7 +58,7 @@ function elapsed(i) {
  * не прочитает. Настоящие названия бывают в два ряда, наши иногда в три —
  * это цена, и она меньше, чем цена пропущенных слов.
  */
-function Card({i, title, here, onPlay, small}) {
+function Card({i, title, here, onPlay, onMenu, small}) {
   const t = useT();
   return (
     <div className={small ? 'vid small' : 'vid'} data-i={i} onClick={onPlay}>
@@ -81,13 +74,16 @@ function Card({i, title, here, onPlay, small}) {
             {t('video.meta', {views: views(i)})}{here ? t('video.here') : ''}
           </div>
         </div>
-        <span className="kebab">⋮</span>
+        {/* Меню карточки. Останавливаем всплытие: клик по самой карточке
+            открывает ролик, и без этого «⋮» открывал бы его тоже. */}
+        <span className="kebab" role="button"
+              onClick={e => { e.stopPropagation(); if (onMenu) onMenu(); }}>⋮</span>
       </div>
     </div>
   );
 }
 
-export default function Video({go}) {
+export default function Video({go, back}) {
   const {text, offset} = useStore();
   const t = useT();
   const {chunks, pos, setPos} = useChunks(SIZE.vlist);
@@ -101,40 +97,53 @@ export default function Video({go}) {
     setPos(i);
     go('player');
   };
+  const act = action => run(action, {go, boxRef, pos});
 
   return (
     <Screen id="video">
       <StatusBar />
       <div className="yhdr">
-        <span className="back" onClick={() => go('home')} role="button" aria-label={t('back')}>‹</span>
+        <span className="back" onClick={back} role="button" aria-label={t('back')}>‹</span>
         <b className="ylogo"><i>▶</i>{APP_NAMES.video}</b>
-        <span className="ic">⌕</span>
+        <span className="ic" onClick={() => go('toc')} role="button"
+              aria-label={t('video.search')}>⌕</span>
         <span className="ic" onClick={() => go('toc')} role="button"
               aria-label={t('toc.title')}>☰</span>
       </div>
-      {/* Чипсы фильтров декоративны: узнаваемость экрана держится на них
-          не меньше, чем на списке превью. */}
+      {/* Чипсы фильтров. Фильтровать в книге нечего, но у каждого нашлось
+          своё честное дело: «Все» — к началу списка, «Новое» — туда, где
+          читаешь, название книги — в оглавление. */}
       <div className="chips">
-        <span className="on">{t('video.chip_all')}</span>
-        <span>{t('video.chip_new')}</span>
-        <span>{t('video.channel')}</span>
+        <span className="on" onClick={() => act('top')} role="button">{t('video.chip_all')}</span>
+        <span onClick={() => act('here')} role="button">{t('video.chip_new')}</span>
+        <span onClick={() => go('toc')} role="button">{t('video.channel')}</span>
       </div>
       <Progress offset={offset} len={text.length} />
       <div className="body" ref={boxRef}>
         {items.map(i => (
-          <Card key={i} i={i} title={chunks[i].text} here={i === pos} onPlay={() => play(i)} />
+          <Card key={i} i={i} title={chunks[i].text} here={i === pos}
+                onPlay={() => play(i)} onMenu={() => go('toc')} />
         ))}
       </div>
-      <Tabbar items={TABS} active={0} />
+      <Tabbar items={TABS.video} active={0} onPick={act} />
     </Screen>
   );
 }
 
-/** Один комментарий: тот же кусок книги, подписанный очередным человеком. */
-function Comment({i, at, text}) {
+/**
+ * Один комментарий: тот же кусок книги, подписанный очередным человеком.
+ *
+ * Сердечко нажимается и держит своё состояние, пока экран открыт. Дальше не
+ * хранится намеренно: это отметка на выдуманном комментарии, и переживать
+ * перезапуск ей незачем — а вот не отзываться на нажатие она не имеет права.
+ * «Ответить» открывает переписку с этим человеком: он же контакт из списка,
+ * и ответить ему в этом приложении можно ровно там.
+ */
+function Comment({i, at, text, onReply}) {
   const t = useT();
   const c = contactAt(i);
   const emo = commentEmo(i);
+  const [liked, setLiked] = useState(false);
   return (
     <div className="cmt" data-at={at}>
       <div className="cav" style={{background: shot('face', i + 5, grad(i + 5))}} />
@@ -142,8 +151,9 @@ function Comment({i, at, text}) {
         <div className="cu">{c.name}<span>{t('video.ago', {n: i % 8 + 1})}</span></div>
         <div className="ct">{text}</div>
         <div className="ca">
-          <span>♡ {likes(i)}</span>
-          <span className="rep">{t('video.reply')}</span>
+          <span className={liked ? 'lk on' : 'lk'} role="button"
+                onClick={() => setLiked(v => !v)}>{liked ? '♥' : '♡'} {likes(i) + (liked ? 1 : 0)}</span>
+          <span className="rep" role="button" onClick={onReply}>{t('video.reply')}</span>
           {/* Сердечко от автора канала — деталь, которую узнаёт каждый, кто
               вообще заглядывал в комментарии под роликами. */}
           {i % 5 === 2 ? <span className="heart">♥</span> : null}
@@ -160,13 +170,18 @@ function Comment({i, at, text}) {
  * Описание зафиксировано на входе (`head`) и под прокруткой не меняется:
  * иначе текст менялся бы под пальцем, пока курсор едет по комментариям.
  */
-export function Player({go}) {
+export function Player({go, back}) {
   const {text, offset, setOffset} = useStore();
   const t = useT();
   const {chunks: ds} = useChunks(SIZE.video);      // описание — длинный кусок
   const {chunks: cs} = useChunks(SIZE.comment);    // комментарии — короткие
   const boxRef = useRef(null);
   const [head, setHead] = useState(offset);
+  // Отметки под роликом. Живут, пока открыт экран: они ни на что не влияют,
+  // но обязаны отзываться на нажатие — кнопка, которая не нажимается, ломает
+  // обман вернее, чем кривой цвет.
+  const [mark, setMark] = useState(0);        // 0 — нет, 1 — палец вверх, -1 — вниз
+  const [subbed, setSubbed] = useState(false);
 
   const at = indexAt(ds, head);
   const desc = ds[at];
@@ -224,13 +239,17 @@ export function Player({go}) {
     <Screen id="player" bar="#000000">
       <StatusBar />
       <div className="stage" style={{background: shot('wide', at, grad(at))}}>
-        <span className="back" onClick={() => go('video')} role="button" aria-label={t('back')}>‹</span>
+        <span className="back" onClick={back} role="button" aria-label={t('back')}>‹</span>
         <span className="ic" onClick={() => go('toc')} role="button" aria-label={t('toc.title')}>☰</span>
-        <span className="pl">▶</span>
+        {/* Играть здесь нечему, но у обеих кнопок есть точный смысл в наших
+            понятиях: «play» — читать дальше (следующая страница), «на весь
+            экран» — та же книга в полноэкранной ленте клипов. Курсор общий,
+            поэтому переход продолжает то же самое место. */}
+        <span className="pl" role="button" onClick={next}>▶</span>
         <div className="ctrl">
           <span className="tm">{elapsed(at)} / {dur(at)}</span>
           <i className="bar"><b style={{width: seen(at) + '%'}} /></i>
-          <span className="full">⛶</span>
+          <span className="full" role="button" onClick={() => go('reels')}>⛶</span>
         </div>
       </div>
       <Progress offset={offset} len={text.length} />
@@ -238,11 +257,17 @@ export function Player({go}) {
         <div className="vinfo">
           <h3>{desc ? videoTitle(desc.text, 90) : ''}</h3>
           <div className="m">{t('video.views', {views: views(at)})}</div>
+          {/* «Поделиться» и «Сохранить» отсюда убраны. Делиться в приложении
+              без сети нечем, а «сохранить» ничего не сохраняло бы — это та же
+              мёртвая кнопка, только с подписью. Осталось то, у чего есть
+              честный ответ. */}
           <div className="vacts">
-            <span>👍 {likes(at)}</span>
-            <span>👎</span>
-            <span>↪ {t('video.share')}</span>
-            <span>⤓ {t('video.save')}</span>
+            <span className={mark === 1 ? 'on' : ''} role="button"
+                  onClick={() => setMark(v => (v === 1 ? 0 : 1))}>
+              👍 {likes(at) + (mark === 1 ? 1 : 0)}
+            </span>
+            <span className={mark === -1 ? 'on' : ''} role="button"
+                  onClick={() => setMark(v => (v === -1 ? 0 : -1))}>👎</span>
           </div>
           <div className="chan">
             <div className="ava" style={{background: shot('face', FACE, grad(at + 3))}} />
@@ -250,7 +275,9 @@ export function Player({go}) {
               <b>{t('video.channel')}</b>
               <span>{t('video.subs')}</span>
             </div>
-            <button className="sub">{t('video.subscribe')}</button>
+            <button className={subbed ? 'sub on' : 'sub'} onClick={() => setSubbed(v => !v)}>
+              {t(subbed ? 'video.subscribed' : 'video.subscribe')}
+            </button>
           </div>
           {/* Первая половина страницы. Блок раскрыт всегда: сворачивать то,
               ради чего экран существует, было бы издевательством. */}
@@ -264,11 +291,16 @@ export function Player({go}) {
           {list.length ? (
             <>
               <div className="chead">{t('video.comments')}<i>{list.length}</i></div>
-              <div className="cadd">
+              {/* Написать комментарий здесь нечем и некому — строка ведёт
+                  туда, где в этом приложении «пишут»: в переписку. */}
+              <div className="cadd" role="button" onClick={() => go('chat')}>
                 <div className="cav me">☺</div>
                 <span>{t('video.add_comment')}</span>
               </div>
-              {list.map(k => <Comment key={k} i={k} at={cs[k].at} text={cs[k].text} />)}
+              {list.map(k => (
+                <Comment key={k} i={k} at={cs[k].at} text={cs[k].text}
+                         onReply={() => go('chat', {arg: k})} />
+              ))}
             </>
           ) : null}
 
@@ -280,6 +312,7 @@ export function Player({go}) {
                 title={videoTitle(text.slice(endAt, endAt + 220), 90)}
                 small
                 onPlay={next}
+                onMenu={() => go('toc')}
               />
             </>
           ) : (
@@ -287,7 +320,7 @@ export function Player({go}) {
           )}
         </div>
       </div>
-      <Tabbar items={TABS} active={0} />
+      <Tabbar items={TABS.video} active={0} onPick={action => run(action, {go, boxRef, pos: at})} />
     </Screen>
   );
 }

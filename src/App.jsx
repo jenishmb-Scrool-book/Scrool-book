@@ -15,7 +15,7 @@ import Chapters from './screens/Chapters.jsx';
 import Library from './screens/Library.jsx';
 import Settings from './screens/Settings.jsx';
 
-const SCREENS = {
+export const SCREENS = {
   home: Home,
   chats: Chats, chat: Chat,
   reels: Reels, stories: Stories, feed: Feed,
@@ -30,10 +30,9 @@ const SCREENS = {
 const READERS = ['chats', 'chat', 'reels', 'stories', 'feed', 'video', 'tweets'];
 const NO_BOOK_OK = ['home', 'library', 'settings'];       // этим книга не нужна
 
-// Куда ведёт аппаратная «назад». Всё, чего здесь нет, возвращает домой.
-// Без этой таблицы «назад» из плеера или переписки выбрасывало на дом, хотя
-// человек пришёл из списка — и терялся ровно тот экран, куда он метил.
-const BACK = {chat: 'chats', player: 'video'};
+// Глубина истории переходов. Больше двух десятков экранов подряд не открывает
+// никто, а держать список без предела — это утечка, растущая от каждого тапа.
+const DEPTH = 24;
 
 // Шапки, с которых снимается цвет для системного статус-бара. Порядок не важен:
 // на экране она всегда одна.
@@ -41,9 +40,15 @@ const BARS = '.screen .mhdr, .screen .chdr, .screen .yhdr, .screen .thdr, .scree
 const pick = el => (el ? getComputedStyle(el).backgroundColor : null);
 
 export default function App() {
-  const {ready, books, text, ui, lastApp, addBook, setLastApp, error} = useStore();
+  const {ready, books, text, ui, addBook, setLastApp, error} = useStore();
   const [screen, setScreen] = useState('home');
   const [arg, setArg] = useState(null);      // параметр экрана: с какой строки списка вошли
+
+  // История переходов. Была таблица «откуда куда» на два экрана, и она врала
+  // везде, где переход не один: в настройки приходят и из дома, и с нижней
+  // панели любого «приложения», а «назад» из таблицы всегда уводил на дом —
+  // то есть терял ровно то место, откуда человек вышел на минуту.
+  const hist = useRef([]);
 
   // Тема, кегль и язык живут атрибутами на <html>: токены палитры объявлены
   // на :root, а body красит система вокруг «телефона» — под #phone их не спрятать.
@@ -109,16 +114,29 @@ export default function App() {
   // не переподписываясь на каждый рендер.
   const screenRef = useRef(screen);
   screenRef.current = screen;
-  // Оглавление открывается из любой читалки, поэтому «назад» из него ведёт
-  // не в фиксированный экран, а туда, откуда читали.
-  const lastRef = useRef(null);
-  lastRef.current = lastApp;
   const textRef = useRef(text);
   textRef.current = text;
+
+  const argRef = useRef(arg);
+  argRef.current = arg;
 
   const go = (id, opt) => {
     // Читать нечего — вместо пустого экрана уводим в библиотеку.
     if (!NO_BOOK_OK.includes(id) && !textRef.current.length) id = 'library';
+    const from = screenRef.current;
+    if (id !== from) {
+      const h = hist.current;
+      // Переход на экран, который уже в истории, РАЗМАТЫВАЕТ её до него, а не
+      // наращивает. Иначе «‹» в шапке (он ведёт `go('home')`, а не «назад»)
+      // клал бы дом поверх дома, и аппаратная «назад» ходила бы по кругу
+      // вместо того, чтобы выйти из приложения.
+      const k = h.findIndex(e => e.screen === id);
+      if (k >= 0) h.length = k;
+      else {
+        h.push({screen: from, arg: argRef.current});
+        if (h.length > DEPTH) h.shift();
+      }
+    }
     if (READERS.includes(id)) setLastApp(id);
     setArg(opt && 'arg' in opt ? opt.arg : null);
     setScreen(id);
@@ -126,15 +144,32 @@ export default function App() {
   const goRef = useRef(go);
   goRef.current = go;
 
+  /** Шаг назад по истории. false — истории нет. */
+  const back = () => {
+    const prev = hist.current.pop();
+    if (!prev) return false;
+    if (READERS.includes(prev.screen)) setLastApp(prev.screen);
+    setArg(prev.arg == null ? null : prev.arg);
+    setScreen(prev.screen);
+    return true;
+  };
+  const backRef = useRef(back);
+  backRef.current = back;
+
+  // То, что экраны вешают на «‹» в шапке. Раньше каждый экран знал, куда
+  // возвращаться, своим списком — и врал: настройки всегда уводили в
+  // библиотеку, хотя попасть в них можно с нижней панели любого движка.
+  const goBack = () => { if (!backRef.current()) goRef.current('home'); };
+
   useEffect(() => {
     let off;
     let dead = false;
     // С дома «назад» отдаёт false — приложение сворачивается.
     const onBack = () => {
-      const at = screenRef.current;
-      if (at === 'home') return false;
-      if (at === 'toc') goRef.current(lastRef.current || 'reels');
-      else goRef.current(BACK[at] || 'home');
+      if (screenRef.current === 'home') return false;
+      if (backRef.current()) return true;
+      // Истории нет (например, экран восстановлен после перезапуска) — на дом.
+      goRef.current('home');
       return true;
     };
     Promise.resolve(initNative({onBack}))
@@ -162,7 +197,7 @@ export default function App() {
   const Current = SCREENS[screen] || Home;
   return (
     <div id="phone">
-      <Current go={go} arg={arg} />
+      <Current go={go} back={goBack} arg={arg} />
       {error ? <div className="err">{error}</div> : null}
     </div>
   );

@@ -31,7 +31,7 @@ const parseFile = async f => {
 
 // Библиотека: только книги. Настройки живут отдельным экраном — этот файл
 // иначе становится местом, где сходятся сразу несколько несвязанных задач.
-export default function Library({go}) {
+export default function Library({go, back}) {
   const {books, current, text: bookText, offset, addBook, openBook, deleteBook} = useStore();
   const t = useT();
   const [text, setText] = useState('');
@@ -113,7 +113,7 @@ export default function Library({go}) {
     <Screen id="library">
       <StatusBar />
       <Header
-        onBack={() => go('home')}
+        onBack={back}
         title={t('lib.title')}
         right={
           <span onClick={() => go('settings')} role="button" aria-label={t('set.title')}

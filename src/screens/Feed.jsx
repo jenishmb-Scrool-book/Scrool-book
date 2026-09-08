@@ -7,41 +7,42 @@ import Tabbar from '../ui/Tabbar.jsx';
 import useCardWindow from '../ui/useCardWindow.js';
 import useChunks from '../ui/useChunks.js';
 import {SIZE} from '../ui/sizes.js';
+import {run} from '../ui/actions.js';
+import {TABS} from '../ui/tabs.js';
 import {grad, marks} from '../ui/visual.js';
 import {FACE, shot} from '../ui/pics.js';
 import {APP_NAMES} from '../ui/skins.js';
 import {NAMES} from '../lib/fake.js';
 
-// Нижняя панель. Подписей нет — их нет и в оригинале, а панель с лишними
-// словами читается как чужая.
-const TABS = [['⌂', null], ['⌕', null], ['＋', null], ['♡', null], ['☺', null]];
-
 // «Лента»: те же куски постами. Текст лежит ровно на месте картинки —
 // в этом весь фокус, картинки тут нет вообще.
-export default function Feed({go}) {
+export default function Feed({go, back}) {
   const {text, offset} = useStore();
   const t = useT();
   const {chunks, pos, setPos} = useChunks(SIZE.feed);
   const count = chunks.length;
   const {boxRef, items} = useCardWindow({count, pos, setPos, ahead: 1, cardSelector: '.post'});
+  const act = action => run(action, {go, boxRef, pos});
 
   return (
     <Screen id="feed">
       <StatusBar />
       <div className="fhdr">
-        <span className="back" onClick={() => go('home')} role="button" aria-label={t('back')}>‹</span>
+        <span className="back" onClick={back} role="button" aria-label={t('back')}>‹</span>
         <b className="flogo">{APP_NAMES.feed}</b>
-        <span className="ic">♡</span>
+        <span className="ic" onClick={() => go('chats')} role="button"
+              aria-label={t('feed.direct')}>✉</span>
         <span className="ic" onClick={() => go('toc')} role="button"
               aria-label={t('toc.title')}>☰</span>
       </div>
       <Progress offset={offset} len={text.length} />
       <div className="body" ref={boxRef}>
-        {/* Полоса «историй» над лентой. Она декоративна и не нажимается: её
-            задача — чтобы экран узнавался с первого взгляда, а не открывался. */}
+        {/* Полоса «историй» над лентой. Открывает истории — тот самый движок,
+            который в оригинале за ней и стоит. Курсор общий, поэтому история
+            начнётся с того же места книги. */}
         <div className="srow">
           {NAMES.slice(0, 6).map((name, k) => (
-            <div className="sitem" key={k}>
+            <div className="sitem" key={k} role="button" onClick={() => go('stories')}>
               <div className="ring" style={{background: grad(k * 7 + 2)}}>
                 <i style={{background: shot('face', k * 11 + 3, grad(k))}} />
               </div>
@@ -66,7 +67,7 @@ export default function Feed({go}) {
           </div>
         ))}
       </div>
-      <Tabbar items={TABS} active={0} />
+      <Tabbar items={TABS.feed} active={0} onPick={act} />
     </Screen>
   );
 }

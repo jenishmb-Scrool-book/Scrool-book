@@ -8,29 +8,38 @@ import Tabbar from '../ui/Tabbar.jsx';
 import useCardWindow from '../ui/useCardWindow.js';
 import useChunks from '../ui/useChunks.js';
 import {SIZE} from '../ui/sizes.js';
+import {run} from '../ui/actions.js';
 import {grad, reaction, reactionCount, sticker} from '../ui/visual.js';
 import {shot} from '../ui/pics.js';
-import {skinOf} from '../ui/skins.js';
-import {contactAt, msgTime} from '../lib/fake.js';
+import {skinOf, tabIndex} from '../ui/skins.js';
+import {NAMES, callAt, contactAt, groupAt, msgTime} from '../lib/fake.js';
 
-// «Мессенджер» — два экрана на одном движке, и ЧИТАТЬ можно на обоих.
+// «Мессенджер» — один движок и четыре вкладки, и ЧИТАТЬ можно на двух из них.
 //
-//   Chats — список переписок. Каждая строка это кусок книги, подписанный
-//           очередным именем: книга как будто приходит от разных людей.
-//           Прокрутка списка двигает курсор — то есть по контактам можно
-//           просто идти сверху вниз и читать, никуда не заходя.
-//   Chat  — разговор. Тот же текст, но репликами по очереди: одну говорит
-//           собеседник, следующую ты. Между ними — смайлики и реакции.
+//   Чаты   — список переписок. Каждая строка это кусок книги, подписанный
+//            очередным именем: книга как будто приходит от разных людей.
+//            Прокрутка списка двигает курсор — то есть по контактам можно
+//            просто идти сверху вниз и читать, никуда не заходя.
+//   Группы — то же самое, но строка подписана группой и отправителем:
+//            «Работа · Костя: текст». Настоящая вторая вкладка, а не копия.
+//   Звонки — журнал вызовов. Единственная поверхность приложения БЕЗ текста
+//            книги, и это осознанно: кусок книги на месте «Исходящий, 12:30»
+//            читался бы как поломка. Строка открывает переписку с человеком.
+//   Люди   — список контактов, то же назначение.
+//
+//   Chat   — сама переписка. Тот же текст, но репликами по очереди: одну
+//            говорит собеседник, следующую ты. Между ними смайлики и реакции.
 //
 // Так это устроено по прямой просьбе владельца: «чтобы информация из книги
 // была не внутри чата, а снаружи, — можно было читать, просто проходя по
-// контактам; а когда заходишь внутрь, пусть будет как переписка: сперва
-// один пишет, потом другой, и между ними смайлики смеха или сердечек».
-//
-// Витринных чатов больше нет и не нужно: раньше список состоял из одной живой
-// строки и шести нарисованных, теперь живые все.
+// контактам; а когда заходишь внутрь, пусть будет как переписка».
+// Вкладки внизу заработали по следующей его же правке: «в ватцапе есть внизу
+// кнопки статус, группы и так далее — пусть всё работает».
 
 const TYPING = 260;    // мс, столько показывается «печатает…» после отправки
+
+// Вкладки, на которых читают. Остальные — списки людей, там курсор не едет.
+const READ_TABS = ['chats', 'groups'];
 
 // Кто говорит. Строгое чередование: чётные — собеседник, нечётные — ты.
 // Реплики книги длинные, и любая «умная» группировка тут же превращает
@@ -44,13 +53,13 @@ function Avatar({seed, cls}) {
 }
 
 /**
- * Шапка переписки. Иконки справа берутся у скина: в «зелёном» это камера и
- * трубка, в «синем» — только трубка. Последняя иконка — единственная живая:
- * перепрыгнуть по главам в мессенджере больше нечем, а иногда нужно.
+ * Шапка переписки. Значки справа берутся у скина вместе с назначением: трубка
+ * ведёт в журнал вызовов, камера («видеозвонок») — в «видео», последний значок
+ * — в оглавление: перепрыгнуть по главам в мессенджере больше нечем, а иногда
+ * нужно.
  */
-function ChatHead({skin, onBack, seed, title, sub, onMenu}) {
+function ChatHead({skin, onBack, seed, title, sub, onAct}) {
   const S = skinOf(skin);
-  const last = S.chat.length - 1;
   return (
     <div className="chdr">
       <span className="back" onClick={onBack} role="button" aria-label="Назад">‹</span>
@@ -59,10 +68,9 @@ function ChatHead({skin, onBack, seed, title, sub, onMenu}) {
         <b>{title}</b>
         <span>{sub}</span>
       </div>
-      {S.chat.map((ic, k) => (
-        <span key={k} className="ic"
-              onClick={k === last ? onMenu : undefined}
-              role={k === last && onMenu ? 'button' : undefined}>{ic}</span>
+      {S.chat.map(([ic, , action], k) => (
+        <span key={k} className="ic" role="button"
+              onClick={() => onAct(action)}>{ic}</span>
       ))}
     </div>
   );
@@ -90,6 +98,167 @@ function Row({i, name, seed, text, time, state, onClick}) {
 }
 
 /**
+ * Читающий список: «Чаты» или «Группы».
+ *
+ * Отдельный компонент с `key={tab}` не ради порядка, а по необходимости:
+ * `useCardWindow` вешает обработчик прокрутки один раз за монтирование. Если
+ * бы список просто перерисовывался при смене вкладки, после возврата из
+ * «Звонков» обработчик остался бы висеть на выброшенном узле, и прокрутка
+ * перестала бы двигать курсор — молча.
+ */
+function Roster({mode, chunks, pos, setPos, onOpen}) {
+  const count = chunks.length;
+  // gap: под плашкой «страница / осталось» нужен запас, иначе она накрывает
+  // время у самой верхней строки.
+  const {boxRef, items} = useCardWindow({count, pos, setPos, ahead: 2, cardSelector: '.crow', gap: 26});
+
+  return (
+    <div className="body" ref={boxRef}>
+      {items.map(i => {
+        const g = mode === 'groups';
+        const c = g ? groupAt(i) : contactAt(i);
+        return (
+          <Row
+            key={i}
+            i={i}
+            name={c.name}
+            seed={c.seed}
+            /* В группе превью всегда подписано отправителем — без этого
+               вкладка «Группы» ничем не отличалась бы от вкладки «Чаты». */
+            text={g ? c.from + ': ' + chunks[i].text : chunks[i].text}
+            time={msgTime(i)}
+            /* Непрочитанное здесь не выдумано: всё, что ниже курсора, ты
+               действительно ещё не читал. Точка справа — ровно это. */
+            state={i === pos ? 'on' : (i > pos ? 'new' : 'seen')}
+            onClick={() => onOpen(i)}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+/** Журнал вызовов. Текста книги здесь нет — см. заголовок файла. */
+function CallList({onOpen}) {
+  const t = useT();
+  const rows = NAMES.length * 3;   // хватает на экран с запасом, без бесконечности
+  const ARROW = {in: '↙', out: '↗', missed: '↙'};
+  return (
+    <div className="body">
+      {Array.from({length: rows}, (unused, i) => {
+        const c = callAt(i);
+        return (
+          <div className="crow call" key={i} onClick={() => onOpen(i)}>
+            <Avatar seed={c.seed} />
+            <div className="ci">
+              <b>{c.name}</b>
+              <span className={c.kind === 'missed' ? 'miss' : ''}>
+                {ARROW[c.kind]} {t('chats.call_' + c.kind)} · {c.time}
+              </span>
+            </div>
+            <span className="ic">{c.video ? '▷' : '☏'}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Список контактов. Тоже без текста книги и по той же причине. */
+function PeopleList({onOpen}) {
+  const t = useT();
+  return (
+    <div className="body">
+      {NAMES.map((unused, i) => {
+        const c = contactAt(i);
+        return (
+          <div className="crow call" key={i} onClick={() => onOpen(i)}>
+            <Avatar seed={c.seed} />
+            <div className="ci">
+              <b>{c.name}</b>
+              <span>{t('chats.online')}</span>
+            </div>
+            <span className="ic">✉</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export default function Chats({go, back, arg}) {
+  const {text, offset, ui} = useStore();
+  const t = useT();
+  const S = skinOf(ui.skin);
+  const {chunks, pos, setPos} = useChunks(SIZE.roster);
+
+  // На какой вкладке открылись. Приходит из шапки переписки: трубка ведёт в
+  // журнал вызовов, а не просто «назад в список».
+  const [tab, setTab] = useState(() => {
+    const want = String(arg == null ? 'chats' : arg);
+    const ok = S.tabs && S.tabs.some(([, , action]) => action === 'tab:' + want);
+    return ok ? want : 'chats';
+  });
+
+  const act = action => {
+    if (action.startsWith('tab:')) {
+      const to = action.slice(4);
+      // Тап по уже активной вкладке — наверх списка. Так ведут себя настоящие
+      // панели, и это единственный способ вернуться к началу длинной ленты.
+      if (to === tab) run('top', {go});
+      else setTab(to);
+      return;
+    }
+    run(action, {go, pos});
+  };
+
+  // Открыть разговор ровно на этой строке. Курсор двигаем здесь, а не внутри
+  // разговора: он общий и в символах, поэтому переписка просто откроется на
+  // том же месте книги — со своим, вдвое более крупным фрагментом.
+  const openAt = i => {
+    setPos(i);
+    go('chat', {arg: i});
+  };
+  // А из журнала вызовов и списка людей — с этим человеком, но НЕ трогая
+  // курсор: строка там означает собеседника, а не место в книге.
+  const openWith = i => go('chat', {arg: i});
+
+  return (
+    <Screen id="chats" skin={ui.skin}>
+      <StatusBar />
+      <div className="mhdr">
+        <span className="back" onClick={back} role="button" aria-label={t('back')}>‹</span>
+        {/* В шапке списка стоит имя «приложения», а не слово «Чаты»: так это
+            устроено во всех настоящих мессенджерах, и с одного взгляда видно,
+            в каком из трёх ты сейчас. */}
+        <h2>{S.name}</h2>
+        {S.head.map(([ic, , action], k) => (
+          <span key={k} className="ic" role="button" onClick={() => act(action)}>{ic}</span>
+        ))}
+      </div>
+      {S.search ? (
+        <div className="msearch" onClick={() => go('toc')} role="button">⌕ {t('chats.search')}</div>
+      ) : null}
+      {/* Полоса чтения — только там, где читают. На вкладке звонков она
+          показывала бы прогресс по книге над списком, в котором книги нет. */}
+      {READ_TABS.includes(tab) ? <Progress offset={offset} len={text.length} /> : null}
+      {READ_TABS.includes(tab) ? (
+        <Roster key={tab} mode={tab} chunks={chunks} pos={pos} setPos={setPos} onOpen={openAt} />
+      ) : tab === 'calls' ? (
+        <CallList onOpen={openWith} />
+      ) : (
+        <PeopleList onOpen={openWith} />
+      )}
+      {/* «Новое сообщение» открывает переписку на том месте, где читаешь.
+          Писать в этом приложении действительно некому, но кнопка в этом углу
+          есть у каждого мессенджера, и увести её некуда, кроме как в чат. */}
+      <div className="fab" onClick={() => openAt(pos)} role="button">{S.fab}</div>
+      {S.tabs ? <Tabbar items={S.tabs} active={tabIndex(ui.skin, tab)} onPick={act} /> : null}
+    </Screen>
+  );
+}
+
+/**
  * Пузырь сообщения.
  *
  * `sp` — пустая распорка в конце текста шириной под время. Без неё время,
@@ -109,66 +278,7 @@ function Bubble({text, time, out, tick, react, count}) {
   );
 }
 
-export default function Chats({go}) {
-  const {text, offset, ui} = useStore();
-  const t = useT();
-  const S = skinOf(ui.skin);
-  const {chunks, pos, setPos} = useChunks(SIZE.roster);
-  const count = chunks.length;
-  // gap: под плашкой «страница / осталось» нужен запас, иначе она накрывает
-  // время у самой верхней строки.
-  const {boxRef, items} = useCardWindow({count, pos, setPos, ahead: 2, cardSelector: '.crow', gap: 26});
-
-  // Открыть разговор ровно на этой строке. Курсор двигаем здесь, а не внутри
-  // разговора: он общий и в символах, поэтому переписка просто откроется на
-  // том же месте книги — со своим, вдвое более крупным фрагментом.
-  const open = i => {
-    setPos(i);
-    go('chat', {arg: i});
-  };
-
-  return (
-    <Screen id="chats" skin={ui.skin}>
-      <StatusBar />
-      <div className="mhdr">
-        <span className="back" onClick={() => go('home')} role="button" aria-label={t('back')}>‹</span>
-        {/* В шапке списка стоит имя «приложения», а не слово «Чаты»: так это
-            устроено во всех настоящих мессенджерах, и с одного взгляда видно,
-            в каком из трёх ты сейчас. */}
-        <h2>{S.name}</h2>
-        {S.head.map((ic, k) => <span key={k} className="ic">{ic}</span>)}
-      </div>
-      {S.search ? <div className="msearch">⌕ {t('chats.search')}</div> : null}
-      <Progress offset={offset} len={text.length} />
-      <div className="body" ref={boxRef}>
-        {items.map(i => {
-          const c = contactAt(i);
-          return (
-            <Row
-              key={i}
-              i={i}
-              name={c.name}
-              seed={c.seed}
-              text={chunks[i].text}
-              time={msgTime(i)}
-              /* Непрочитанное здесь не выдумано: всё, что ниже курсора, ты
-                 действительно ещё не читал. Точка справа — ровно это. */
-              state={i === pos ? 'on' : (i > pos ? 'new' : 'seen')}
-              onClick={() => open(i)}
-            />
-          );
-        })}
-      </div>
-      {/* Кнопка «новое сообщение». Нерабочая: писать в этом приложении некому.
-          Стоит потому, что её отсутствие заметнее, чем её бездействие, — она
-          есть в каждом мессенджере ровно в этом углу. */}
-      <div className="fab" aria-hidden="true">{S.fab}</div>
-      {S.tabs ? <Tabbar items={S.tabs} active={0} /> : null}
-    </Screen>
-  );
-}
-
-export function Chat({go, arg}) {
+export function Chat({go, back, arg}) {
   const {text, offset, ui} = useStore();
   const t = useT();
   const {chunks, pos, setPos} = useChunks(SIZE.chats);
@@ -211,6 +321,13 @@ export function Chat({go, arg}) {
     timer.current = setTimeout(() => setTyping(false), TYPING);
   };
 
+  // Значки в шапке: `tab:` уводит в список на нужную вкладку, остальное —
+  // обычный переход.
+  const act = action => {
+    if (action.startsWith('tab:')) go('chats', {arg: action.slice(4)});
+    else run(action, {go, boxRef, pos});
+  };
+
   // Прокрутка к новому сообщению нужна дважды: когда пузырь появился точками и
   // когда точки сменились текстом — высота при этом меняется, и без второго
   // раза сообщение уезжает под нижнюю кромку.
@@ -231,11 +348,11 @@ export function Chat({go, arg}) {
       <StatusBar />
       <ChatHead
         skin={ui.skin}
-        onBack={() => go('chats')}
+        onBack={back}
         seed={c.seed}
         title={c.name}
         sub={typing ? t('chats.typing') : t('chats.online')}
-        onMenu={() => go('toc')}
+        onAct={act}
       />
       <Progress offset={offset} len={text.length} />
       <div className="body" ref={boxRef}>
@@ -269,11 +386,12 @@ export function Chat({go, arg}) {
         })}
         {last ? <div className="done">{t('reader.end')}</div> : null}
       </div>
-      {/* Поле ввода нерабочее и таким и задумано: отвечать книге некому.
-          Оно здесь потому, что без него экран не читается как мессенджер, —
-          а кнопка «отправить» заодно заменила бывшую кнопку «Дальше». */}
+      {/* Поле ввода не принимает текст и не должно: отвечать книге некому.
+          Но нажимается всё — и поле, и оба значка: любое касание внизу
+          продвигает разговор, как и кнопка «отправить». Мёртвых кнопок на
+          экране быть не должно, а других значений у них здесь нет. */}
       <div className="composer">
-        <div className="cbox">
+        <div className="cbox" onClick={send} role="button">
           <span className="ic">☺</span>
           <div className="fld">{t('chats.composer')}</div>
           <span className="ic">⊕</span>
