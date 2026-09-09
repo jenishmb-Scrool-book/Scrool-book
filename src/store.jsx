@@ -28,7 +28,28 @@ const ONOFF = ['on', 'off'];
 const SKINS = ['tg', 'wa', 'ms'];
 const UI = {theme: 'system', lang: 'ru', font: 'md', notify: 'off', skin: 'tg'};
 
-const EMPTY = {books: [], cur: null, at: {}, last: 'reels', ui: UI};
+const EMPTY = {books: [], cur: null, at: {}, last: 'reels', ui: UI, place: null};
+
+// Место, где закрыли приложение: экран и его параметр (вкладка
+// мессенджера, номер собеседника). Курсор хранился и раньше, но одного его
+// мало: приложение всё равно открывалось на домашнем экране, и до текста
+// оставалось ещё одно нажатие.
+//
+// Списка экранов стор нарочно не знает: он лежит в App.jsx, и импорт
+// оттуда замкнул бы круг. Здесь только защита от мусора в хранилище, а
+// «есть ли такой экран» проверяет тот, кто его открывает.
+const readPlace = raw => {
+  const id = raw && typeof raw.id === 'string' ? raw.id.slice(0, 24) : '';
+  if (!id) return null;
+  const a = raw.arg;
+  const arg = typeof a === 'string' ? a.slice(0, 32)
+    : Number.isFinite(a) ? Math.trunc(a)
+    : null;
+  return {id, arg};
+};
+
+const samePlace = (a, b) =>
+  (a ? a.id : null) === (b ? b.id : null) && (a ? a.arg : null) === (b ? b.arg : null);
 
 // Значение из хранилища могло устареть или быть испорчено — берём только известные.
 const pick = (v, list, fallback) => (list.includes(v) ? v : fallback);
@@ -144,7 +165,8 @@ export function StoreProvider({children}) {
         cur: raw.cur ?? null,
         at: {...(raw.at || {})},
         last: APPS.includes(raw.last) ? raw.last : 'reels',
-        ui: readUi(raw.ui)
+        ui: readUi(raw.ui),
+        place: readPlace(raw.place)
       };
       let txt = '';
       if (m.cur && m.books.some(b => b.id === m.cur)) {
@@ -180,6 +202,25 @@ export function StoreProvider({children}) {
     };
   }, []);
 
+  /* ===== выход из приложения ===== */
+  // Размонтирование выше спасает только в браузере. На телефоне Android
+  // не закрывает WebView вежливо, а убивает процесс целиком, и React об этом
+  // не узнаёт — последние DEBOUNCE миллисекунд чтения просто пропадали бы.
+  // А пропадали бы они каждый раз: человек выходит тогда, когда дочитал, то
+  // есть последний сдвиг курсора почти всегда моложе задержки.
+  // visibilitychange приходит от системы при сворачивании — это и есть последний
+  // момент, когда мы ещё живы и можем дописать.
+  useEffect(() => {
+    const flush = () => {if (dirty.current) write();};
+    const hidden = () => {if (document.visibilityState === 'hidden') flush();};
+    document.addEventListener('visibilitychange', hidden);
+    window.addEventListener('pagehide', flush);
+    return () => {
+      document.removeEventListener('visibilitychange', hidden);
+      window.removeEventListener('pagehide', flush);
+    };
+  }, [write]);
+
   /* ===== курсор ===== */
   const setOffset = useCallback(n => {
     const m = metaRef.current;
@@ -205,6 +246,18 @@ export function StoreProvider({children}) {
     // «Продолжить» уводит только в читалки: home и library тут запоминать нечего.
     if (!APPS.includes(id) || m.last === id) return;
     applyMeta({...m, last: id});
+    schedule();
+  }, [applyMeta, schedule]);
+
+  // Где закрыли приложение. От lastApp отличается тем, что тот отвечает на
+  // вопрос «куда ведёт Продолжить» и потому знает только читалки. Этот —
+  // на вопрос «где я был», и дом с библиотекой тут такие же ответы, как
+  // остальные: вышел с дома — вернулся на дом.
+  const setPlace = useCallback(p => {
+    const m = metaRef.current;
+    const next = readPlace(p);
+    if (samePlace(next, m.place || null)) return;
+    applyMeta({...m, place: next});
     schedule();
   }, [applyMeta, schedule]);
 
@@ -334,13 +387,15 @@ export function StoreProvider({children}) {
     setOffset,
     lastApp: meta.last,
     setLastApp,
+    place: meta.place || null,
+    setPlace,
     ui: meta.ui || UI,
     setUi,
     addBook,
     openBook,
     deleteBook,
     error
-  }), [ready, meta, text, chapters, error, setOffset, setLastApp, setUi, addBook, openBook, deleteBook]);
+  }), [ready, meta, text, chapters, error, setOffset, setLastApp, setPlace, setUi, addBook, openBook, deleteBook]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

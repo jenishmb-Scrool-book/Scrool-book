@@ -239,6 +239,106 @@ describe('lastApp', () => {
   });
 });
 
+describe('место', () => {
+  // Курсор сохранялся и без этого, но одного его мало: приложение
+  // открывалось на доме, и до текста оставалось лишнее нажатие.
+  it('запоминается и переживает перезапуск', async () => {
+    const h = await mount();
+    act(() => h.result.current.setPlace({id: 'chat', arg: 4}));
+    expect(h.result.current.place).toEqual({id: 'chat', arg: 4});
+    h.unmount();
+
+    const again = await mount();
+    expect(again.result.current.place).toEqual({id: 'chat', arg: 4});
+  });
+
+  it('вкладка мессенджера — такой же параметр, как номер', async () => {
+    const h = await mount();
+    act(() => h.result.current.setPlace({id: 'chats', arg: 'groups'}));
+    expect(h.result.current.place).toEqual({id: 'chats', arg: 'groups'});
+  });
+
+  it('без параметра хранит null, а не undefined', async () => {
+    const h = await mount();
+    act(() => h.result.current.setPlace({id: 'reels'}));
+    expect(h.result.current.place).toEqual({id: 'reels', arg: null});
+  });
+
+  // Запись могла остаться от другой версии или быть испорчена. Подняться
+  // приложение обязано в любом случае — худшее, что теряется, это один переход.
+  it('мусор из хранилища превращается в null', async () => {
+    for (const junk of [42, 'reels', {}, {id: 7}, {id: ''}, null]) {
+      localStorage.clear();
+      await saveMeta({books: [], cur: null, at: {}, last: 'reels', place: junk});
+      const h = await mount();
+      expect(h.result.current.place, JSON.stringify(junk)).toBeNull();
+      h.unmount();
+    }
+  });
+
+  it('параметр неизвестного вида отбрасывается, а само место остаётся', async () => {
+    await saveMeta({books: [], cur: null, at: {}, last: 'reels', place: {id: 'chat', arg: {}}});
+    const {result} = await mount();
+    expect(result.current.place).toEqual({id: 'chat', arg: null});
+  });
+
+  it('повторная запись того же места не трогает хранилище', async () => {
+    const h = await mount();
+    act(() => h.result.current.setPlace({id: 'feed', arg: null}));
+    await waitFor(() => expect(rawMeta().place).toEqual({id: 'feed', arg: null}));
+
+    const spy = vi.spyOn(Storage.prototype, 'setItem');
+    act(() => h.result.current.setPlace({id: 'feed', arg: null}));
+    await sleep(600);
+    expect(spy).not.toHaveBeenCalled();
+  });
+});
+
+// Размонтирование спасает только в браузере: Android не закрывает WebView
+// вежливо, а убивает процесс целиком — React об этом не узнаёт.
+describe('сворачивание', () => {
+  const hide = async () => {
+    Object.defineProperty(document, 'visibilityState', {value: 'hidden', configurable: true});
+    await act(async () => {document.dispatchEvent(new Event('visibilitychange'));});
+  };
+
+  afterEach(() => {
+    Object.defineProperty(document, 'visibilityState', {value: 'visible', configurable: true});
+  });
+
+  it('дописывает смещение, не дожидаясь дебаунса', async () => {
+    const h = await mount();
+    const id = await add(h, 'Тест', 'Раз.\n\nДва.\n\nТри.');
+    act(() => h.result.current.setOffset(12));
+    expect(rawMeta().at[id]).toBe(0);           // дебаунс ещё не сработал
+
+    await hide();
+    expect(rawMeta().at[id]).toBe(12);
+  });
+
+  it('видимый экран ничего не пишет', async () => {
+    const h = await mount();
+    const id = await add(h, 'Тест', 'Раз.\n\nДва.\n\nТри.');
+    act(() => h.result.current.setOffset(12));
+    await act(async () => {document.dispatchEvent(new Event('visibilitychange'));});
+    expect(rawMeta().at[id]).toBe(0);
+  });
+
+  // Отписка обязательна: иначе каждый перезапуск стора оставляет обработчик
+  // на выброшенном состоянии — и он перезапишет мету старым значением.
+  it('после размонтирования обработчик снят', async () => {
+    const h = await mount();
+    const id = await add(h, 'Тест', 'Раз.\n\nДва.\n\nТри.');
+    act(() => h.result.current.setOffset(12));
+    h.unmount();
+    expect(rawMeta().at[id]).toBe(12);
+
+    localStorage.setItem('scroll.meta', JSON.stringify({...rawMeta(), at: {[id]: 3}}));
+    await hide();
+    expect(rawMeta().at[id]).toBe(3);           // мёртвый стор не вмешался
+  });
+});
+
 describe('размонтирование', () => {
   it('дописывает несохранённое смещение и не оставляет висящий таймер', async () => {
     const h = await mount();

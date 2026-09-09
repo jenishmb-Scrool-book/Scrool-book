@@ -40,15 +40,45 @@ const BARS = '.screen .mhdr, .screen .chdr, .screen .yhdr, .screen .thdr, .scree
 const pick = el => (el ? getComputedStyle(el).backgroundColor : null);
 
 export default function App() {
-  const {ready, books, text, ui, addBook, setLastApp, error} = useStore();
+  const {ready, books, text, ui, addBook, setLastApp, place, setPlace, error} = useStore();
   const [screen, setScreen] = useState('home');
   const [arg, setArg] = useState(null);      // параметр экрана: с какой строки списка вошли
+  const [restored, setRestored] = useState(false);   // место из прошлого запуска уже разобрано
 
   // История переходов. Была таблица «откуда куда» на два экрана, и она врала
   // везде, где переход не один: в настройки приходят и из дома, и с нижней
   // панели любого «приложения», а «назад» из таблицы всегда уводил на дом —
   // то есть терял ровно то место, откуда человек вышел на минуту.
   const hist = useRef([]);
+
+  // Возврат туда, где закрыли приложение.
+  //
+  // Курсор сохранялся и раньше, но приложение всё равно открывалось на
+  // домашнем экране: место в книге было цело, а место в телефоне терялось, и
+  // до текста оставалось лишнее нажатие. Ни одно настоящее приложение так себя
+  // не ведёт — свернул на середине переписки, вернулся в середину переписки.
+  //
+  // Ровно один раз за запуск и только после гидрации: до неё текста ещё нет, и
+  // любой экран чтения увёл бы в библиотеку (см. `go`).
+  useEffect(() => {
+    if (!ready || restored) return;
+    setRestored(true);
+    if (!place || place.id === 'home' || !SCREENS[place.id]) return;
+    // Книга могла исчезнуть вместе с местом — тогда открывать нечего.
+    if (!NO_BOOK_OK.includes(place.id) && !text.length) return;
+    setArg(place.arg);
+    setScreen(place.id);
+    if (READERS.includes(place.id)) setLastApp(place.id);
+  }, [ready, restored, place, text.length, setLastApp]);
+
+  // И запоминаем место — только ПОСЛЕ разбора прошлого. Иначе первый же кадр,
+  // на котором по умолчанию стоит дом, затёр бы то, что мы собирались прочесть.
+  // Флаг именно состояние, а не ref: эффекты одного коммита идут подряд, и с
+  // ref эта запись случилась бы до того, как `screen` успел смениться.
+  useEffect(() => {
+    if (!restored) return;
+    setPlace({id: screen, arg});
+  }, [restored, screen, arg, setPlace]);
 
   // Тема, кегль и язык живут атрибутами на <html>: токены палитры объявлены
   // на :root, а body красит система вокруг «телефона» — под #phone их не спрятать.
