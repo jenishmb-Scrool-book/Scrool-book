@@ -88,12 +88,12 @@ function Card({i, title, here, onPlay, onMenu, small}) {
 export default function Video({go, back}) {
   const {text, offset} = useStore();
   const t = useT();
-  const {chunks, pos, setPos} = useChunks(SIZE.vlist);
+  const {chunks, pos, setPos, eye} = useChunks(SIZE.vlist);
   const count = chunks.length;
   // Прокрутка списка двигает курсор: список названий сам стал способом читать.
   // До этого здесь стояло `trackPos: false` с доводом «листать список ≠ читать» —
   // он был верен ровно до того дня, когда в названиях появился текст книги.
-  const {boxRef, items, away, toPos} = useCardWindow({count, pos, setPos, ahead: 1, cardSelector: '.vid'});
+  const {boxRef, items, away, toPos} = useCardWindow({count, pos, setPos, eye, ahead: 1, cardSelector: '.vid'});
 
   const play = i => {
     setPos(i);

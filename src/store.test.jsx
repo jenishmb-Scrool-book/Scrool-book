@@ -245,23 +245,23 @@ describe('место', () => {
   it('запоминается и переживает перезапуск', async () => {
     const h = await mount();
     act(() => h.result.current.setPlace({id: 'chat', arg: 4}));
-    expect(h.result.current.place).toEqual({id: 'chat', arg: 4});
+    expect(h.result.current.place).toEqual({id: 'chat', arg: 4, at: null, y: 0});
     h.unmount();
 
     const again = await mount();
-    expect(again.result.current.place).toEqual({id: 'chat', arg: 4});
+    expect(again.result.current.place).toEqual({id: 'chat', arg: 4, at: null, y: 0});
   });
 
   it('вкладка мессенджера — такой же параметр, как номер', async () => {
     const h = await mount();
     act(() => h.result.current.setPlace({id: 'chats', arg: 'groups'}));
-    expect(h.result.current.place).toEqual({id: 'chats', arg: 'groups'});
+    expect(h.result.current.place).toEqual({id: 'chats', arg: 'groups', at: null, y: 0});
   });
 
   it('без параметра хранит null, а не undefined', async () => {
     const h = await mount();
     act(() => h.result.current.setPlace({id: 'reels'}));
-    expect(h.result.current.place).toEqual({id: 'reels', arg: null});
+    expect(h.result.current.place).toEqual({id: 'reels', arg: null, at: null, y: 0});
   });
 
   // Запись могла остаться от другой версии или быть испорчена. Подняться
@@ -279,18 +279,95 @@ describe('место', () => {
   it('параметр неизвестного вида отбрасывается, а само место остаётся', async () => {
     await saveMeta({books: [], cur: null, at: {}, last: 'reels', place: {id: 'chat', arg: {}}});
     const {result} = await mount();
-    expect(result.current.place).toEqual({id: 'chat', arg: null});
+    expect(result.current.place).toEqual({id: 'chat', arg: null, at: null, y: 0});
   });
 
   it('повторная запись того же места не трогает хранилище', async () => {
     const h = await mount();
     act(() => h.result.current.setPlace({id: 'feed', arg: null}));
-    await waitFor(() => expect(rawMeta().place).toEqual({id: 'feed', arg: null}));
+    await waitFor(() => expect(rawMeta().place).toEqual({id: 'feed', arg: null, at: null, y: 0}));
 
     const spy = vi.spyOn(Storage.prototype, 'setItem');
     act(() => h.result.current.setPlace({id: 'feed', arg: null}));
     await sleep(600);
     expect(spy).not.toHaveBeenCalled();
+  });
+});
+
+// Куда смотрели: карточка у кромки экрана (в символах) и сколько её ушло под
+// кромку. Одного курсора для возврата мало — он показывает на карточку, а
+// стоял человек не на её краю. Как это меряется на живом экране, проверяет
+// ui/useCardWindow.test.jsx; здесь — что хранится и когда пропадает.
+describe('место прокрутки', () => {
+  const BOOK = 'Раз. Два. Три.\n\nЧетыре. Пять.\n\nШесть. Семь.';
+
+  /** Книга и экран, к которому прокрутке есть чем прицепиться. */
+  const open = async h => {
+    await add(h, 'Тест', BOOK);
+    act(() => h.result.current.setPlace({id: 'feed', arg: null}));
+  };
+
+  it('пишется внутрь места и переживает перезапуск', async () => {
+    const h = await mount();
+    await open(h);
+    act(() => h.result.current.setSeen(16, 40));
+    expect(h.result.current.place).toEqual({id: 'feed', arg: null, at: 16, y: 40});
+    h.unmount();
+
+    const again = await mount();
+    expect(again.result.current.place).toEqual({id: 'feed', arg: null, at: 16, y: 40});
+  });
+
+  // Пиксели меряны от карточки, а карточка — от нарезки этого экрана. На
+  // другом экране мерить нечем, и старая запись увела бы в случайное место.
+  it('уход на другой экран её стирает', async () => {
+    const h = await mount();
+    await open(h);
+    act(() => h.result.current.setSeen(16, 40));
+    act(() => h.result.current.setPlace({id: 'reels', arg: null}));
+    expect(h.result.current.place).toEqual({id: 'reels', arg: null, at: null, y: 0});
+  });
+
+  // Обратная сторона того же: App пишет место на каждом кадре и знает только
+  // экран. Сравнивай setPlace ещё и прокрутку — она стиралась бы сразу.
+  it('повторная запись того же экрана её сохраняет', async () => {
+    const h = await mount();
+    await open(h);
+    act(() => h.result.current.setSeen(16, 40));
+    act(() => h.result.current.setPlace({id: 'feed', arg: null}));
+    expect(h.result.current.place).toEqual({id: 'feed', arg: null, at: 16, y: 40});
+  });
+
+  it('без места прокрутке некуда лечь', async () => {
+    const h = await mount();
+    await add(h, 'Тест', BOOK);
+    act(() => h.result.current.setSeen(16, 40));
+    expect(h.result.current.place).toBeNull();
+  });
+
+  it('за концом книги подрезается', async () => {
+    const h = await mount();
+    await open(h);
+    act(() => h.result.current.setSeen(9000, 40));
+    expect(h.result.current.place.at).toBe(BOOK.length - 1);
+  });
+
+  it('мусор в записи прокруткой не становится, а экран остаётся', async () => {
+    const cases = [
+      [{at: '12', y: 5}, {at: null, y: 0}],
+      [{at: -5, y: 5}, {at: null, y: 0}],
+      [{at: 5, y: 'вниз'}, {at: 5, y: 0}],
+      // Отрицательный сдвиг законен: в переписке карточку ставят к нижней кромке.
+      [{at: 5, y: -280}, {at: 5, y: -280}],
+      [{at: 5, y: 1e9}, {at: 5, y: 1e6}]
+    ];
+    for (const [raw, want] of cases) {
+      localStorage.clear();
+      await saveMeta({books: [], cur: null, at: {}, last: 'reels', place: {id: 'feed', arg: null, ...raw}});
+      const h = await mount();
+      expect(h.result.current.place, JSON.stringify(raw)).toEqual({id: 'feed', arg: null, ...want});
+      h.unmount();
+    }
   });
 });
 
@@ -314,6 +391,17 @@ describe('сворачивание', () => {
 
     await hide();
     expect(rawMeta().at[id]).toBe(12);
+  });
+
+  it('дописывает и место прокрутки', async () => {
+    const h = await mount();
+    await add(h, 'Тест', 'Раз.\n\nДва.\n\nТри.');
+    act(() => h.result.current.setPlace({id: 'feed', arg: null}));
+    act(() => h.result.current.setSeen(6, 24));
+    expect(rawMeta().place).toBeNull();          // дебаунс ещё не сработал
+
+    await hide();
+    expect(rawMeta().place).toEqual({id: 'feed', arg: null, at: 6, y: 24});
   });
 
   it('видимый экран ничего не пишет', async () => {

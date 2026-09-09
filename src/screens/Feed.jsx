@@ -21,9 +21,9 @@ import Resume from '../ui/Resume.jsx';
 export default function Feed({go, back}) {
   const {text, offset} = useStore();
   const t = useT();
-  const {chunks, pos, setPos} = useChunks(SIZE.feed);
+  const {chunks, pos, setPos, eye} = useChunks(SIZE.feed);
   const count = chunks.length;
-  const {boxRef, items, away, toPos} = useCardWindow({count, pos, setPos, ahead: 1, cardSelector: '.post'});
+  const {boxRef, items, away, toPos} = useCardWindow({count, pos, setPos, eye, ahead: 1, cardSelector: '.post'});
   const act = action => run(action, {go, boxRef, pos});
 
   return (

@@ -94,7 +94,7 @@ describe('место при перезапуске', () => {
     // «Продолжить» на домашнем экране уводит в последнюю читалку.
     await act(async () => {container.querySelector('.widget button').click();});
     expect(here()).toBe('reels');
-    await waitFor(() => expect(rawMeta().place).toEqual({id: 'reels', arg: null}));
+    await waitFor(() => expect(rawMeta().place).toEqual({id: 'reels', arg: null, at: null, y: 0}));
   });
 
   // Полный круг: закрыли в чтении — открылись в чтении.
@@ -119,6 +119,6 @@ describe('место при перезапуске', () => {
     // Восстановленный экран пришёл без истории, поэтому «‹» ведёт на дом.
     await act(async () => {container.querySelector('.mhdr .back').click();});
     expect(here()).toBe('home');
-    await waitFor(() => expect(rawMeta().place).toEqual({id: 'home', arg: null}));
+    await waitFor(() => expect(rawMeta().place).toEqual({id: 'home', arg: null, at: null, y: 0}));
   });
 });

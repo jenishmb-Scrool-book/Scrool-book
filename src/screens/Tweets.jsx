@@ -22,9 +22,9 @@ import Resume from '../ui/Resume.jsx';
 export default function Tweets({go, back}) {
   const {text, offset} = useStore();
   const t = useT();
-  const {chunks, pos, setPos} = useChunks(SIZE.tweets);
+  const {chunks, pos, setPos, eye} = useChunks(SIZE.tweets);
   const count = chunks.length;
-  const {boxRef, items, away, toPos} = useCardWindow({count, pos, setPos, ahead: 1, cardSelector: '.tw'});
+  const {boxRef, items, away, toPos} = useCardWindow({count, pos, setPos, eye, ahead: 1, cardSelector: '.tw'});
   const act = action => run(action, {go, boxRef, pos});
 
   return (

@@ -30,14 +30,23 @@ const UI = {theme: 'system', lang: 'ru', font: 'md', notify: 'off', skin: 'tg'};
 
 const EMPTY = {books: [], cur: null, at: {}, last: 'reels', ui: UI, place: null};
 
-// Место, где закрыли приложение: экран и его параметр (вкладка
-// мессенджера, номер собеседника). Курсор хранился и раньше, но одного его
-// мало: приложение всё равно открывалось на домашнем экране, и до текста
+// Место, где закрыли приложение: экран, его параметр (вкладка мессенджера,
+// номер собеседника) и прокрутка на нём. Курсор хранился и раньше, но одного
+// его мало: приложение всё равно открывалось на домашнем экране, и до текста
 // оставалось ещё одно нажатие.
+//
+// Прокрутка — это ПАРА: `at` — смещение в символах той карточки, что стояла у
+// кромки экрана, `y` — сколько её уже ушло под кромку. Карточка в символах, а
+// не номером, по той же причине, что и курсор: номер зависит от размера
+// фрагмента, а он у каждого экрана свой. Одних пикселей тоже мало: после
+// перезапуска окно рендера начинается с другого куска книги, и та же тысяча
+// пикселей означает другое место.
 //
 // Списка экранов стор нарочно не знает: он лежит в App.jsx, и импорт
 // оттуда замкнул бы круг. Здесь только защита от мусора в хранилище, а
 // «есть ли такой экран» проверяет тот, кто его открывает.
+const CAP = 1e6;      // потолок пикселя: заслон от мусора, а не смысл
+
 const readPlace = raw => {
   const id = raw && typeof raw.id === 'string' ? raw.id.slice(0, 24) : '';
   if (!id) return null;
@@ -45,9 +54,17 @@ const readPlace = raw => {
   const arg = typeof a === 'string' ? a.slice(0, 32)
     : Number.isFinite(a) ? Math.trunc(a)
     : null;
-  return {id, arg};
+  const at = Number.isFinite(raw.at) && raw.at >= 0 ? Math.trunc(raw.at) : null;
+  const y = at === null || !Number.isFinite(raw.y)
+    ? 0
+    : Math.trunc(Math.min(Math.max(raw.y, -CAP), CAP));
+  return {id, arg, at, y};
 };
 
+// Экран и параметр — да, прокрутка — нет, и это несущая деталь. App пишет сюда
+// {id, arg} на каждом переходе и не знает про прокрутку вовсе; сравнивай мы её
+// тоже — запись «тот же экран» стирала бы место прокрутки на первом же кадре.
+// А смена экрана, наоборот, обязана его стереть: мерить прокрутку нечем.
 const samePlace = (a, b) =>
   (a ? a.id : null) === (b ? b.id : null) && (a ? a.arg : null) === (b ? b.arg : null);
 
@@ -155,6 +172,11 @@ export function StoreProvider({children}) {
     timer.current = setTimeout(() => {timer.current = null; write();}, DEBOUNCE);
   }, [write]);
 
+  // Дописать немедленно. Нужна тем, кто знает, что жить осталось до конца
+  // обработчика: сворачивание ниже и окно рендера, которое в этот же момент
+  // снимает с экрана последнюю прокрутку.
+  const flush = useCallback(() => {if (dirty.current) write();}, [write]);
+
   /* ===== гидрация ===== */
   useEffect(() => {
     let live = true;
@@ -211,7 +233,6 @@ export function StoreProvider({children}) {
   // visibilitychange приходит от системы при сворачивании — это и есть последний
   // момент, когда мы ещё живы и можем дописать.
   useEffect(() => {
-    const flush = () => {if (dirty.current) write();};
     const hidden = () => {if (document.visibilityState === 'hidden') flush();};
     document.addEventListener('visibilitychange', hidden);
     window.addEventListener('pagehide', flush);
@@ -219,7 +240,7 @@ export function StoreProvider({children}) {
       document.removeEventListener('visibilitychange', hidden);
       window.removeEventListener('pagehide', flush);
     };
-  }, [write]);
+  }, [flush]);
 
   /* ===== курсор ===== */
   const setOffset = useCallback(n => {
@@ -257,6 +278,20 @@ export function StoreProvider({children}) {
     const m = metaRef.current;
     const next = readPlace(p);
     if (samePlace(next, m.place || null)) return;
+    applyMeta({...m, place: next});
+    schedule();
+  }, [applyMeta, schedule]);
+
+  // Куда смотрели на этом экране: карточка у кромки (в символах) и сколько её
+  // ушло под кромку. От курсора отличается тем, что курсор отвечает «докуда
+  // прочитано» и назад не едет, а это — «что было на экране», и при листании
+  // назад они расходятся. Хранится внутри места и вместе с ним умирает: на
+  // другом экране мерить эту прокрутку нечем.
+  const setSeen = useCallback((at, y) => {
+    const m = metaRef.current;
+    if (!m.place) return;
+    const next = readPlace({...m.place, at: clamp(at, textRef.current.length), y});
+    if (next.at === m.place.at && next.y === m.place.y) return;
     applyMeta({...m, place: next});
     schedule();
   }, [applyMeta, schedule]);
@@ -389,13 +424,16 @@ export function StoreProvider({children}) {
     setLastApp,
     place: meta.place || null,
     setPlace,
+    setSeen,
+    flush,
     ui: meta.ui || UI,
     setUi,
     addBook,
     openBook,
     deleteBook,
     error
-  }), [ready, meta, text, chapters, error, setOffset, setLastApp, setPlace, setUi, addBook, openBook, deleteBook]);
+  }), [ready, meta, text, chapters, error, setOffset, setLastApp, setPlace, setSeen, flush,
+       setUi, addBook, openBook, deleteBook]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

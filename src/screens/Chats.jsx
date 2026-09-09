@@ -108,11 +108,11 @@ function Row({i, name, seed, text, time, state, onClick}) {
  * «Звонков» обработчик остался бы висеть на выброшенном узле, и прокрутка
  * перестала бы двигать курсор — молча.
  */
-function Roster({mode, chunks, pos, setPos, onOpen}) {
+function Roster({mode, chunks, pos, setPos, eye, onOpen}) {
   const count = chunks.length;
   // gap: под плашкой «страница / осталось» нужен запас, иначе она накрывает
   // время у самой верхней строки.
-  const {boxRef, items, away, toPos} = useCardWindow({count, pos, setPos, ahead: 2, cardSelector: '.crow', gap: 26});
+  const {boxRef, items, away, toPos} = useCardWindow({count, pos, setPos, eye, ahead: 2, cardSelector: '.crow', gap: 26});
 
   return (
     <>
@@ -195,7 +195,7 @@ export default function Chats({go, back, arg}) {
   const {text, offset, ui} = useStore();
   const t = useT();
   const S = skinOf(ui.skin);
-  const {chunks, pos, setPos} = useChunks(SIZE.roster);
+  const {chunks, pos, setPos, eye} = useChunks(SIZE.roster);
 
   // На какой вкладке открылись. Приходит из шапки переписки: трубка ведёт в
   // журнал вызовов, а не просто «назад в список».
@@ -248,7 +248,7 @@ export default function Chats({go, back, arg}) {
           показывала бы прогресс по книге над списком, в котором книги нет. */}
       {READ_TABS.includes(tab) ? <Progress offset={offset} len={text.length} go={go} /> : null}
       {READ_TABS.includes(tab) ? (
-        <Roster key={tab} mode={tab} chunks={chunks} pos={pos} setPos={setPos} onOpen={openAt} />
+        <Roster key={tab} mode={tab} chunks={chunks} pos={pos} setPos={setPos} eye={eye} onOpen={openAt} />
       ) : tab === 'calls' ? (
         <CallList onOpen={openWith} />
       ) : (
@@ -286,10 +286,10 @@ function Bubble({text, time, out, tick, react, count}) {
 export function Chat({go, back, arg}) {
   const {text, offset, ui} = useStore();
   const t = useT();
-  const {chunks, pos, setPos} = useChunks(SIZE.chats);
+  const {chunks, pos, setPos, eye} = useChunks(SIZE.chats);
   const count = chunks.length;
   const {boxRef, items, away, toPos} = useCardWindow({
-    count, pos, setPos, ahead: 8, cardSelector: '.mline', anchor: 'bottom'
+    count, pos, setPos, eye, ahead: 8, cardSelector: '.mline', anchor: 'bottom'
   });
   const [typing, setTyping] = useState(false);
   const timer = useRef(0);

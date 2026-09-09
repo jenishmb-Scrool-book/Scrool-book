@@ -18,9 +18,9 @@ import Resume from '../ui/Resume.jsx';
 export default function Reels({go, back}) {
   const {text, offset} = useStore();
   const t = useT();
-  const {chunks, pos, setPos} = useChunks(SIZE.reels);
+  const {chunks, pos, setPos, eye} = useChunks(SIZE.reels);
   const count = chunks.length;
-  const {boxRef, items, away, toPos} = useCardWindow({count, pos, setPos, ahead: 2, cardSelector: '.reel'});
+  const {boxRef, items, away, toPos} = useCardWindow({count, pos, setPos, eye, ahead: 2, cardSelector: '.reel'});
   const act = action => run(action, {go, boxRef, pos});
 
   return (
