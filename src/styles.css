@@ -224,8 +224,13 @@ button,textarea,input{font:inherit;color:inherit}
    в статус-баре время рисуется только в браузере. */
 .glance{margin:16px 20px 2px;line-height:1.04;text-shadow:0 1px 3px #000000b3,0 2px 18px #000000a6}
 .glance b{display:block;font-size:2.9rem;font-weight:300;letter-spacing:-1.6px}
-.glance span{display:block;margin-top:3px;font-size:.81rem;opacity:.82;text-transform:lowercase}
-.glance span::first-letter{text-transform:uppercase}
+.glance span{display:block;margin-top:3px;font-size:.81rem;opacity:.82}
+/* Приведение регистра нужно только русскому: Intl отдаёт «чт, 10 сент.»
+   целиком строчными, а Android показывает первую букву заглавной. В английском
+   заглавных две — «Thu, Sep 10», — и общее правило съедало вторую, превращая
+   месяц в «sep». Язык стоит атрибутом на <html> (см. App.jsx). */
+:root[lang="ru"] .glance span{text-transform:lowercase}
+:root[lang="ru"] .glance span::first-letter{text-transform:uppercase}
 
 /* Виджет «читаешь сейчас». Именно виджет, а не карточка: у виджета на Android
    скругление крупнее, чем у иконок, подложка полупрозрачная, а внутри — строка
@@ -730,6 +735,121 @@ button,textarea,input{font:inherit;color:inherit}
 .row .ghost{background:var(--btn-2);color:var(--fg)}
 .wallprev{height:120px;border-radius:12px;background-size:cover;background-position:center;
   margin:-12px 0 10px;border:1px solid var(--glass-line)}
+
+/* ===== вступление ===== */
+/* Единственный экран, который человек видит ровно один раз, — и именно поэтому
+   он обязан выглядеть законченным: по нему судят обо всём остальном ещё до
+   того, как увидят хоть строчку книги.
+   Свечение акцентом сверху, а не градиент во весь экран: голый фон на первом
+   экране читается как несобранная страница, градиент по всему — как заставка. */
+.intro{background:var(--bg);overflow:hidden}
+.intro::before{content:'';position:absolute;left:-30%;right:-30%;top:-34%;height:64%;
+  background:radial-gradient(50% 50% at 50% 50%,var(--accent),transparent 70%);
+  opacity:.2;pointer-events:none;z-index:0}
+.ihead,.ibody,.ifoot{position:relative;z-index:1}
+/* Строка сверху есть всегда, даже пустая: иначе на последней карточке весь
+   экран подпрыгивал бы на высоту исчезнувшей кнопки. */
+.ihead{flex:none;display:flex;justify-content:flex-end;min-height:40px;padding:4px 8px 0}
+.iskip{border:0;background:none;color:inherit;opacity:.5;cursor:pointer;
+  font-size:.81rem;padding:8px 10px}
+.iskip:active{opacity:.8}
+.ibody{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;
+  justify-content:center;gap:13px;padding:0 26px}
+.ibody h1{margin:0;font-size:1.5rem;line-height:1.22;font-weight:700;letter-spacing:-.4px}
+.ibody p{margin:0;font-size:.94rem;line-height:1.55;opacity:.72}
+.ibody .inote{font-size:.81rem;opacity:.52}
+.ifoot{flex:none;display:flex;align-items:center;gap:14px;
+  padding:14px 26px calc(22px + env(safe-area-inset-bottom,0px))}
+/* Точки — не украшение: они говорят, сколько всего осталось. Три штуки видно
+   целиком, и это само по себе обещание, что экран короткий. */
+.idots{flex:1;display:flex;gap:6px}
+.idots i{width:7px;height:7px;border-radius:4px;background:var(--fg);opacity:.22;
+  transition:width .2s,opacity .2s}
+.idots i.on{width:20px;opacity:1;background:var(--accent)}
+.igo{flex:none;border:0;border-radius:14px;padding:13px 24px;cursor:pointer;
+  font-size:.94rem;font-weight:600;background:var(--accent);color:var(--on-accent)}
+.igo:active{filter:brightness(.92)}
+
+/* Шаг выбора языка. Единственный экран приложения без словаря: он показывается
+   до того, как язык выбран, и написан на обоих сразу. */
+.ilang{justify-content:center;text-align:center;gap:0}
+.iname{font-size:2.5rem;font-weight:800;letter-spacing:2.5px;line-height:1}
+.itag{margin-top:12px;font-size:.87rem;line-height:1.5;opacity:.6}
+.itag span{display:block}
+.ipick{margin:36px 0 12px;font-size:.72rem;font-weight:600;letter-spacing:1.4px;
+  text-transform:uppercase;opacity:.42}
+.ilang button{display:block;width:100%;margin-bottom:10px;padding:15px;cursor:pointer;
+  border:1px solid var(--field-line);border-radius:14px;background:var(--field);
+  color:inherit;font-size:1rem;font-weight:600}
+.ilang button:active{border-color:var(--accent);background:var(--card-sel)}
+
+/* Картинка карточки. Она здесь не иллюстрация, а половина объяснения: три
+   абзаца про «притворяется телефоном» короче любого из них показать. */
+.iart{flex:none;margin-bottom:6px}
+/* Мини-домашний экран: те же значки и тот же порядок, что на настоящем. */
+.iapps{display:grid;grid-template-columns:repeat(4,1fr);gap:15px 6px;padding:16px 10px;
+  border-radius:22px;background:var(--glass);border:1px solid var(--glass-line)}
+.iapps span{display:grid;place-items:center;
+  animation:ipop .34s backwards cubic-bezier(.2,.8,.3,1);animation-delay:calc(var(--i)*45ms)}
+.iapps b{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;
+  color:#fff;overflow:hidden;box-shadow:0 4px 10px #0000004a}
+.iapps .rnd b{border-radius:50%}
+.iapps b svg{width:58%;height:58%;display:block}
+@keyframes ipop{from{opacity:0;transform:scale(.7)}}
+
+/* Лента кусков едет сама. Это и есть ответ на вопрос «а что мне тут делать»:
+   ничего, кроме того же движения пальцем, каким листают ленту.
+   Карточек шесть, и все одинаковые: лента уезжает ровно на три и начинается
+   заново, а при одинаковых карточках возврат не виден вовсе. */
+.icards{position:relative;height:166px;overflow:hidden;border-radius:22px;
+  background:var(--glass);border:1px solid var(--glass-line)}
+.icards .in{position:absolute;left:14px;right:14px;top:14px;
+  animation:iroll 7s infinite cubic-bezier(.55,0,.3,1)}
+.icards .ic{height:56px;margin-bottom:10px;padding:12px;border-radius:14px;
+  background:var(--card);box-shadow:0 3px 10px #00000024}
+.icards .ic i{display:block;height:7px;margin-bottom:7px;border-radius:4px;
+  background:var(--fg);opacity:.2}
+.icards .ic i:last-child{width:52%;margin:0}
+@keyframes iroll{
+  0%,18%{transform:translateY(0)}
+  27%,45%{transform:translateY(-66px)}
+  55%,73%{transform:translateY(-132px)}
+  82%,100%{transform:translateY(-198px)}
+}
+
+/* Два «приложения» и одна полоса под ними. Это и есть весь продукт, поэтому
+   картинка здесь буквальная: слева клип, справа переписка, место одно. */
+.ishare{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.isc{height:124px;padding:10px;overflow:hidden;border-radius:16px;
+  display:flex;flex-direction:column;gap:6px;
+  background:var(--card);border:1px solid var(--line)}
+.isc.dark{justify-content:flex-end;border-color:#ffffff1a;
+  background:linear-gradient(160deg,#2b2b3c,#0c0c14)}
+.isc.dark i{display:block;height:7px;border-radius:4px;background:#fff;opacity:.5}
+.isc.dark i:last-child{width:56%}
+.isc.chat{justify-content:flex-start;background:var(--chat-bg)}
+.isc.chat b{display:block;width:72%;height:17px;border-radius:9px;background:var(--bubble)}
+.isc.chat b.me{margin-left:auto;background:var(--accent);opacity:.85}
+.ishare .ibar{position:relative;grid-column:1/-1;height:6px;border-radius:3px;
+  background:var(--track)}
+.ishare .ibar i{display:block;width:46%;height:100%;border-radius:3px;background:var(--accent)}
+.ishare .ibar em{position:absolute;left:46%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;
+  border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--bg)}
+
+/* Короткий экран: картинка уступает первой, текст на ней не режется. */
+@media (max-height:700px){
+  .iart{margin-bottom:2px}
+  .icards{height:124px}
+  .isc{height:104px}
+  .ibody h1{font-size:1.32rem}
+  .iname{font-size:2.1rem}
+  .ipick{margin-top:26px}
+}
+/* Движение здесь объясняет механику, но человек мог попросить систему её
+   выключить — тогда карточки просто стоят. */
+@media (prefers-reduced-motion:reduce){
+  .iapps span,.icards .in{animation:none}
+}
 
 /* ===== истории ===== */
 /* Шестой движок. От «Клипов» отличается не палитрой, а способом листания:

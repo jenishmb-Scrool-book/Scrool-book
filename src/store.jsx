@@ -33,7 +33,7 @@ const ONOFF = ['on', 'off'];
 const SKINS = ['tg', 'wa', 'ms'];
 const UI = {theme: 'system', lang: 'ru', font: 'md', notify: 'off', skin: 'tg'};
 
-const EMPTY = {books: [], cur: null, at: {}, last: 'reels', ui: UI, place: null};
+const EMPTY = {books: [], cur: null, at: {}, last: 'reels', ui: UI, place: null, intro: 0};
 
 // Место, где закрыли приложение: экран, его параметр (вкладка мессенджера,
 // номер собеседника) и прокрутка на нём. Курсор хранился и раньше, но одного
@@ -312,7 +312,12 @@ export function StoreProvider({children}) {
         at: {...(raw.at || {})},
         last: APPS.includes(raw.last) ? raw.last : 'reels',
         ui: readUi(raw.ui),
-        place: readPlace(raw.place)
+        place: readPlace(raw.place),
+        // Вступление показывается ровно один раз и только тому, у кого
+        // приложения ещё не было. Мета с книгами, но без этого поля, — это
+        // обновление, а не первый запуск: человеку, дочитавшему полкниги,
+        // объяснять, что такое клипы, поздно и незачем.
+        intro: raw.intro || (Array.isArray(raw.books) && raw.books.length) ? 1 : 0
       };
       let txt = '';
       if (m.cur && m.books.some(b => b.id === m.cur)) {
@@ -387,6 +392,17 @@ export function StoreProvider({children}) {
     applyMeta({...m, ui: next});
     schedule();
   }, [applyMeta, schedule]);
+
+  // Вступление пройдено. Пишем немедленно, а не дебаунсом: следом за этим
+  // экраном идёт запись первой книги, и умри приложение между двумя записями —
+  // человек увидел бы вступление второй раз, то есть приложение, которое его
+  // не помнит. Ради одной записи за всю жизнь установки ждать нечего.
+  const endIntro = useCallback(() => {
+    const m = metaRef.current;
+    if (m.intro) return;
+    applyMeta({...m, intro: 1});
+    write();
+  }, [applyMeta, write]);
 
   const setLastApp = useCallback(id => {
     const m = metaRef.current;
@@ -583,12 +599,16 @@ export function StoreProvider({children}) {
     flush,
     ui: meta.ui || UI,
     setUi,
+    // Вступление: пройдено или нет. Наружу отдаём именно «пройдено», а не
+    // «показать»: экран решает, что делать, а не хранилище.
+    introDone: !!meta.intro,
+    endIntro,
     addBook,
     openBook,
     deleteBook,
     error
   }), [ready, meta, text, chapters, pics, getPic, error, setOffset, setLastApp, setPlace, setSeen,
-       flush, setUi, addBook, openBook, deleteBook]);
+       flush, setUi, endIntro, addBook, openBook, deleteBook]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -24,6 +24,20 @@ const ru = {
   'dismiss': 'Скрыть',
   'today': 'Сегодня',
 
+  // ===== вступление =====
+  // Шага выбора языка здесь нет намеренно: он показывается ДО того, как язык
+  // выбран, и написан на обоих сразу — прямо в `screens/Intro.jsx`.
+  'intro.skip': 'Пропустить',
+  'intro.next': 'Далее',
+  'intro.start': 'Начать читать',
+  'intro.t1': 'Книга притворяется телефоном',
+  'intro.b1': 'Свой текст приложение режет на короткие куски и показывает не как книгу, а как экран телефона: переписка, клипы, истории, лента, ролики.',
+  'intro.t2': 'Читаешь тем же движением, каким листаешь',
+  'intro.b2': 'В клипах — свайп вверх, в историях — тап справа, в переписке и ленте — обычная прокрутка. Размер куска везде свой: от двух предложений до целой страницы.',
+  'intro.t3': 'Место в книге одно на все экраны',
+  'intro.b3': 'Прочитал десять кусков в клипах, зашёл в переписку — продолжаешь с той же строки. Свои книги добавляй в «Библиотеке»: .txt, .fb2 или .epub. Интернет не нужен.',
+  'intro.note': 'Первая книга уже открыта — это подробная инструкция, и читается она так же, как всё остальное.',
+
   'home.now': 'Читаешь сейчас',
   'home.empty': 'Нет текста — добавь в библиотеке',
   'home.continue': 'Продолжить',
@@ -184,6 +198,17 @@ const en = {
   'delete': 'Delete',
   'dismiss': 'Dismiss',
   'today': 'Today',
+
+  'intro.skip': 'Skip',
+  'intro.next': 'Next',
+  'intro.start': 'Start reading',
+  'intro.t1': 'A book pretending to be a phone',
+  'intro.b1': 'The app cuts your text into short pieces and shows them not as a book, but as a phone screen: chat, clips, stories, feed, video.',
+  'intro.t2': 'You read with the gesture you already scroll with',
+  'intro.b2': 'In clips — swipe up, in stories — tap on the right, in chat and feed — plain scrolling. The size of the piece differs everywhere: from two sentences to a whole page.',
+  'intro.t3': 'One place in the book for every screen',
+  'intro.b3': 'Read ten pieces in clips, open the chat — you carry on from the same line. Add your own books in the Library: .txt, .fb2 or .epub. No internet needed.',
+  'intro.note': 'The first book is already open — it is the long version of this, and it reads like everything else here.',
 
   'home.now': 'Currently reading',
   'home.empty': 'No text yet — add one in the library',

@@ -2,8 +2,9 @@ import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {useStore} from './store.jsx';
 import {initNative, setBarColor} from './native.js';
 import {isLight, rgbOf} from './ui/color.js';
-import {SEED, SEED_TITLE} from './seed.js';
+import {seedOf} from './seed.js';
 import {DICT} from './i18n.js';
+import Intro from './screens/Intro.jsx';
 import Home from './screens/Home.jsx';
 import Chats, {Chat} from './screens/Chats.jsx';
 import Reels from './screens/Reels.jsx';
@@ -40,10 +41,12 @@ const BARS = '.screen .mhdr, .screen .chdr, .screen .yhdr, .screen .thdr, .scree
 const pick = el => (el ? getComputedStyle(el).backgroundColor : null);
 
 export default function App() {
-  const {ready, books, text, ui, addBook, setLastApp, place, setPlace, error} = useStore();
+  const {ready, books, text, ui, addBook, setLastApp, place, setPlace, error,
+         introDone, endIntro} = useStore();
   const [screen, setScreen] = useState('home');
   const [arg, setArg] = useState(null);      // параметр экрана: с какой строки списка вошли
   const [restored, setRestored] = useState(false);   // место из прошлого запуска уже разобрано
+  const [step, setStep] = useState(0);       // шаг вступления; 0 — выбор языка
 
   // История переходов. Была таблица «откуда куда» на два экрана, и она врала
   // везде, где переход не один: в настройки приходят и из дома, и с нижней
@@ -60,8 +63,16 @@ export default function App() {
   //
   // Ровно один раз за запуск и только после гидрации: до неё текста ещё нет, и
   // любой экран чтения увёл бы в библиотеку (см. `go`).
+  //
+  // «Один раз» держит ref, а не состояние, и это не перестраховка. Между
+  // гидрацией и коммитом, в котором `restored` станет true, успевает приехать
+  // текст первой книги — эффект запускается второй раз со СТАРЫМ значением
+  // состояния и с уже непустым текстом, то есть проходит проверку «книги нет»
+  // и уводит на экран чтения, которого человек не просил. Ref виден сразу.
+  const once = useRef(false);
   useEffect(() => {
-    if (!ready || restored) return;
+    if (!ready || once.current) return;
+    once.current = true;
     setRestored(true);
     if (!place || place.id === 'home' || !SCREENS[place.id]) return;
     // Книга могла исчезнуть вместе с местом — тогда открывать нечего.
@@ -69,7 +80,7 @@ export default function App() {
     setArg(place.arg);
     setScreen(place.id);
     if (READERS.includes(place.id)) setLastApp(place.id);
-  }, [ready, restored, place, text.length, setLastApp]);
+  }, [ready, place, text.length, setLastApp]);
 
   // И запоминаем место — только ПОСЛЕ разбора прошлого. Иначе первый же кадр,
   // на котором по умолчанию стоит дом, затёр бы то, что мы собирались прочесть.
@@ -129,16 +140,24 @@ export default function App() {
     // выглядит так же ровно, как в приложении.
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', color);
-  }, [screen, ui.skin, ui.theme]);
+    // `introDone` здесь потому, что вступление сменяется домом БЕЗ смены
+    // `screen`: он всё это время и так «home». Без него полоска осталась бы
+    // того цвета, который замерили на вступлении.
+  }, [screen, ui.skin, ui.theme, introDone]);
 
   // Первый запуск: вместо пустого экрана подкладываем текст, объясняющий механику.
   // Живёт здесь, а не в сторе: это онбординг, а не хранилище.
+  //
+  // Ждём конца вступления, и это не мелочь: язык выбирается там, на первом же
+  // шаге, а книга кладётся один раз и навсегда — переписать её потом нельзя,
+  // вместе с ней переписалось бы и место чтения.
   const seeded = useRef(false);
   useEffect(() => {
-    if (!ready || books.length || seeded.current) return;
+    if (!ready || !introDone || books.length || seeded.current) return;
     seeded.current = true;   // одна попытка: если запись не удалась, не зацикливаемся
-    addBook(SEED_TITLE, SEED);
-  }, [ready, books.length, addBook]);
+    const first = seedOf(ui.lang);
+    addBook(first.title, first.text);
+  }, [ready, introDone, books.length, ui.lang, addBook]);
 
   // Рефы, чтобы обработчик аппаратной «назад» видел свежее состояние,
   // не переподписываясь на каждый рендер.
@@ -149,6 +168,13 @@ export default function App() {
 
   const argRef = useRef(arg);
   argRef.current = arg;
+
+  // Вступление живёт мимо истории переходов: это не экран приложения, а то,
+  // что стоит перед ним. Поэтому «назад» на нём ходит по его собственным шагам.
+  const introRef = useRef(false);
+  introRef.current = ready && !introDone;
+  const stepRef = useRef(step);
+  stepRef.current = step;
 
   const go = (id, opt) => {
     // Читать нечего — вместо пустого экрана уводим в библиотеку.
@@ -196,6 +222,14 @@ export default function App() {
     let dead = false;
     // С дома «назад» отдаёт false — приложение сворачивается.
     const onBack = () => {
+      // Во вступлении — шаг назад по нему же. С первого шага сворачиваем:
+      // позади него ничего нет, и держать человека на экране, с которого не
+      // выйти, не станет ни одно приложение.
+      if (introRef.current) {
+        if (stepRef.current <= 0) return false;
+        setStep(stepRef.current - 1);
+        return true;
+      }
       if (screenRef.current === 'home') return false;
       if (backRef.current()) return true;
       // Истории нет (например, экран восстановлен после перезапуска) — на дом.
@@ -226,6 +260,16 @@ export default function App() {
     return (
       <div id="phone">
         <div className="screen on"><div className="boot">{DICT[ui.lang] ? DICT[ui.lang].boot : DICT.ru.boot}</div></div>
+      </div>
+    );
+  }
+
+  // Первый запуск: сперва язык и объяснение, и только потом сам «телефон».
+  // Домашний экран за ним не рисуется вовсе — он и есть то, что непонятно.
+  if (!introDone) {
+    return (
+      <div id="phone">
+        <Intro step={step} onStep={setStep} onDone={endIntro} />
       </div>
     );
   }

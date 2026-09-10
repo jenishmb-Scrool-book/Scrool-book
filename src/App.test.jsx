@@ -40,6 +40,25 @@ async function boot() {
   return r;
 }
 
+/**
+ * Пройти вступление первого запуска: выбрать язык и пролистать карточки.
+ * Само вступление проверяется в screens/Intro.test.jsx — здесь оно просто
+ * стоит на дороге к дому, как и на настоящем первом запуске.
+ */
+async function pass(lang = 'ru') {
+  const want = lang === 'en' ? 'English' : 'Русский';
+  const btn = [...document.querySelectorAll('.ilang button')].find(b => b.textContent === want);
+  await act(async () => {btn.click();});
+  // Кнопка внизу справа ведёт по карточкам, последняя заканчивает вступление.
+  for (let i = 0; i < 8 && document.querySelector('.igo'); i++) {
+    await act(async () => {document.querySelector('.igo').click();});
+  }
+  // Первая книга кладётся после вступления и кладётся асинхронно. Дождаться её
+  // здесь обязательно: незавершённая запись доживает до следующего теста и
+  // приезжает в чужое хранилище посреди его гидрации.
+  await waitFor(() => expect((rawMeta() || {books: []}).books).toHaveLength(1));
+}
+
 /** Положить в хранилище книгу и место, как после прошлого запуска. */
 const seed = (place, ui) =>
   Promise.all([
@@ -57,8 +76,12 @@ const seed = (place, ui) =>
 beforeEach(() => localStorage.clear());
 
 describe('место при перезапуске', () => {
-  it('без записи открывается дом', async () => {
+  // Пустое хранилище — это первый запуск, а он начинается со вступления.
+  // Дом за ним: возвращаться после него некуда, места ещё нет.
+  it('без записи открывается дом — после вступления', async () => {
     await boot();
+    expect(here()).toBe('intro');
+    await pass();
     expect(here()).toBe('home');
   });
 
@@ -83,7 +106,9 @@ describe('место при перезапуске', () => {
   // это пустой экран, и `go` для таких случаев уводит в библиотеку; на старте
   // это было бы хуже дома: человек не просил ничего открывать.
   it('без книги остаётся дома, а не уходит в чтение', async () => {
-    await saveMeta({books: [], cur: null, at: {}, last: 'reels', place: {id: 'reels', arg: null}});
+    // `intro: 1` — приложением уже пользовались: книгу удалили, а не не завели.
+    await saveMeta({books: [], cur: null, at: {}, last: 'reels',
+                    place: {id: 'reels', arg: null}, intro: 1});
     await boot();
     expect(here()).toBe('home');
   });
@@ -152,6 +177,7 @@ describe('аппаратная «назад»', () => {
   // Единственный случай, когда «назад» отдаёт false: дальше некуда, и Android
   // должен свернуть приложение сам.
   it('на доме сворачивает приложение', async () => {
+    await seed(null);
     await boot();
     expect(here()).toBe('home');
     expect(await NAT.onBack()).toBe(false);

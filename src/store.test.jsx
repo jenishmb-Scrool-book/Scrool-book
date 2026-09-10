@@ -697,3 +697,53 @@ describe('картинки', () => {
     expect(src).toBe('');
   });
 });
+
+// Отметка «вступление пройдено».
+//
+// Живёт в мете рядом с местом, и цена ошибки у неё несимметричная: показать
+// вступление лишний раз — сказать человеку, что приложение его не помнит,
+// а не показать вовремя — оставить его на непонятном экране.
+describe('вступление', () => {
+  it('на пустом хранилище не пройдено', async () => {
+    const {result} = await mount();
+    expect(result.current.introDone).toBe(false);
+  });
+
+  it('отметка пишется сразу, а не дебаунсом', async () => {
+    const h = await mount();
+    await act(async () => {h.result.current.endIntro();});
+    await waitFor(() => expect(rawMeta().intro).toBe(1));
+    expect(h.result.current.introDone).toBe(true);
+  });
+
+  // Мета с книгами, но без поля, — это обновление, а не первый запуск.
+  it('у того, у кого книги уже есть, выводится сама', async () => {
+    const text = 'Раз. Два. Три.';
+    await saveText('b1', text);
+    await saveMeta({books: [{id: 'b1', title: 'Книга', len: text.length}], cur: 'b1', at: {b1: 0}});
+
+    const {result} = await mount();
+    expect(result.current.introDone).toBe(true);
+  });
+
+  // Книгу добавляют СРАЗУ после вступления, и мета при этом переписывается
+  // целиком. Потеряйся отметка здесь — вступление возвращалось бы на втором
+  // запуске, то есть ровно у всех.
+  it('переживает добавление книги', async () => {
+    const h = await mount();
+    await act(async () => {h.result.current.endIntro();});
+    await add(h, 'Книга', 'Раз. Два. Три. Четыре.');
+    expect(rawMeta().intro).toBe(1);
+    expect(h.result.current.introDone).toBe(true);
+  });
+
+  it('переживает перезапуск', async () => {
+    const first = await mount();
+    await act(async () => {first.result.current.endIntro();});
+    await waitFor(() => expect(rawMeta().intro).toBe(1));
+    first.unmount();
+
+    const {result} = await mount();
+    expect(result.current.introDone).toBe(true);
+  });
+});
