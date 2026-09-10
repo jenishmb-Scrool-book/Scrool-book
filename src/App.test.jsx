@@ -1,5 +1,5 @@
 import React from 'react';
-import {describe, it, expect, beforeEach} from 'vitest';
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {render, waitFor, act} from '@testing-library/react';
 import App from './App.jsx';
 import {StoreProvider} from './store.jsx';
@@ -16,6 +16,15 @@ import {DICT} from './i18n.js';
 // открываться на доме.
 
 const TEXT = 'Раз, два, три, четыре, пять. Вышел зайчик погулять.\n\n'.repeat(40);
+
+// Аппаратная «назад» приходит из нативного слоя, а он в браузере не
+// выполняется вовсе. Подменяем его целиком, кроме одного: запоминаем
+// обработчик, который на телефоне дёргает система, — чтобы дёрнуть его самим.
+const NAT = vi.hoisted(() => ({onBack: null}));
+vi.mock('./native.js', async orig => ({
+  ...(await orig()),
+  initNative: async ({onBack} = {}) => {NAT.onBack = onBack;}
+}));
 
 const wrapper = ({children}) => <StoreProvider>{children}</StoreProvider>;
 const rawMeta = () => JSON.parse(localStorage.getItem('scroll.meta') || 'null');
@@ -120,5 +129,42 @@ describe('место при перезапуске', () => {
     await act(async () => {container.querySelector('.mhdr .back').click();});
     expect(here()).toBe('home');
     await waitFor(() => expect(rawMeta().place).toEqual({id: 'home', arg: null, at: null, y: 0}));
+  });
+});
+
+// Аппаратная «назад» на телефоне.
+//
+// Сломать её можно в двух местах: в самом обработчике и в проводе до него.
+// Провод здесь и проверяется — что App отдаёт нативному слою работающий
+// обработчик и что тот ходит по истории переходов, а не по таблице «откуда
+// куда». Сам нативный слой проверяет native.test.js.
+describe('аппаратная «назад»', () => {
+  it('возвращает на предыдущий экран', async () => {
+    await seed(null);
+    await boot();
+    await act(async () => {document.querySelector('.grid .icon').click();});
+    expect(here()).not.toBe('home');
+
+    await act(async () => {expect(await NAT.onBack()).toBe(true);});
+    expect(here()).toBe('home');
+  });
+
+  // Единственный случай, когда «назад» отдаёт false: дальше некуда, и Android
+  // должен свернуть приложение сам.
+  it('на доме сворачивает приложение', async () => {
+    await boot();
+    expect(here()).toBe('home');
+    expect(await NAT.onBack()).toBe(false);
+  });
+
+  // Экран восстановлен после перезапуска — истории переходов нет вообще.
+  // Выходить из приложения в этом месте нельзя: человек пришёл на него сам.
+  it('с восстановленного экрана ведёт на дом', async () => {
+    await seed({id: 'feed', arg: null});
+    await boot();
+    expect(here()).toBe('feed');
+
+    await act(async () => {expect(await NAT.onBack()).toBe(true);});
+    expect(here()).toBe('home');
   });
 });
