@@ -545,3 +545,155 @@ describe('оглавление и подрезка текста', () => {
     expect(saved.slice(ch[0].at, ch[0].at + 7)).toBe('Глава 1');
   });
 });
+
+/* ===== картинки =====
+   Стор держит их той же координатой, что и курсор: смещением в символах.
+   Сами файлы лежат отдельно и читаются по одному — здесь проверяется и то,
+   и другое, включая случай, когда картинка не легла. */
+
+const TEXT_P = 'Раз, два.\n\nТри, четыре.\n\nПять, шесть.';
+const DATA = 'AAAAAAAAAAAA';                       // содержимое парсер уже проверил
+const png = at => ({at, type: 'image/png', data: DATA});
+
+const addWith = async (h, text, images) => {
+  let id;
+  await act(async () => {id = await h.result.current.addBook('Книга', text, null, images);});
+  return id;
+};
+const keys = () => Object.keys(localStorage);
+
+describe('картинки', () => {
+  it('кладутся в хранилище, а в сторе остаётся, где какая стоит', async () => {
+    const h = await mount();
+    const at = TEXT_P.indexOf('Три');
+    await addWith(h, TEXT_P, [png(at)]);
+
+    expect(h.result.current.pics).toEqual([{at, k: 0}]);
+    let src;
+    await act(async () => {src = await h.result.current.getPic(0);});
+    expect(src).toBe('data:image/png;base64,' + DATA);
+  });
+
+  it('книга без картинок ничего лишнего в хранилище не пишет', async () => {
+    const h = await mount();
+    await addWith(h, TEXT_P, []);
+    expect(h.result.current.pics).toEqual([]);
+    expect(keys().some(k => k.includes('.pic') || k.includes('.pix'))).toBe(false);
+  });
+
+  // Виньетка между сценами стоит в книге десятки раз — и это один файл.
+  it('одинаковые данные на разных местах — один файл, две записи', async () => {
+    const h = await mount();
+    const a = TEXT_P.indexOf('Три');
+    const b = TEXT_P.indexOf('Пять');
+    await addWith(h, TEXT_P, [png(a), png(b)]);
+
+    expect(h.result.current.pics).toEqual([{at: a, k: 0}, {at: b, k: 0}]);
+    expect(keys().filter(k => k.includes('.pic.'))).toHaveLength(1);
+  });
+
+  it('смещение за концом текста подрезается по нему', async () => {
+    const h = await mount();
+    await addWith(h, TEXT_P, [png(99999)]);
+    expect(h.result.current.pics).toEqual([{at: TEXT_P.length - 1, k: 0}]);
+  });
+
+  // Парсер считал смещения по своему тексту, а хранится подрезанный — ровно
+  // та же поправка, что у глав.
+  it('ведущие пробелы не сдвигают картинку', async () => {
+    const h = await mount();
+    const lead = '\n\n   ';
+    await addWith(h, lead + TEXT_P, [png(lead.length + TEXT_P.indexOf('Три'))]);
+    expect(h.result.current.pics).toEqual([{at: TEXT_P.indexOf('Три'), k: 0}]);
+  });
+
+  it('картинка переживает перезапуск', async () => {
+    const at = TEXT_P.indexOf('Три');
+    let h = await mount();
+    await addWith(h, TEXT_P, [png(at)]);
+    h.unmount();
+
+    h = await mount();
+    expect(h.result.current.pics).toEqual([{at, k: 0}]);
+    let src;
+    await act(async () => {src = await h.result.current.getPic(0);});
+    expect(src).toMatch(/^data:image\/png;base64,/);
+  });
+
+  it('испорченный список картинок книгу не ломает', async () => {
+    const h = await mount();
+    await addWith(h, TEXT_P, [png(0)]);
+    const id = h.result.current.current.id;
+    h.unmount();
+
+    localStorage.setItem('scroll.book.' + id + '.pix', 'не json');
+    const again = await mount();
+    expect(again.result.current.text).toBe(TEXT_P);
+    expect(again.result.current.pics).toEqual([]);
+  });
+
+  it('мусор в списке отбрасывается, а годные записи остаются', async () => {
+    const h = await mount();
+    await addWith(h, TEXT_P, [png(3)]);
+    const id = h.result.current.current.id;
+    h.unmount();
+
+    localStorage.setItem('scroll.book.' + id + '.pix',
+      JSON.stringify([{at: 3, k: 0}, {at: 5}, {at: 5, k: -1}, null, {at: 'нет', k: 0}]));
+    const again = await mount();
+    expect(again.result.current.pics).toEqual([{at: 0, k: 0}, {at: 3, k: 0}]);
+  });
+
+  it('удаление книги уносит и её картинки', async () => {
+    const h = await mount();
+    await addWith(h, TEXT_P, [png(0)]);
+    const id = h.result.current.current.id;
+    expect(keys().filter(k => k.includes(id + '.pic'))).not.toHaveLength(0);
+
+    await act(async () => {await h.result.current.deleteBook(id);});
+    expect(keys().filter(k => k.includes(id + '.pic'))).toHaveLength(0);
+    expect(keys().filter(k => k.includes(id + '.pix'))).toHaveLength(0);
+    expect(h.result.current.pics).toEqual([]);
+  });
+
+  it('переключение книг меняет и список картинок', async () => {
+    const h = await mount();
+    const first = await addWith(h, TEXT_P, [png(0)]);
+    await addWith(h, 'Другая книга без картинок совсем.', []);
+    expect(h.result.current.pics).toEqual([]);
+
+    await act(async () => {await h.result.current.openBook(first);});
+    expect(h.result.current.pics).toEqual([{at: 0, k: 0}]);
+  });
+
+  // Текст важнее иллюстрации: место кончилось — книга всё равно должна лечь.
+  it('картинка не влезла — книга всё равно сохраняется', async () => {
+    const h = await mount();
+    const real = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (k, v) {
+      if (String(k).includes('.pic.')) throw new DOMException('quota', 'QuotaExceededError');
+      return real.call(this, k, v);
+    });
+
+    const id = await addWith(h, TEXT_P, [png(0)]);
+    expect(id).not.toBeNull();
+    expect(h.result.current.text).toBe(TEXT_P);
+    expect(h.result.current.pics).toEqual([]);
+    expect(h.result.current.error).toBeNull();
+  });
+
+  it('getPic на пропавшем файле отдаёт пустую строку, а не бросает', async () => {
+    const h = await mount();
+    await addWith(h, TEXT_P, [png(0)]);
+    let src;
+    await act(async () => {src = await h.result.current.getPic(7);});
+    expect(src).toBe('');
+  });
+
+  it('getPic без открытой книги ничего не читает', async () => {
+    const h = await mount();
+    let src;
+    await act(async () => {src = await h.result.current.getPic(0);});
+    expect(src).toBe('');
+  });
+});

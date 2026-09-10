@@ -14,6 +14,7 @@ import {FACE, shot} from '../ui/pics.js';
 import {APP_NAMES} from '../ui/skins.js';
 import {NAMES} from '../lib/fake.js';
 import Glyph from '../ui/Glyph.jsx';
+import BookPics from '../ui/BookPic.jsx';
 import Resume from '../ui/Resume.jsx';
 
 // «Лента»: те же куски постами. Текст лежит ровно на месте картинки —
@@ -21,7 +22,7 @@ import Resume from '../ui/Resume.jsx';
 export default function Feed({go, back}) {
   const {text, offset} = useStore();
   const t = useT();
-  const {chunks, pos, setPos, eye} = useChunks(SIZE.feed);
+  const {chunks, pos, setPos, eye, picsOf} = useChunks(SIZE.feed);
   const count = chunks.length;
   const {boxRef, items, away, toPos} = useCardWindow({count, pos, setPos, eye, ahead: 1, cardSelector: '.post'});
   const act = action => run(action, {go, boxRef, pos});
@@ -58,6 +59,10 @@ export default function Feed({go, back}) {
               <div className="av" style={{background: shot('face', FACE, grad(i))}} />
               {t('feed.author')}
             </div>
+            {/* Картинка из книги — своей рамкой, над текстом: под текстом
+                лежит снимок для вида, и класть иллюстрацию туда же значило бы
+                выбирать между «видно картинку» и «читается текст». */}
+            <BookPics list={picsOf(i)} />
             {/* Текст лежит поверх снимка, а не вместо него. Затемнение под ним
                 обязательно: на светлом кадре белые буквы иначе пропадают. */}
             <div className="pic" style={{background: shot('post', i, grad(i + 3))}}>

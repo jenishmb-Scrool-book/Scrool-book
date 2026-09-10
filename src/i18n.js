@@ -47,6 +47,9 @@ const ru = {
   'chats.tab_groups': 'Группы',
   'chats.tab_calls': 'Звонки',
   'chats.tab_people': 'Люди',
+  // Подпись для читалки с экрана: сама картинка ей ничего не скажет, а
+  // «изображение» без пояснения в потоке текста читается как обрыв.
+  'pic.alt': 'Картинка из книги',
   'reader.end': 'Конец текста',
   'reader.resume': 'Вернуться к месту',
 
@@ -204,6 +207,7 @@ const en = {
   'chats.tab_groups': 'Groups',
   'chats.tab_calls': 'Calls',
   'chats.tab_people': 'People',
+  'pic.alt': 'Picture from the book',
   'reader.end': 'End of text',
   'reader.resume': 'Back to your place',
 

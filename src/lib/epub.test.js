@@ -1,5 +1,6 @@
 import {describe, it, expect} from 'vitest';
 import {parseEpub} from './epub.js';
+import {toB64} from './img.js';
 
 /* ===== сборка ZIP прямо в тесте =====
    Готовый .epub в репозиторий не кладём: бинарник нельзя прочитать глазами и
@@ -71,7 +72,8 @@ const page = body =>
   + '<body>' + body + '</body></html>';
 
 /** Собирает epub из карты «путь → строка». */
-const book = map => zip(Object.entries(map).map(([name, data]) => ({name, data: u8(data)})));
+const book = map => zip(Object.entries(map).map(([name, data]) =>
+  ({name, data: data instanceof Uint8Array ? data : u8(data)})));
 
 // Простейшая книга: OPF лежит в подпапке — самый частый источник ошибок
 // с относительными путями.
@@ -354,3 +356,177 @@ function findSig(bytes, sig) {
       && bytes[i + 2] === want[2] && bytes[i + 3] === want[3]) return i;
   return -1;
 }
+
+/* ===== картинки =====
+   В epub картинка это отдельный файл архива, а в главе от неё стоит ссылка —
+   относительная ФАЙЛУ ГЛАВЫ. Проверяем и путь, и смещение, на которое она
+   встала в общем тексте. */
+
+// 600 байт: больше порога MIN. Настоящий PNG не нужен — парсер картинку не
+// декодирует, он перекладывает байты в base64.
+const PIC = (() => {
+  const a = new Uint8Array(600);
+  for (let i = 0; i < a.length; i++) a[i] = i % 256;
+  return a;
+})();
+const PIC_B64 = toB64(PIC);
+
+describe('parseEpub() — картинки', () => {
+  it('картинка в главе встаёт на начало следующего абзаца', async () => {
+    const r = await parseEpub(book({
+      'META-INF/container.xml': CONTAINER,
+      'OEBPS/content.opf': opf('К',
+        [{id: 'a', href: 'a.xhtml'}, {id: 'p', href: 'p.png', type: 'image/png'}], ['a']),
+      'OEBPS/a.xhtml': page('<p>Раз.</p><img src="p.png"/><p>Два.</p>'),
+      'OEBPS/p.png': PIC
+    }));
+    expect(r.text).toBe('Раз.\n\nДва.');
+    expect(r.images).toHaveLength(1);
+    expect(r.images[0]).toEqual({at: r.text.indexOf('Два.'), type: 'image/png', data: PIC_B64});
+  });
+
+  // Самая частая ошибка при чтении epub: путь считают от корня или от папки
+  // OPF, а он считается от файла главы.
+  it('ссылка относительна файлу главы, а не корню архива', async () => {
+    const r = await parseEpub(book({
+      'META-INF/container.xml': CONTAINER,
+      'OEBPS/content.opf': opf('К',
+        [{id: 'a', href: 'text/a.xhtml'}, {id: 'p', href: 'images/p.png', type: 'image/png'}], ['a']),
+      'OEBPS/text/a.xhtml': page('<p>Раз.</p><img src="../images/p.png"/><p>Два.</p>'),
+      'OEBPS/images/p.png': PIC
+    }));
+    expect(r.images).toHaveLength(1);
+    expect(r.images[0].data).toBe(PIC_B64);
+  });
+
+  it('обложка epub3 встаёт нулевым смещением', async () => {
+    const r = await parseEpub(book({
+      'META-INF/container.xml': CONTAINER,
+      'OEBPS/content.opf': opf('К',
+        [{id: 'a', href: 'a.xhtml'},
+         {id: 'c', href: 'cover.jpg', type: 'image/jpeg', props: 'cover-image'}], ['a']),
+      'OEBPS/a.xhtml': page('<p>Раз.</p>'),
+      'OEBPS/cover.jpg': PIC
+    }));
+    expect(r.images).toHaveLength(1);
+    expect(r.images[0].at).toBe(0);
+    expect(r.images[0].type).toBe('image/jpeg');
+  });
+
+  // epub2 в библиотеках до сих пор больше, чем epub3, и обложка там объявлена
+  // строкой в метаданных.
+  it('обложка epub2 объявлена через <meta name="cover">', async () => {
+    const opf2 = '<?xml version="1.0" encoding="utf-8"?>'
+      + '<package xmlns="http://www.idpf.org/2007/opf" version="2.0">'
+      + '<metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>К</dc:title>'
+      + '<meta name="cover" content="c"/></metadata>'
+      + '<manifest><item id="a" href="a.xhtml" media-type="application/xhtml+xml"/>'
+      + '<item id="c" href="cover.jpg" media-type="image/jpeg"/></manifest>'
+      + '<spine><itemref idref="a"/></spine></package>';
+    const r = await parseEpub(book({
+      'META-INF/container.xml': CONTAINER,
+      'OEBPS/content.opf': opf2,
+      'OEBPS/a.xhtml': page('<p>Раз.</p>'),
+      'OEBPS/cover.jpg': PIC
+    }));
+    expect(r.images).toHaveLength(1);
+    expect(r.images[0].at).toBe(0);
+  });
+
+  // Страница-вклейка без единого абзаца — это и есть обложка в большинстве
+  // книг. Раньше такой файл выходил из разбора раньше, чем до картинки
+  // доходило дело, и терялась ровно она.
+  it('глава из одной картинки без текста не теряется', async () => {
+    const r = await parseEpub(book({
+      'META-INF/container.xml': CONTAINER,
+      'OEBPS/content.opf': opf('К',
+        [{id: 'c', href: 'cover.xhtml'}, {id: 'a', href: 'a.xhtml'},
+         {id: 'p', href: 'p.png', type: 'image/png'}], ['c', 'a']),
+      'OEBPS/cover.xhtml': page('<div><img src="p.png"/></div>'),
+      'OEBPS/a.xhtml': page('<p>Раз.</p>'),
+      'OEBPS/p.png': PIC
+    }));
+    expect(r.text).toBe('Раз.');
+    expect(r.chapters).toHaveLength(1);
+    expect(r.images).toHaveLength(1);
+    expect(r.images[0].at).toBe(0);
+  });
+
+  it('картинка внутри svg берётся, а текст из svg — нет', async () => {
+    const r = await parseEpub(book({
+      'META-INF/container.xml': CONTAINER,
+      'OEBPS/content.opf': opf('К',
+        [{id: 'a', href: 'a.xhtml'}, {id: 'p', href: 'p.png', type: 'image/png'}], ['a']),
+      'OEBPS/a.xhtml': page('<svg xmlns="http://www.w3.org/2000/svg"'
+        + ' xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 10 10">'
+        + '<text>подпись внутри рисунка</text><image xlink:href="p.png"/></svg><p>Раз.</p>'),
+      'OEBPS/p.png': PIC
+    }));
+    expect(r.text).toBe('Раз.');
+    expect(r.images).toHaveLength(1);
+    expect(r.images[0].at).toBe(0);
+  });
+
+  it('один файл на двух местах читается один раз, а записей две', async () => {
+    const r = await parseEpub(book({
+      'META-INF/container.xml': CONTAINER,
+      'OEBPS/content.opf': opf('К',
+        [{id: 'a', href: 'a.xhtml'}, {id: 'p', href: 'p.png', type: 'image/png'}], ['a']),
+      'OEBPS/a.xhtml': page('<p>Раз.</p><img src="p.png"/><p>Два.</p><img src="p.png"/><p>Три.</p>'),
+      'OEBPS/p.png': PIC
+    }));
+    expect(r.images.map(i => i.at)).toEqual([r.text.indexOf('Два.'), r.text.indexOf('Три.')]);
+    expect(r.images[0].data).toBe(r.images[1].data);
+  });
+
+  it('svg-файл картинкой не берём', async () => {
+    const r = await parseEpub(book({
+      'META-INF/container.xml': CONTAINER,
+      'OEBPS/content.opf': opf('К',
+        [{id: 'a', href: 'a.xhtml'}, {id: 'p', href: 'p.svg', type: 'image/svg+xml'}], ['a']),
+      'OEBPS/a.xhtml': page('<p>Раз.</p><img src="p.svg"/><p>Два.</p>'),
+      'OEBPS/p.svg': '<svg xmlns="http://www.w3.org/2000/svg"><rect width="9" height="9"/></svg>'
+    }));
+    expect(r.images).toEqual([]);
+  });
+
+  it('распорка мельче порога пропускается', async () => {
+    const r = await parseEpub(book({
+      'META-INF/container.xml': CONTAINER,
+      'OEBPS/content.opf': opf('К',
+        [{id: 'a', href: 'a.xhtml'}, {id: 'p', href: 'p.gif', type: 'image/gif'}], ['a']),
+      'OEBPS/a.xhtml': page('<p>Раз.</p><img src="p.gif"/><p>Два.</p>'),
+      'OEBPS/p.gif': new Uint8Array(64)
+    }));
+    expect(r.images).toEqual([]);
+  });
+
+  it('картинки нет в архиве — книга всё равно читается', async () => {
+    const r = await parseEpub(book({
+      'META-INF/container.xml': CONTAINER,
+      'OEBPS/content.opf': opf('К',
+        [{id: 'a', href: 'a.xhtml'}, {id: 'p', href: 'p.png', type: 'image/png'}], ['a']),
+      'OEBPS/a.xhtml': page('<p>Раз.</p><img src="p.png"/><p>Два.</p>')
+    }));
+    expect(r.text).toBe('Раз.\n\nДва.');
+    expect(r.images).toEqual([]);
+  });
+
+  it('картинки не сдвигают смещения глав', async () => {
+    const r = await parseEpub(book({
+      'META-INF/container.xml': CONTAINER,
+      'OEBPS/content.opf': opf('К',
+        [{id: 'a', href: 'a.xhtml'}, {id: 'b', href: 'b.xhtml'},
+         {id: 'p', href: 'p.png', type: 'image/png'}], ['a', 'b']),
+      'OEBPS/a.xhtml': page('<h1>Первая</h1><p>Раз.</p><img src="p.png"/>'),
+      'OEBPS/b.xhtml': page('<h1>Вторая</h1><p>Два.</p>'),
+      'OEBPS/p.png': PIC
+    }));
+    expect(r.chapters.map(c => c.at)).toEqual([0, r.text.indexOf('Вторая')]);
+    expect(r.images[0].at).toBe(r.text.indexOf('Вторая'));
+  });
+
+  it('книга без картинок отдаёт пустой список, а не undefined', async () => {
+    expect((await parseEpub(simple())).images).toEqual([]);
+  });
+});

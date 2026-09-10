@@ -8,6 +8,7 @@ import {grad} from '../ui/visual.js';
 import {FACE, shot} from '../ui/pics.js';
 import {msgTime} from '../lib/fake.js';
 import Glyph from '../ui/Glyph.jsx';
+import BookPics from '../ui/BookPic.jsx';
 
 // «Истории»: карточка на весь экран, вперёд — тап по правой половине, назад — по левой.
 //
@@ -20,7 +21,7 @@ const SEGS = 6;   // столько полосок сверху, как в од�
 export default function Stories({go, back}) {
   const {current, text, offset} = useStore();
   const t = useT();
-  const {chunks, pos, setPos} = useChunks(SIZE.stories);
+  const {chunks, pos, setPos, picsOf} = useChunks(SIZE.stories);
   const count = chunks.length;
   const cur = chunks[pos];
   const base = Math.floor(pos / SEGS) * SEGS;
@@ -42,6 +43,7 @@ export default function Stories({go, back}) {
           <span className="ic" onClick={() => go('toc')} role="button" aria-label={t('toc.title')}><Glyph name="menu" /></span>
           <span className="back" onClick={back} role="button" aria-label={t('back')}>✕</span>
         </div>
+        <BookPics list={picsOf(pos)} />
         <div className="stxt">{cur ? cur.text : ''}</div>
         <div className="sfoot">
           {last ? t('reader.end') : t('stories.of', {i: pos + 1, n: count})}

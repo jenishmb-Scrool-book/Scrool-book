@@ -14,6 +14,7 @@ import {FACE, shot} from '../ui/pics.js';
 import {APP_NAMES} from '../ui/skins.js';
 import {msgTime} from '../lib/fake.js';
 import Glyph from '../ui/Glyph.jsx';
+import BookPics from '../ui/BookPic.jsx';
 import Resume from '../ui/Resume.jsx';
 
 // «Короткие посты»: самый мелкий фрагмент из всех движков.
@@ -22,7 +23,7 @@ import Resume from '../ui/Resume.jsx';
 export default function Tweets({go, back}) {
   const {text, offset} = useStore();
   const t = useT();
-  const {chunks, pos, setPos, eye} = useChunks(SIZE.tweets);
+  const {chunks, pos, setPos, eye, picsOf} = useChunks(SIZE.tweets);
   const count = chunks.length;
   const {boxRef, items, away, toPos} = useCardWindow({count, pos, setPos, eye, ahead: 1, cardSelector: '.tw'});
   const act = action => run(action, {go, boxRef, pos});
@@ -51,6 +52,9 @@ export default function Tweets({go, back}) {
                 <b>{t('tw.name')}</b>
                 <span>{t('tw.handle')} · {msgTime(i)}</span>
               </div>
+              {/* Над текстом, а не под ним, как принято в этой ленте: в книге
+                  картинка стояла перед абзацем, и порядок чтения важнее привычки. */}
+              <BookPics list={picsOf(i)} />
               <div className="tt">{chunks[i].text}</div>
               <div className="ta">
                 <span><Glyph name="comment" /> {comments(i)}</span>

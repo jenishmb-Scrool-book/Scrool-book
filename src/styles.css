@@ -36,6 +36,9 @@
   --btn-2:      #2a2a3a;
   --chat-bg:    #0d1620;
   --bubble:     #1e2c36;
+  /* Подложка под картинкой из книги: она вписывается целиком, и по краям
+     почти всегда остаётся поле. Оно должно читаться как рамка, а не как дыра. */
+  --pic-bg:     #0b0b12;
   --pill-bg:    #000000a6;  /* плашка счётчика страниц */
   --pill-fg:    #ffffff;
   --err-bg:     #5a1730;
@@ -57,6 +60,7 @@
     --hdr:        #ffffff;
     --line:       #00000014;
     --line-2:     #00000010;
+    --pic-bg:     #e9e9ef;
     --glass:      #ffffff5c;
     --glass-2:    #ffffff47;
     --glass-line: #ffffff8a;
@@ -91,6 +95,7 @@
   --hdr:        #ffffff;
   --line:       #00000014;
   --line-2:     #00000010;
+  --pic-bg:     #e9e9ef;
   --glass:      #ffffff5c;
   --glass-2:    #ffffff47;
   --glass-line: #ffffff8a;
@@ -867,3 +872,40 @@ button,textarea,input{font:inherit;color:inherit}
 .flogo{flex:1;font-size:1.19rem;font-weight:700;font-style:italic;letter-spacing:-.3px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fhdr .ic{font-size:1.13rem;opacity:.75;padding:2px 4px;cursor:pointer;user-select:none}
+
+/* ===== картинки из книги ===== */
+/* Это не снимок из `ui/pics.js` — тот лежит в сборке и подложен под текст для
+   вида. Здесь картинка из файла, который принёс человек, и она часть чтения.
+   Поэтому «вписать целиком», а не «обрезать по центру»: у иллюстрации
+   середина не главнее краёв, а срезанная подпись под рисунком — потерянный
+   текст.
+
+   У рамки есть высота ДО того, как картинка доехала. Иначе её появление
+   раздвигало бы ленту под пальцем, а вместе с ней уезжало бы и место чтения:
+   за прокруткой здесь следит курсор. */
+.bpic{margin:0;height:210px;overflow:hidden;background:var(--pic-bg);
+  display:grid;place-items:center}
+.bpic img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
+/* Рамка уже есть у экрана — влезаем в неё (превью ролика 16:9, плеер). */
+.bpic.fill{position:absolute;inset:0;height:auto;background:#000;z-index:0}
+/* Строка списка переписок: превью присланного фото, больше туда и не влезет. */
+.bpic.thumb{width:46px;height:46px;flex:none;border-radius:9px}
+
+/* Лента: кадр крупный — здесь картинка и есть пост. */
+.post .bpic{height:290px}
+/* Короткие посты и комментарии: рамка со скруглением, как вложение в реплике. */
+.tw .bpic{height:190px;border-radius:14px;margin:6px 0 2px}
+.cmt .bpic{height:150px;border-radius:11px;margin:2px 0 7px}
+/* В пузыре переписки — над текстом, скруглением чуть меньше самого пузыря. */
+.msg .bpic{height:160px;border-radius:calc(var(--bub) - 7px);margin:1px 0 7px;background:#00000038}
+/* Полноэкранные движки: картинка забирает верх, текст остаётся внизу. Фон у
+   рамки прозрачный — под ней уже лежит кадр ленты со своим затемнением, и
+   вторая подложка читалась бы как чёрная дыра посреди кадра. Зато самой
+   картинке нужны край и тень: без них светлый снимок на светлом кадре
+   сливается с ним, и непонятно, где он кончается. */
+.reel .bpic,#stories .bpic{flex:none;background:#0000;height:38%;margin-bottom:12px}
+.reel .bpic img,#stories .bpic img{border-radius:14px;box-shadow:0 6px 20px #00000066}
+#stories .bpic{position:relative;z-index:2;height:40%;margin-bottom:6px}
+/* Без картинки текст занимает три четверти экрана, с картинкой — столько,
+   сколько осталось: иначе длинный фрагмент выдавил бы её за кромку. */
+.reel.haspic .txt{max-height:38%}

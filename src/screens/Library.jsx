@@ -44,7 +44,7 @@ export default function Library({go, back}) {
   // и «разбираю файл» над вставленным из буфера текстом было бы просто неправдой.
   const [busy, setBusy] = useState('');
 
-  const add = (title, body, chapters) => {
+  const add = (title, body, chapters, images) => {
     const v = (body || '').trim();
     if (!v) {
       setBusy('');
@@ -55,7 +55,7 @@ export default function Library({go, back}) {
     // addBook не реджектится: при переполнении и на пустом тексте она резолвится
     // в null и пишет причину в store.error. Поэтому решаем по id, а не по .catch.
     setBusy('lib.busy');
-    later(addBook((title || v.slice(0, 40)).trim(), v, chapters))
+    later(addBook((title || v.slice(0, 40)).trim(), v, chapters, images))
       .then(id => {
         if (!id) return setMsg(t('lib.save_failed_space'));
         setText('');            // поле чистим только после успеха, иначе текст потерян навсегда
@@ -84,8 +84,10 @@ export default function Library({go, back}) {
         }
         // Главы от парсера идут в стор как есть. Если файл их не размечал,
         // стор сам распознает заголовки в тексте — как для вставленного руками.
+        // Картинки идут туда же и тем же путём: стор кладёт их в хранилище
+        // и запоминает, на каком смещении какая стояла.
         // add() снимет busy сам: она же и завершает всю операцию.
-        add(r.title || f.name.replace(/\.\w+$/, ''), r.text, r.chapters);
+        add(r.title || f.name.replace(/\.\w+$/, ''), r.text, r.chapters, r.images);
       })
       .catch(err => {
         setBusy('');

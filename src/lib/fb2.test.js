@@ -1,5 +1,6 @@
 import {describe, it, expect} from 'vitest';
 import {parseFb2} from './fb2.js';
+import {toB64} from './img.js';
 
 // windows-1251 кодировщика в браузере нет (TextEncoder умеет только utf-8),
 // поэтому фикстуру собираем байтами руками. Бинарники в репозиторий не кладём:
@@ -203,5 +204,131 @@ describe('parseFb2() — главы и смещения', () => {
       '<section><title><p>Глава I</p><p>О пользе чтения</p></title><p>текст</p></section>')));
     expect(r.chapters[0].title).toBe('Глава I О пользе чтения');
     expect(r.text.slice(0, r.chapters[0].title.length)).toBe(r.chapters[0].title);
+  });
+});
+
+/* ===== картинки =====
+   Вложения в fb2 лежат отдельно от текста, в base64, и связаны с ним только
+   ссылкой. Проверяем именно связь: на каком смещении картинка встала. */
+
+// 600 нулевых байт: больше порога MIN, а содержимое парсеру безразлично —
+// он картинку не декодирует, а перекладывает.
+const B64 = toB64(new Uint8Array(600));
+
+const bin = (id, type, data) =>
+  '<binary id="' + id + '" content-type="' + type + '">' + (data === undefined ? B64 : data) + '</binary>';
+
+/** FB2 с пространством имён xlink, обложкой в описании и вложениями после тела. */
+const withPics = (body, bins, cover) =>
+  '<?xml version="1.0" encoding="utf-8"?>\n'
+  + '<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0"'
+  + ' xmlns:l="http://www.w3.org/1999/xlink">'
+  + '<description><title-info><book-title>Книга</book-title>'
+  + (cover ? '<coverpage><image l:href="#' + cover + '"/></coverpage>' : '')
+  + '</title-info></description>'
+  + '<body>' + body + '</body>' + (bins || '') + '</FictionBook>';
+
+describe('parseFb2() — картинки', () => {
+  it('картинка между абзацами встаёт на начало следующего', () => {
+    const r = parseFb2(utf8(withPics(
+      '<p>Раз.</p><image l:href="#pic1"/><p>Два.</p>',
+      bin('pic1', 'image/png')
+    )));
+    expect(r.text).toBe('Раз.\n\nДва.');
+    expect(r.images).toHaveLength(1);
+    expect(r.images[0].at).toBe(r.text.indexOf('Два.'));
+    expect(r.images[0].type).toBe('image/png');
+    expect(r.images[0].data).toBe(B64);
+  });
+
+  it('сама картинка в текст не попадает', () => {
+    const r = parseFb2(utf8(withPics(
+      '<p>Раз.</p><image l:href="#pic1"/><p>Два.</p>',
+      bin('pic1', 'image/png')
+    )));
+    expect(r.text).not.toMatch(/AAAA/);
+  });
+
+  it('обложка из описания встаёт нулевым смещением', () => {
+    const r = parseFb2(utf8(withPics('<p>Раз.</p>', bin('cov', 'image/jpeg'), 'cov')));
+    expect(r.images).toHaveLength(1);
+    expect(r.images[0].at).toBe(0);
+    expect(r.images[0].type).toBe('image/jpeg');
+  });
+
+  // Обложку объявляют дважды почти всегда: в описании и первой картинкой тела.
+  // Без склейки она показалась бы на первой же карточке дважды подряд.
+  it('обложка, объявленная дважды, берётся один раз', () => {
+    const r = parseFb2(utf8(withPics(
+      '<image l:href="#cov"/><p>Раз.</p>',
+      bin('cov', 'image/jpeg'), 'cov'
+    )));
+    expect(r.images).toHaveLength(1);
+    expect(r.images[0].at).toBe(0);
+  });
+
+  it('одна и та же картинка на разных местах — две записи', () => {
+    const r = parseFb2(utf8(withPics(
+      '<p>Раз.</p><image l:href="#p"/><p>Два.</p><image l:href="#p"/><p>Три.</p>',
+      bin('p', 'image/png')
+    )));
+    expect(r.images.map(i => i.at)).toEqual([r.text.indexOf('Два.'), r.text.indexOf('Три.')]);
+  });
+
+  it('префикс ссылки может быть любым: важно пространство имён', () => {
+    const doc = '<?xml version="1.0" encoding="utf-8"?>'
+      + '<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0"'
+      + ' xmlns:xlink="http://www.w3.org/1999/xlink">'
+      + '<description><title-info><book-title>К</book-title></title-info></description>'
+      + '<body><p>Раз.</p><image xlink:href="#p"/><p>Два.</p></body>'
+      + bin('p', 'image/png') + '</FictionBook>';
+    expect(parseFb2(utf8(doc)).images).toHaveLength(1);
+  });
+
+  it('ссылка без вложения книгу не ломает', () => {
+    const r = parseFb2(utf8(withPics('<p>Раз.</p><image l:href="#нет"/><p>Два.</p>', '')));
+    expect(r.text).toBe('Раз.\n\nДва.');
+    expect(r.images).toEqual([]);
+  });
+
+  it('svg и прочие не-растровые вложения пропускаются', () => {
+    const r = parseFb2(utf8(withPics(
+      '<p>Раз.</p><image l:href="#s"/><p>Два.</p>',
+      bin('s', 'image/svg+xml')
+    )));
+    expect(r.images).toEqual([]);
+  });
+
+  it('вложение мельче порога — это распорка, не иллюстрация', () => {
+    const r = parseFb2(utf8(withPics(
+      '<p>Раз.</p><image l:href="#t"/><p>Два.</p>',
+      bin('t', 'image/gif', toB64(new Uint8Array(64)))
+    )));
+    expect(r.images).toEqual([]);
+  });
+
+  it('несуществующий тип image/jpg приводится к настоящему', () => {
+    const r = parseFb2(utf8(withPics('<p>Раз.</p><image l:href="#j"/>', bin('j', 'image/jpg'))));
+    expect(r.images[0].type).toBe('image/jpeg');
+  });
+
+  it('картинка в самом конце книги смещение получает, а парсер не падает', () => {
+    const r = parseFb2(utf8(withPics('<p>Раз.</p><image l:href="#p"/>', bin('p', 'image/png'))));
+    expect(r.images).toHaveLength(1);
+    expect(r.images[0].at).toBeGreaterThan(0);
+  });
+
+  it('картинки не сдвигают смещения глав', () => {
+    const r = parseFb2(utf8(withPics(
+      '<section><title><p>Глава</p></title><image l:href="#p"/><p>Раз.</p></section>',
+      bin('p', 'image/png')
+    )));
+    expect(r.chapters).toEqual([{title: 'Глава', at: 0}]);
+    expect(r.text).toBe('Глава\n\nРаз.');
+    expect(r.images[0].at).toBe(r.text.indexOf('Раз.'));
+  });
+
+  it('книга без картинок отдаёт пустой список, а не undefined', () => {
+    expect(parseFb2(utf8(fb2('К', '<p>Раз.</p>'))).images).toEqual([]);
   });
 });

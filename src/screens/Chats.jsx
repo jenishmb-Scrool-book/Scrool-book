@@ -14,6 +14,7 @@ import {shot} from '../ui/pics.js';
 import {skinOf, tabIndex} from '../ui/skins.js';
 import {NAMES, callAt, contactAt, groupAt, msgTime} from '../lib/fake.js';
 import Glyph from '../ui/Glyph.jsx';
+import BookPics from '../ui/BookPic.jsx';
 import Resume from '../ui/Resume.jsx';
 
 // «Мессенджер» — один движок и четыре вкладки, и ЧИТАТЬ можно на двух из них.
@@ -83,7 +84,7 @@ function ChatHead({skin, onBack, seed, title, sub, onAct}) {
  * строки: это не подпись к чату, это сам текст, и оборвать его на середине
  * значило бы сломать единственное, зачем экран нужен.
  */
-function Row({i, name, seed, text, time, state, onClick}) {
+function Row({i, name, seed, text, time, state, pics, onClick}) {
   return (
     <div className={'crow ' + state} data-i={i} onClick={onClick}>
       <Avatar seed={seed} />
@@ -91,6 +92,9 @@ function Row({i, name, seed, text, time, state, onClick}) {
         <b>{name}</b>
         <span>{text}</span>
       </div>
+      {/* Картинка из книги — квадратиком справа, как превью присланного фото
+          в настоящем списке переписок. Больше в строку и не влезет. */}
+      <BookPics list={pics} cls="thumb" one />
       <div className="cm">
         <i>{time}</i>
         {state === 'new' ? <em className="dot" /> : null}
@@ -108,7 +112,7 @@ function Row({i, name, seed, text, time, state, onClick}) {
  * «Звонков» обработчик остался бы висеть на выброшенном узле, и прокрутка
  * перестала бы двигать курсор — молча.
  */
-function Roster({mode, chunks, pos, setPos, eye, onOpen}) {
+function Roster({mode, chunks, pos, setPos, eye, picsOf, onOpen}) {
   const count = chunks.length;
   // gap: под плашкой «страница / осталось» нужен запас, иначе она накрывает
   // время у самой верхней строки.
@@ -133,6 +137,7 @@ function Roster({mode, chunks, pos, setPos, eye, onOpen}) {
               /* Непрочитанное здесь не выдумано: всё, что ниже курсора, ты
                  действительно ещё не читал. Точка справа — ровно это. */
               state={i === pos ? 'on' : (i > pos ? 'new' : 'seen')}
+              pics={picsOf(i)}
               onClick={() => onOpen(i)}
             />
           );
@@ -195,7 +200,7 @@ export default function Chats({go, back, arg}) {
   const {text, offset, ui} = useStore();
   const t = useT();
   const S = skinOf(ui.skin);
-  const {chunks, pos, setPos, eye} = useChunks(SIZE.roster);
+  const {chunks, pos, setPos, eye, picsOf} = useChunks(SIZE.roster);
 
   // На какой вкладке открылись. Приходит из шапки переписки: трубка ведёт в
   // журнал вызовов, а не просто «назад в список».
@@ -248,7 +253,8 @@ export default function Chats({go, back, arg}) {
           показывала бы прогресс по книге над списком, в котором книги нет. */}
       {READ_TABS.includes(tab) ? <Progress offset={offset} len={text.length} go={go} /> : null}
       {READ_TABS.includes(tab) ? (
-        <Roster key={tab} mode={tab} chunks={chunks} pos={pos} setPos={setPos} eye={eye} onOpen={openAt} />
+        <Roster key={tab} mode={tab} chunks={chunks} pos={pos} setPos={setPos} eye={eye}
+                picsOf={picsOf} onOpen={openAt} />
       ) : tab === 'calls' ? (
         <CallList onOpen={openWith} />
       ) : (
@@ -271,10 +277,12 @@ export default function Chats({go, back, arg}) {
  * текст обтекает его, как в настоящем мессенджере. Это единственный способ
  * получить такое поведение без измерений в JS.
  */
-function Bubble({text, time, out, tick, react, count}) {
+function Bubble({text, time, out, tick, react, count, pics}) {
   const cls = ['msg', out ? 'out' : '', 'tail', react ? 'hasr' : ''].filter(Boolean).join(' ');
   return (
     <div className={cls}>
+      {/* Внутри пузыря, над текстом: так и приходит сообщение с картинкой. */}
+      <BookPics list={pics} />
       {text}
       <span className="sp" />
       <span className="t">{time}{tick ? <i className="tick">✓✓</i> : null}</span>
@@ -286,7 +294,7 @@ function Bubble({text, time, out, tick, react, count}) {
 export function Chat({go, back, arg}) {
   const {text, offset, ui} = useStore();
   const t = useT();
-  const {chunks, pos, setPos, eye} = useChunks(SIZE.chats);
+  const {chunks, pos, setPos, eye, picsOf} = useChunks(SIZE.chats);
   const count = chunks.length;
   const {boxRef, items, away, toPos} = useCardWindow({
     count, pos, setPos, eye, ahead: 8, cardSelector: '.mline', anchor: 'bottom'
@@ -375,6 +383,7 @@ export function Chat({go, back, arg}) {
               ) : (
                 <Bubble
                   text={chunks[i].text}
+                  pics={picsOf(i)}
                   time={msgTime(i)}
                   out={out}
                   tick={out}

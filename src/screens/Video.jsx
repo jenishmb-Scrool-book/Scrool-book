@@ -16,6 +16,7 @@ import {FACE, shot} from '../ui/pics.js';
 import {contactAt} from '../lib/fake.js';
 import {indexAt} from '../lib/chunk.js';
 import Glyph from '../ui/Glyph.jsx';
+import BookPics from '../ui/BookPic.jsx';
 import Resume from '../ui/Resume.jsx';
 
 // «Видео» — три места, где читается одна и та же книга.
@@ -60,11 +61,15 @@ function elapsed(i) {
  * не прочитает. Настоящие названия бывают в два ряда, наши иногда в три —
  * это цена, и она меньше, чем цена пропущенных слов.
  */
-function Card({i, title, here, onPlay, onMenu, small}) {
+function Card({i, title, here, pics, onPlay, onMenu, small}) {
   const t = useT();
   return (
     <div className={small ? 'vid small' : 'vid'} data-i={i} onClick={onPlay}>
+      {/* Картинка из книги встаёт прямо в превью: рамка 16:9 здесь уже есть,
+          а текста поверх неё нет — единственное место, где своя рамка была бы
+          лишней. */}
       <div className="th" style={{background: shot('wide', i, grad(i))}}>
+        <BookPics list={pics} cls="fill" one />
         <em>{dur(i)}</em>
         {here ? <b className="seen" style={{width: seen(i) + '%'}} /> : null}
       </div>
@@ -88,7 +93,7 @@ function Card({i, title, here, onPlay, onMenu, small}) {
 export default function Video({go, back}) {
   const {text, offset} = useStore();
   const t = useT();
-  const {chunks, pos, setPos, eye} = useChunks(SIZE.vlist);
+  const {chunks, pos, setPos, eye, picsOf} = useChunks(SIZE.vlist);
   const count = chunks.length;
   // Прокрутка списка двигает курсор: список названий сам стал способом читать.
   // До этого здесь стояло `trackPos: false` с доводом «листать список ≠ читать» —
@@ -123,7 +128,7 @@ export default function Video({go, back}) {
       <Progress offset={offset} len={text.length} go={go} />
       <div className="body" ref={boxRef}>
         {items.map(i => (
-          <Card key={i} i={i} title={chunks[i].text} here={i === pos}
+          <Card key={i} i={i} title={chunks[i].text} here={i === pos} pics={picsOf(i)}
                 onPlay={() => play(i)} onMenu={() => go('toc')} />
         ))}
       </div>
@@ -142,7 +147,7 @@ export default function Video({go, back}) {
  * «Ответить» открывает переписку с этим человеком: он же контакт из списка,
  * и ответить ему в этом приложении можно ровно там.
  */
-function Comment({i, at, text, onReply}) {
+function Comment({i, at, text, pics, onReply}) {
   const t = useT();
   const c = contactAt(i);
   const emo = commentEmo(i);
@@ -152,6 +157,7 @@ function Comment({i, at, text, onReply}) {
       <div className="cav" style={{background: shot('face', i + 5, grad(i + 5))}} />
       <div className="cb">
         <div className="cu">{c.name}<span>{t('video.ago', {n: i % 8 + 1})}</span></div>
+        <BookPics list={pics} />
         <div className="ct">{text}</div>
         <div className="ca">
           <span className={liked ? 'lk on' : 'lk'} role="button"
@@ -176,8 +182,8 @@ function Comment({i, at, text, onReply}) {
 export function Player({go, back}) {
   const {text, offset, setOffset} = useStore();
   const t = useT();
-  const {chunks: ds} = useChunks(SIZE.video);      // описание — длинный кусок
-  const {chunks: cs} = useChunks(SIZE.comment);    // комментарии — короткие
+  const {chunks: ds, picsOf: dpics} = useChunks(SIZE.video);      // описание — длинный кусок
+  const {chunks: cs, picsOf: cpics} = useChunks(SIZE.comment);    // комментарии — короткие
   const boxRef = useRef(null);
   const [head, setHead] = useState(offset);
   // Отметки под роликом. Живут, пока открыт экран: они ни на что не влияют,
@@ -241,7 +247,10 @@ export function Player({go, back}) {
   return (
     <Screen id="player" bar="#000000">
       <StatusBar />
+      {/* Картинка этой страницы книги лежит там же, где у ролика обложка, —
+          в самом плеере. Второй раз в описании её показывать незачем. */}
       <div className="stage" style={{background: shot('wide', at, grad(at))}}>
+        <BookPics list={dpics(at)} cls="fill" one />
         <span className="back" onClick={back} role="button" aria-label={t('back')}><Glyph name="back" /></span>
         <span className="ic" onClick={() => go('toc')} role="button" aria-label={t('toc.title')}><Glyph name="menu" /></span>
         {/* Играть здесь нечему, но у обеих кнопок есть точный смысл в наших
@@ -301,7 +310,7 @@ export function Player({go, back}) {
                 <span>{t('video.add_comment')}</span>
               </div>
               {list.map(k => (
-                <Comment key={k} i={k} at={cs[k].at} text={cs[k].text}
+                <Comment key={k} i={k} at={cs[k].at} text={cs[k].text} pics={cpics(k)}
                          onReply={() => go('chat', {arg: k})} />
               ))}
             </>

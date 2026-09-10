@@ -158,3 +158,45 @@ export async function loadToc(id) {
 
 /** @param {string} id @returns {Promise<void>} */
 export const deleteToc = id => deleteText(id + TOC);
+
+/* ===== картинки =====
+   Каждая картинка — отдельная запись, и лежит она ровно там же, где текст:
+   на телефоне файлом, в браузере ключом. Своего механизма у них нет намеренно.
+   Соблазн был: писать на Android бинарником, а не base64, — файл вдвое меньше.
+   Но это была бы вторая ветка «только для телефона», которую здесь нечем
+   проверить, а первая такая уже стоила месяца молчащей кнопки «назад».
+
+   Причина держать их порознь, а не одним файлом, та же, что у оглавления:
+   картинка нужна тогда, когда до неё дошли, а не когда открыли книгу. Одним
+   файлом её пришлось бы читать целиком — все тридцать мегабайт сразу.
+
+   Список «где какая» (`.pix`) маленький и читается вместе с книгой. */
+const PIC = '.pic.';
+const PIX = '.pix';
+
+/** @param {string} id @param {number} k номер картинки @param {string} url готовый data: URL */
+export const savePic = (id, k, url) => saveText(id + PIC + k, String(url));
+
+/** @param {string} id @param {number} k @returns {Promise<string>} пустая строка, если нет */
+export const loadPic = (id, k) => loadText(id + PIC + k);
+
+/** @param {string} id @param {number} k @returns {Promise<void>} */
+export const deletePic = (id, k) => deleteText(id + PIC + k);
+
+/** @param {string} id @param {{at:number,k:number}[]} list */
+export const savePix = (id, list) => saveText(id + PIX, JSON.stringify(Array.isArray(list) ? list : []));
+
+/** @param {string} id @returns {Promise<{at:number,k:number}[]>} пустой массив, если нет или испорчено */
+export async function loadPix(id) {
+  const raw = await loadText(id + PIX);
+  if (!raw) return [];
+  try {
+    const v = JSON.parse(raw);
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];                                  // испорченный список — книга открывается без картинок
+  }
+}
+
+/** @param {string} id @returns {Promise<void>} */
+export const deletePix = id => deleteText(id + PIX);

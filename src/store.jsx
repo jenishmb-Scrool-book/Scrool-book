@@ -1,5 +1,10 @@
 import React, {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
-import {StorageFullError, deleteText, deleteToc, loadMeta, loadText, loadToc, saveMeta, saveText, saveToc} from './lib/storage.js';
+import {
+  StorageFullError, deletePic, deletePix, deleteText, deleteToc,
+  loadMeta, loadPic, loadPix, loadText, loadToc,
+  saveMeta, savePic, savePix, saveText, saveToc
+} from './lib/storage.js';
+import {dataUrl} from './lib/img.js';
 import {detect} from './lib/toc.js';
 
 // Одно состояние на всё приложение: сырой текст книги и один курсор.
@@ -98,12 +103,97 @@ const readToc = (list, len) =>
     .sort((a, b) => a.at - b.at)
     .filter((c, i, all) => i === 0 || c.at !== all[i - 1].at);
 
+// Картинки книги. Список «где какая» — та же координата, что у глав: смещение
+// в символах. Ему верить нельзя ровно по тем же причинам, поэтому и проверка
+// такая же — пропускаем только то, что указывает внутрь текста.
+const readPix = (list, len) =>
+  (Array.isArray(list) ? list : [])
+    // Не запись — не картинка. Без этой строки `null` в списке доезжал до
+    // конца целым: `null && null.k` это `null`, а `Number(null)` — ноль,
+    // то есть законный номер нулевой картинки на нулевом смещении.
+    .filter(p => p && typeof p === 'object')
+    .map(p => ({
+      k: Math.trunc(Number(p && p.k)),
+      at: Math.min(Math.max(Math.trunc(Number(p && p.at)) || 0, 0), Math.max(0, len - 1))
+    }))
+    .filter(p => Number.isFinite(p.k) && p.k >= 0)
+    .sort((a, b) => a.at - b.at);
+
+// Кэш загруженных картинок: ключ «книга:номер» → промис data: URL.
+//
+// Модульный, а не в состоянии React: он ни на что не влияет в разметке, а
+// перерисовка всего дерева из-за того, что доехала одна иллюстрация, — это
+// подёргивание там, где человек читает. Промис, а не строка, потому что одна
+// картинка легко оказывается на экране дважды (карточка и её же превью), и
+// два чтения одного файла ни к чему.
+//
+// Записей немного: у иллюстрации data: URL весит сотни килобайт, и держать в
+// памяти всю книгу незачем — окно рендера всё равно показывает полтора десятка
+// карточек.
+const PICS = 8;
+const cache = new Map();
+
+const remember = (key, job) => {
+  cache.set(key, job);
+  if (cache.size > PICS) cache.delete(cache.keys().next().value);
+  return job;
+};
+
+/** Забыть всё про книгу: её только что удалили, а ключи в кэше пережили бы её. */
+const forget = id => {
+  for (const key of [...cache.keys()]) if (key.startsWith(id + ':')) cache.delete(key);
+};
+
+/**
+ * Кладёт картинки книги в хранилище и отдаёт список «где какая».
+ *
+ * Ошибки записи глотаются намеренно: текст книги к этому моменту уже лёг, и
+ * потерять книгу из-за иллюстрации, которая не влезла в память телефона, было
+ * бы обменом наоборот. Не влезла — читаем без неё.
+ *
+ * `lead` — те же обрезанные ведущие пробелы, что и у глав: парсер считал
+ * смещения по своему тексту, а храним мы подрезанный.
+ */
+async function writePics(id, images, lead) {
+  const list = [];
+  const seen = new Map();          // одинаковые данные → один файл на все ссылки
+  let count = 0;
+  for (const img of Array.isArray(images) ? images : []) {
+    if (!img || !img.type || !img.data) continue;
+    let k = seen.get(img.data);
+    if (k === undefined) {
+      k = count;
+      try {
+        await savePic(id, k, dataUrl(img.type, img.data));
+      } catch {
+        break;                     // место кончилось — дальше будут те же отказы
+      }
+      seen.set(img.data, k);
+      count += 1;
+    }
+    list.push({at: (Math.trunc(Number(img.at)) || 0) - lead, k});
+  }
+  return {list, count};
+}
+
+/**
+ * Убрать картинки книги. Отдельной функцией, потому что нужна дважды: при
+ * удалении книги и при откате неудачного импорта. Осиротевший файл картинки из
+ * библиотеки не виден и не удаляется — значит, живёт до переустановки.
+ */
+async function dropPics(id, count) {
+  for (let k = 0; k < (Number(count) || 0); k++) await deletePic(id, k).catch(() => {});
+  await deletePix(id).catch(() => {});
+  forget(id);
+}
+
 const Ctx = createContext(null);
 
 export function StoreProvider({children}) {
   const [meta, setMeta] = useState(EMPTY);
   const [text, setText] = useState('');
   const [chapters, setChapters] = useState([]);
+  const [pics, setPics] = useState([]);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(null);
 
@@ -127,6 +217,9 @@ export function StoreProvider({children}) {
   const applyToc = useCallback(list => {
     if (mounted.current) setChapters(list);
   }, []);
+  const applyPix = useCallback(list => {
+    if (mounted.current) setPics(list);
+  }, []);
 
   /**
    * Оглавление книги. Считается ОДИН раз за книгу, дальше берётся из хранилища.
@@ -145,6 +238,31 @@ export function StoreProvider({children}) {
       /* оглавление — удобство, а не книга: не легло, так не легло */
     }
     return list;
+  }, []);
+
+  /**
+   * Список картинок книги. В хранилище лезем только если книга их и правда
+   * несёт: у книг без картинок — а это почти все — лишнего чтения не будет.
+   */
+  const bookPix = useCallback(async (book, txt) => {
+    if (!book || !book.pics) return [];
+    return readPix(await loadPix(book.id), txt.length);
+  }, []);
+
+  /**
+   * Картинка по номеру. Отдаёт промис готового `src` для `<img>` — или пустую
+   * строку, если файла нет: карточка тогда просто останется без иллюстрации.
+   */
+  const getPic = useCallback(k => {
+    const id = metaRef.current.cur;
+    if (!id) return Promise.resolve('');
+    const key = id + ':' + k;
+    const hit = cache.get(key);
+    if (hit) {
+      cache.delete(key);            // самая свежая — в конец очереди на вылет
+      return remember(key, hit);
+    }
+    return remember(key, loadPic(id, k).catch(() => ''));
   }, []);
 
   const report = useCallback(e => {
@@ -180,6 +298,12 @@ export function StoreProvider({children}) {
   /* ===== гидрация ===== */
   useEffect(() => {
     let live = true;
+    // Кэш картинок живёт вне React и переживает перемонтирование стора. За
+    // это время хранилище могло стать другим — книгу удалили и завели заново,
+    // а номер у неё тот же. Показать при этом картинку из прошлой жизни хуже,
+    // чем прочитать файл ещё раз: чтение стоит миллисекунды, а неправильная
+    // иллюстрация посреди книги выглядит поломкой.
+    cache.clear();
     (async () => {
       const raw = (await loadMeta()) || EMPTY;
       const m = {
@@ -200,15 +324,17 @@ export function StoreProvider({children}) {
       }
       const book = m.books.find(b => b.id === m.cur) || null;
       const toc = await bookToc(book, txt);
+      const pix = await bookPix(book, txt);
       if (book) m.books = m.books.map(b => (b.id === book.id ? {...b, toc: 1} : b));
       if (!live) return;
       applyMeta(m);
       applyText(txt);
       applyToc(toc);
+      applyPix(pix);
       setReady(true);
     })();
     return () => {live = false;};
-  }, [applyMeta, applyText, applyToc, bookToc]);
+  }, [applyMeta, applyText, applyToc, applyPix, bookToc, bookPix]);
 
   /* ===== размонтирование ===== */
   useEffect(() => {
@@ -297,7 +423,7 @@ export function StoreProvider({children}) {
   }, [applyMeta, schedule]);
 
   /* ===== книги ===== */
-  const addBook = useCallback(async (title, body, incoming) => {
+  const addBook = useCallback(async (title, body, incoming, images) => {
     if (mounted.current) setError(null);
     const raw = String(body ?? '');
     const txt = raw.trim();
@@ -334,9 +460,23 @@ export function StoreProvider({children}) {
       /* книга уже сохранена; без оглавления она читается, без текста — нет */
     }
 
+    // Картинки — туда же и по тем же правилам: не легли, значит книга просто
+    // будет без них. Смещения подрезаем на ведущие пробелы, как и главы.
+    const {list, count} = await writePics(id, images, lead);
+    const pix = readPix(list, txt.length);
+    if (count) {
+      try {
+        await savePix(id, pix);
+      } catch {
+        /* список не лёг — картинки останутся лежать, но книга откроется */
+      }
+    }
+
     const next = {
       ...prev,
-      books: [...prev.books, {id, title: (title || txt.slice(0, 40)).trim(), len: txt.length, toc: 1}],
+      books: [...prev.books, {
+        id, title: (title || txt.slice(0, 40)).trim(), len: txt.length, toc: 1, pics: count
+      }],
       at: {...prev.at, [id]: 0},
       cur: id
     };
@@ -351,14 +491,16 @@ export function StoreProvider({children}) {
       metaRef.current = prev;
       await deleteText(id).catch(() => {});
       await deleteToc(id).catch(() => {});
+      await dropPics(id, count);
       report(e);
       return null;
     }
     if (mounted.current) setMeta(next);
     applyText(txt);
     applyToc(toc);
+    applyPix(pix);
     return id;
-  }, [applyText, applyToc, report]);
+  }, [applyText, applyToc, applyPix, report]);
 
   const openBook = useCallback(async id => {
     if (mounted.current) setError(null);
@@ -369,7 +511,9 @@ export function StoreProvider({children}) {
     if (seq !== openSeq.current) return;          // пока грузили — открыли другую книгу
 
     const base = metaRef.current;                 // мету перечитываем: за await она могла уехать
-    const toc = await bookToc(base.books.find(b => b.id === id) || null, txt);
+    const book = base.books.find(b => b.id === id) || null;
+    const toc = await bookToc(book, txt);
+    const pix = await bookPix(book, txt);
     if (seq !== openSeq.current) return;          // и ещё раз: чтение оглавления тоже асинхронно
     applyMeta({
       ...base,
@@ -379,13 +523,16 @@ export function StoreProvider({children}) {
     });
     applyText(txt);
     applyToc(toc);
+    applyPix(pix);
     await write();                                // смена книги важнее дебаунса
-  }, [applyMeta, applyText, applyToc, bookToc, write]);
+  }, [applyMeta, applyText, applyToc, applyPix, bookToc, bookPix, write]);
 
   const deleteBook = useCallback(async id => {
     if (mounted.current) setError(null);
+    const gone = metaRef.current.books.find(b => b.id === id) || null;
     await deleteText(id);
     await deleteToc(id).catch(() => {});
+    await dropPics(id, gone && gone.pics);
 
     const prev = metaRef.current;
     const books = prev.books.filter(b => b.id !== id);
@@ -394,12 +541,14 @@ export function StoreProvider({children}) {
     const next = {...prev, books, at};
     let txt = null;                               // null — текст не трогаем
     let toc = null;
+    let pix = null;
 
     if (prev.cur === id) {
       const first = books[0] || null;
       next.cur = first ? first.id : null;
       txt = first ? String((await loadText(first.id)) ?? '') : '';
       toc = first ? await bookToc(first, txt) : [];
+      pix = first ? await bookPix(first, txt) : [];
       if (first) {
         next.books = books.map(b => (b.id === first.id ? {...b, len: txt.length, toc: 1} : b));
         next.at = {...next.at, [first.id]: clamp(next.at[first.id], txt.length)};
@@ -409,8 +558,9 @@ export function StoreProvider({children}) {
     applyMeta(next);
     if (txt !== null) applyText(txt);
     if (toc !== null) applyToc(toc);
+    if (pix !== null) applyPix(pix);
     await write();
-  }, [applyMeta, applyText, applyToc, bookToc, write]);
+  }, [applyMeta, applyText, applyToc, applyPix, bookToc, bookPix, write]);
 
   const value = useMemo(() => ({
     ready,
@@ -418,6 +568,11 @@ export function StoreProvider({children}) {
     current: meta.books.find(b => b.id === meta.cur) || null,
     text,
     chapters,
+    // Картинки книги: где какая стоит (`pics`) и как достать саму (`getPic`).
+    // Порознь намеренно — список крошечный и нужен всем карточкам сразу, а
+    // сама картинка тяжёлая и нужна только той, до которой долистали.
+    pics,
+    getPic,
     offset: meta.cur ? meta.at[meta.cur] || 0 : 0,
     setOffset,
     lastApp: meta.last,
@@ -432,8 +587,8 @@ export function StoreProvider({children}) {
     openBook,
     deleteBook,
     error
-  }), [ready, meta, text, chapters, error, setOffset, setLastApp, setPlace, setSeen, flush,
-       setUi, addBook, openBook, deleteBook]);
+  }), [ready, meta, text, chapters, pics, getPic, error, setOffset, setLastApp, setPlace, setSeen,
+       flush, setUi, addBook, openBook, deleteBook]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

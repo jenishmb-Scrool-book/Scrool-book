@@ -11,6 +11,7 @@ import {TABS} from '../ui/tabs.js';
 import {grad, likes, comments, shares} from '../ui/visual.js';
 import {shot} from '../ui/pics.js';
 import Glyph from '../ui/Glyph.jsx';
+import BookPics from '../ui/BookPic.jsx';
 import Resume from '../ui/Resume.jsx';
 
 // «Клипы»: вертикальная лента на весь экран со snap'ом.
@@ -18,7 +19,7 @@ import Resume from '../ui/Resume.jsx';
 export default function Reels({go, back}) {
   const {text, offset} = useStore();
   const t = useT();
-  const {chunks, pos, setPos, eye} = useChunks(SIZE.reels);
+  const {chunks, pos, setPos, eye, picsOf} = useChunks(SIZE.reels);
   const count = chunks.length;
   const {boxRef, items, away, toPos} = useCardWindow({count, pos, setPos, eye, ahead: 2, cardSelector: '.reel'});
   const act = action => run(action, {go, boxRef, pos});
@@ -39,7 +40,12 @@ export default function Reels({go, back}) {
       </div>
       <div className="body" ref={boxRef}>
         {items.map(i => (
-          <div className="reel" key={i} data-i={i} style={{background: shot('tall', i, grad(i))}}>
+          /* Карточка с картинкой из книги отдаёт ей верх экрана, а тексту
+             оставляет низ: `haspic` подрезает его высоту, иначе длинный
+             фрагмент выдавил бы картинку за кромку. */
+          <div className={picsOf(i).length ? 'reel haspic' : 'reel'} key={i} data-i={i}
+               style={{background: shot('tall', i, grad(i))}}>
+            <BookPics list={picsOf(i)} />
             <div className="txt">{chunks[i].text}</div>
             <div className="cnt">{t('reels.handle')} · {t('reels.of', {i: i + 1, n: count})}</div>
             <div className="tag">{t('reels.tag')}</div>

@@ -8,15 +8,37 @@
 // Смещения глав считаются в символах ИТОГОВОГО text — это та же координата,
 // что и курсор чтения в сторе. Индекс главы или номер фрагмента для этого не
 // годятся: у каждого экрана своя нарезка.
+//
+// Картинки — по той же координате. Сами они лежат в конце файла отдельными
+// `<binary>` в base64, а в тексте от них стоит только ссылка; мы запоминаем,
+// на каком смещении стояла ссылка, и достаём вложение уже по ней.
+import {budget, mimeOf, sizeOfB64} from './img.js';
 
 // Абзацеобразующие элементы FB2: каждый даёт отдельный кусок текста.
 // `v` — строка стиха, `th`/`td` — ячейки таблицы (лучше строкой, чем слитно).
 const BLOCK = new Set(['p', 'v', 'subtitle', 'text-author', 'th', 'td']);
 
-// Картинки и base64-вложения в текст не идут вообще.
-const SKIP = new Set(['image', 'binary', 'annotation', 'empty-line']);
+// В ТЕКСТ не идут ни вложения, ни аннотация. `image` в этом списке больше нет:
+// картинка в текст по-прежнему не попадает, но теперь она запоминается
+// отдельно — со смещением, по которому её найдёт карточка.
+const SKIP = new Set(['binary', 'annotation', 'empty-line']);
 
 const squash = s => String(s).replace(/\s+/g, ' ').trim();
+
+const XLINK = 'http://www.w3.org/1999/xlink';
+
+/**
+ * id вложения, на которое ссылается `<image>`.
+ *
+ * Пишут это по-разному: `l:href`, `xlink:href`, изредка просто `href`. Через
+ * `getAttributeNS` тоже спрашиваем, потому что префикс в файле бывает не `l`,
+ * а любой — привязка идёт к пространству имён, а не к букве перед двоеточием.
+ */
+const refOf = el => {
+  const href = el.getAttributeNS(XLINK, 'href')
+    || el.getAttribute('l:href') || el.getAttribute('xlink:href') || el.getAttribute('href') || '';
+  return href.replace(/^#/, '').trim();
+};
 
 /** Байты в Uint8Array; всё, что не похоже на байты, — ошибка, а не undefined. */
 function toBytes(bytes) {
@@ -72,10 +94,62 @@ function flat(el) {
 }
 
 /**
+ * Вложения книги: id → элемент `<binary>`.
+ *
+ * Именно элемент, а не его содержимое. base64-хвост иллюстрированной книги
+ * весит столько же, сколько сама книга, и снять его текст «на всякий случай»
+ * значит удвоить память ради вложений, на которые может не быть ни одной ссылки.
+ */
+function binaries(doc) {
+  const out = new Map();
+  for (const el of doc.getElementsByTagName('*')) {
+    if (el.localName !== 'binary') continue;
+    const id = (el.getAttribute('id') || '').trim();
+    if (id && !out.has(id)) out.set(id, el);
+  }
+  return out;
+}
+
+/**
+ * Ссылки на картинки → сами картинки. Ссылка без вложения, вложение неизвестного
+ * формата, слишком мелкое или слишком крупное — просто пропускаются: книга без
+ * одной иллюстрации читается, книга, которая не открылась, — нет.
+ */
+function images(doc, refs) {
+  if (!refs.length) return [];
+  const bins = binaries(doc);
+  const fits = budget();
+  const done = new Map();          // id → готовая картинка либо null, если не взяли
+  const out = [];
+
+  for (const r of refs) {
+    let img = done.get(r.id);
+    // Одно вложение читается один раз, даже если ссылок на него десяток: у книг
+    // с виньеткой между сценами их столько и бывает. Иначе мегабайтная строка
+    // переписывалась бы на каждую ссылку, а потолок веса выбирался бы одной и
+    // той же картинкой по десять раз.
+    if (img === undefined) {
+      img = null;
+      const el = bins.get(r.id);
+      const type = el ? mimeOf(el.getAttribute('content-type'), r.id) : '';
+      if (type) {
+        // Внутри `<binary>` base64 разбит на строки — пробелы в data: URL не нужны.
+        const data = String(el.textContent || '').replace(/\s+/g, '');
+        if (data && fits(sizeOfB64(data))) img = {type, data};
+      }
+      done.set(r.id, img);
+    }
+    if (img) out.push({at: r.at, type: img.type, data: img.data});
+  }
+  return out;
+}
+
+/**
  * Разбирает FB2.
  *
  * @param {ArrayBuffer|Uint8Array} bytes содержимое файла
- * @returns {{title: string, text: string, chapters: Array<{title: string, at: number}>}}
+ * @returns {{title: string, text: string, chapters: Array<{title: string, at: number}>,
+ *   images: Array<{at: number, type: string, data: string}>}}
  * @throws {Error} пустой файл, не-XML или FB2 без текста
  */
 export function parseFb2(bytes) {
@@ -96,10 +170,24 @@ export function parseFb2(bytes) {
 
   let text = '';
   const chapters = [];
+  const refs = [];
 
   // Смещение, с которого начнётся следующий абзац. Между абзацами «\n\n»,
   // поэтому у непустого текста это длина плюс два.
   const nextAt = () => (text ? text.length + 2 : 0);
+
+  // Ссылка на картинку с местом, где она стояла. Один и тот же id на одном и
+  // том же смещении берём один раз: обложка книги почти всегда объявлена дважды
+  // — в описании и первой же картинкой в теле, — и без этого она показалась бы
+  // на первой карточке дважды подряд.
+  const seen = new Set();
+  const refPic = (el, at) => {
+    const id = refOf(el);
+    const key = id + '@' + at;
+    if (!id || seen.has(key)) return;
+    seen.add(key);
+    refs.push({id, at});
+  };
 
   const push = raw => {
     const v = squash(raw);
@@ -120,6 +208,13 @@ export function parseFb2(bytes) {
       const tag = el.localName;
       if (SKIP.has(tag)) continue;
 
+      if (tag === 'image') {
+        // Смещение — начало СЛЕДУЮЩЕГО абзаца: ровно там картинка и стояла,
+        // перед ним. Если после неё в книге ничего нет, смещение окажется за
+        // концом текста — стор подожмёт его к последнему куску.
+        refPic(el, nextAt());
+        continue;
+      }
       if (tag === 'section') {
         // Место в списке занимаем ДО обхода: вложенные секции добавляют свои
         // главы внутри walk(), и запись «постфактум» перевернула бы порядок —
@@ -144,8 +239,14 @@ export function parseFb2(bytes) {
     }
   };
 
+  // Обложка объявлена не в теле, а в описании, и её ссылку обход не увидит.
+  // Ставим её нулевым смещением — то есть на самую первую карточку книги,
+  // и ДО обхода: в списке она должна идти первой, как и в книге.
+  const coverEl = doc.querySelector('description > title-info > coverpage > image');
+  if (coverEl) refPic(coverEl, 0);
+
   walk(body);
 
   const t = doc.querySelector('description > title-info > book-title');
-  return {title: t ? squash(t.textContent) : '', text, chapters};
+  return {title: t ? squash(t.textContent) : '', text, chapters, images: images(doc, refs)};
 }
