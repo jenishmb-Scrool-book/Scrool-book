@@ -1,87 +1,120 @@
 # -*- coding: utf-8 -*-
 """
-Иконка приложения: пузырь сообщения, собранный из строк текста.
+Иконка приложения из рисунка владельца (tools/logo-source.png).
 
-Замысел один и объясняется одной фразой: книга приходит сообщениями. Поэтому
-не корешок и не буква — приложение маскируется под ленту, и иконка это первое
-обещание. Проверялось на 48 пикселях: на этом размере от рисунка остаётся
-силуэт, и силуэт обязан читаться.
+Рисунок — квадратная плашка: телефон со стрелкой вверх на фоне раскрытой
+книги, под ним надпись «Scrool Book». В иконку он попадает не целиком, и на
+это три причины, каждая про то, как Android показывает иконки.
 
-Всё значимое лежит в центральном круге ⌀288 из 432: у адаптивной иконки
-система обрезает углы по-разному — кругом, квадратом со скруглением, каплей.
+1. Надпись выброшена. Имя приложения система пишет сама, под значком. Второе
+   имя внутри значка — это то же слово дважды, а на 48 пикселях (самый мелкий
+   размер, который просит Android) буквы сливаются в серую полосу.
 
-Рисуем с четырёхкратным запасом и уменьшаем: у PIL нет сглаживания примитивов,
-и без запаса края получаются рваными.
+2. Плашка выброшена. У адаптивной иконки форму задаёт лаунчер: где-то круг,
+   где-то квадрат со скруглением, где-то капля. Своя скруглённая рамка внутри
+   чужой даёт квадрат в квадрате и полоску фона между ними.
+
+3. Знак берётся вместе с куском родного фона, а фон дальше продолжается
+   размножением краевой строки. Вырезать знак по контуру нельзя: у него по
+   краям свечение, и любой порог режет свечение пополам, оставляя вокруг
+   телефона светлый прямоугольник. Класть кусок на ровный цвет тоже нельзя:
+   фон в исходнике не ровный, он светлеет к центру, и край куска виден
+   рамкой. Размножение краевой строки шва не оставляет вовсе — фон просто
+   продолжается тем же цветом, каким кончился.
+   Кругом резать тоже нельзя: знак шире, чем высок, и круг, в который он
+   влезает, дотягивается до надписи снизу и до края плашки сверху.
+
+Знак вписан в круг ⌀288 из 432: это та часть холста, которую любой лаунчер
+обязан показать целиком. Радиус знака измеряется по картинке, а не на глаз.
 """
 import os
 
-from PIL import Image, ImageDraw, ImageFont
+import numpy as np
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
+SRC = 'tools/logo-source.png'       # исходник владельца, лежит в репозитории
 RES = 'android/app/src/main/res'
 OUT = 'docs/release/icons'          # то, что грузится руками в консоль
-BG = (11, 11, 18)                   # #0b0b12 — фон приложения и @color/ic_launcher_background
-SS = 4                              # запас для сглаживания
+SS = 4                              # запас для сглаживания масок
 
 # Плотности: у адаптивной иконки холст 108dp, у устаревшей квадратной — 48dp.
 FOREGROUND = [('mdpi', 108), ('hdpi', 162), ('xhdpi', 216), ('xxhdpi', 324), ('xxxhdpi', 432)]
 LEGACY = [('mdpi', 48), ('hdpi', 72), ('xhdpi', 96), ('xxhdpi', 144), ('xxxhdpi', 192)]
 
+# Знак на исходнике: полосы яркости, измеренные по самой картинке. Ниже 870
+# начинается надпись, и в эти границы она не попадает.
+MARK_TOP, MARK_BOTTOM = 188, 821
 
-def gradient(size, top, bottom):
-    """Вертикальный переход. Полосами по строке — на наших размерах этого хватает."""
-    w, h = size
-    g = Image.new('RGB', (1, h))
-    px = g.load()
-    for y in range(h):
-        k = y / max(1, h - 1)
-        px[0, y] = tuple(round(top[i] + (bottom[i] - top[i]) * k) for i in range(3))
-    return g.resize((w, h), Image.BILINEAR)
+# Запас фона вокруг знака. Ограничен он надписью: между знаком (821) и ею
+# (870) всего 49 точек, поэтому со всех сторон берётся столько же.
+PAD = 40
 
 
-def glyph_mask(side, inset):
+def measure(im):
+    """Центр и радиус знака: самая дальняя от центра габаритов яркая точка."""
+    a = np.asarray(im.convert('RGB'), dtype=np.int32)
+    mx = a.max(axis=2)
+    mx[:MARK_TOP] = 0
+    mx[MARK_BOTTOM:] = 0
+    ys, xs = np.nonzero(mx > 90)
+    cx = (xs.min() + xs.max()) / 2.0
+    cy = (ys.min() + ys.max()) / 2.0
+    r = float(np.sqrt((xs - cx) ** 2 + (ys - cy) ** 2).max())
+    return cx, cy, r
+
+
+def ground(im, box):
     """
-    Маска пузыря со строками. `inset` — сколько пустого поля с каждой стороны
-    в долях стороны: у адаптивной иконки поля много (обрежут), у устаревшей мало.
+    Цвет фона по краю вырезанного куска. Берётся с самой картинки, а не на
+    глаз: разойдись он со швом на десяток единиц — и вокруг знака появится
+    рамка, которую на чёрном видно.
     """
-    S = side * SS
-    m = Image.new('L', (S, S), 0)
-    d = ImageDraw.Draw(m)
-
-    pad = S * inset
-    x0, y0, x1 = pad, pad * 1.06, S - pad
-    y1 = y0 + (x1 - x0) * 0.74           # пузырь чуть приземистее квадрата
-    r = (x1 - x0) * 0.24
-
-    d.rounded_rectangle([x0, y0, x1, y1], radius=r, fill=255)
-    # Хвост слева снизу — без него это не пузырь, а карточка.
-    tail = (x1 - x0) * 0.17
-    d.polygon([(x0 + r * 0.55, y1 - tail * 0.5),
-               (x0 + r * 0.55 + tail * 1.15, y1),
-               (x0 + r * 0.2, y1 + tail * 1.05)], fill=255)
-
-    # Три строки текста вырезаны насквозь: на маленьком размере именно они
-    # превращают пузырь в «сообщение с текстом», а не в пустую каплю.
-    inner = (x1 - x0) * 0.13
-    lh = (y1 - y0 - inner * 2) / 5.2      # высота строки
-    gap = lh * 0.72
-    widths = (1.0, 0.82, 0.5)
-    ly = y0 + inner + lh * 0.35
-    for k, wf in enumerate(widths):
-        lx1 = x0 + inner + (x1 - x0 - inner * 2) * wf
-        d.rounded_rectangle([x0 + inner, ly, lx1, ly + lh], radius=lh / 2, fill=0)
-        ly += lh + gap
-        if k == 1:
-            ly += gap * 0.1
-
-    return m.resize((side, side), Image.LANCZOS)
+    a = np.asarray(im.crop(box).convert('RGB'), dtype=np.float32)
+    edge = np.concatenate([a[:6].reshape(-1, 3), a[-6:].reshape(-1, 3),
+                           a[:, :6].reshape(-1, 3), a[:, -6:].reshape(-1, 3)])
+    return tuple(int(round(v)) for v in edge.mean(axis=0))
 
 
-def glyph_rgba(side, inset):
-    """Пузырь с переходом, на прозрачном фоне."""
-    m = glyph_mask(side, inset)
-    g = gradient((side, side), (154, 128, 255), (78, 140, 255)).convert('RGBA')
-    g.putalpha(m)
-    return g
+SOURCE = Image.open(SRC).convert('RGBA')
+CX, CY, MARK_R = measure(SOURCE)
+# Кусок: знак плюс запас фона. Снизу запас упирается в надпись, поэтому он
+# одинаков со всех сторон и равен тому, что помещается снизу.
+BOX = (int(CX - (CX - 223) - PAD), MARK_TOP - PAD,
+       int(CX + (1031 - CX) + PAD), MARK_BOTTOM + PAD)
+BG = ground(SOURCE, BOX)
+
+
+def tile():
+    """
+    Знак с фоном, продолженным во все стороны размножением краевой строки.
+
+    Запас такой, что при любом нашем масштабе холст иконки закрыт целиком:
+    непрозрачна вся картинка, и шва нет нигде, потому что резать нечего.
+    """
+    a = np.asarray(SOURCE.crop(BOX).convert('RGB'))
+    pad = max(a.shape[0], a.shape[1])
+    a = np.pad(a, ((pad, pad), (pad, pad), (0, 0)), mode='edge')
+    return Image.fromarray(a).convert('RGBA'), pad
+
+
+def placed(art, side, fill):
+    """
+    `art` на прозрачном холсте `side`×`side`: знак внутри него вписан в круг
+    диаметром `fill`·side и поставлен по центру холста. Масштаб считается по
+    знаку, а не по картинке, — у картинки края это фон, и его не жалко.
+    """
+    k = (side * fill / 2.0) / MARK_R
+    w = max(1, int(round(art.width * k)))
+    h = max(1, int(round(art.height * k)))
+    small = art.resize((w, h), Image.LANCZOS)
+    # Центрируем по знаку, а не по картинке: у неё края — это фон, и его
+    # с разных сторон разное количество.
+    off = PADDING
+    cx = (CX - BOX[0] + off) * k
+    cy = (CY - BOX[1] + off) * k
+    canvas = Image.new('RGBA', (side, side), (0, 0, 0, 0))
+    canvas.alpha_composite(small, (int(round(side / 2.0 - cx)), int(round(side / 2.0 - cy))))
+    return canvas
 
 
 def round_mask(side):
@@ -98,25 +131,42 @@ def squircle_mask(side):
     return m.resize((side, side), Image.LANCZOS)
 
 
+def gradient(size, top, bottom):
+    """Вертикальный переход. Полосами по строке — на наших размерах этого хватает."""
+    w, h = size
+    g = Image.new('RGB', (1, h))
+    px = g.load()
+    for y in range(h):
+        k = y / max(1, h - 1)
+        px[0, y] = tuple(round(top[i] + (bottom[i] - top[i]) * k) for i in range(3))
+    return g.resize((w, h), Image.BILINEAR)
+
+
 def save(img, path):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     img.save(path, 'PNG')
     return os.path.getsize(path)
 
 
+TILE, PADDING = tile()
+
 written = []
 
 # ---------- адаптивная иконка: только передний слой, фон задан цветом ----------
+# Круг ⌀288 из 432 — это 0.66, та часть холста, которую покажет любой лаунчер.
+# Знак занимает 0.56: вплотную к границе он упирался в край каплевидной маски
+# и выглядел тесно, а поле вокруг значка — половина того, что делает его
+# значком, а не картинкой.
 for name, side in FOREGROUND:
-    img = Image.new('RGBA', (side, side), (0, 0, 0, 0))
-    img.alpha_composite(glyph_rgba(side, 0.255))       # содержимое внутри ⌀ 288/432
     p = os.path.join(RES, 'mipmap-' + name, 'ic_launcher_foreground.png')
-    written.append((p, save(img, p)))
+    written.append((p, save(placed(TILE, side, 0.56), p)))
 
 # ---------- устаревшие иконки для Android 7 и старше ----------
+# Здесь маску накладываем сами и фон рисуем сами: системной подложки нет,
+# поле у знака своё, и потому его можно сделать крупнее.
 for name, side in LEGACY:
     base = Image.new('RGBA', (side, side), BG + (255,))
-    base.alpha_composite(glyph_rgba(side, 0.17))
+    base.alpha_composite(placed(TILE, side, 0.74))
 
     sq = Image.new('RGBA', (side, side), (0, 0, 0, 0))
     sq.paste(base, (0, 0), squircle_mask(side))
@@ -128,9 +178,26 @@ for name, side in LEGACY:
     p = os.path.join(RES, 'mipmap-' + name, 'ic_launcher_round.png')
     written.append((p, save(rd, p)))
 
+# ---------- цвет подложки адаптивной иконки ----------
+# Пишется скриптом, а не руками: он обязан совпасть с фоном на краю выреза,
+# иначе вокруг знака появится кольцо.
+p = os.path.join(RES, 'values', 'ic_launcher_background.xml')
+xml = (u"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+       u"<resources>\n"
+       u"    <!-- Цвет фона на краю выреза в tools/logo-source.png.\n"
+       u"         Считается в tools/make-icons.py — руками не править. -->\n"
+       u"    <color name=\"ic_launcher_background\">#%02x%02x%02x</color>\n"
+       u"</resources>\n") % BG
+os.makedirs(os.path.dirname(p), exist_ok=True)
+with open(p, 'w', encoding='utf-8', newline='\n') as f:
+    f.write(xml)
+written.append((p, os.path.getsize(p)))
+
 # ---------- иконка карточки Play: 512x512, без прозрачности ----------
+# Play скругляет её сам, поэтому кладём знак на ровный фон и не режем.
 store = Image.new('RGB', (512, 512), BG)
-store.paste(glyph_rgba(512, 0.19), (0, 0), glyph_rgba(512, 0.19))
+mark512 = placed(TILE, 512, 0.66)
+store.paste(mark512, (0, 0), mark512)
 p = os.path.join(OUT, 'play-icon-512.png')
 written.append((p, save(store, p)))
 
@@ -149,28 +216,34 @@ def font(size):
     return ImageFont.load_default()
 
 
-ban = gradient((1024, 500), (26, 22, 52), (11, 11, 18)).convert('RGBA')
-# Пятно света за иконкой, чтобы баннер не был плоским.
+ban = gradient((1024, 500), (26, 22, 52), BG).convert('RGBA')
+# Пятно света за знаком, чтобы баннер не был плоским. Размывается: у ровной
+# заливки виден край, и на тёмном фоне он читается кольцом вокруг значка.
 glow = Image.new('RGBA', (1024, 500), (0, 0, 0, 0))
 gd = ImageDraw.Draw(glow)
-gd.ellipse([40, 30, 500, 470], fill=(124, 92, 255, 46))
-ban.alpha_composite(glow)
+gd.ellipse([60, 50, 480, 450], fill=(124, 92, 255, 58))
+ban.alpha_composite(glow.filter(ImageFilter.GaussianBlur(70)))
 
-icon = glyph_rgba(300, 0.06)
-ban.alpha_composite(icon, (120, 100))
+# На баннере показываем настоящую иконку — скруглённым квадратом, как её
+# покажет лаунчер. Непрозрачный кусок без маски лёг бы на градиент заплаткой.
+side = 340
+face = Image.new('RGBA', (side, side), BG + (255,))
+face.alpha_composite(placed(TILE, side, 0.74))
+icon = Image.new('RGBA', (side, side), (0, 0, 0, 0))
+icon.paste(face, (0, 0), squircle_mask(side))
+ban.alpha_composite(icon, (100, 80))
 
 d = ImageDraw.Draw(ban)
-# Название подгоняем по ширине по той же причине, что и подпись: имя из
-# двух латинских слов вдвое длиннее прежней аббревиатуры и на 96 кеглях
-# уезжает за правый край.
+# Имя набираем шрифтом, а не берём картинкой из исходника: в исходнике оно
+# нарисовано под квадрат, и в полосе 1024×500 встало бы мелким.
+# Подгоняем по ширине — у баннера края обрезаются в разных местах карточки,
+# и текст, доходящий до кромки, там теряет последние буквы.
 NAME = 'Scrool Book'
 size = 96
 while size > 48 and d.textlength(NAME, font=font(size)) > 470:
     size -= 4
 # Опускаем строку на половину съеденной высоты, чтобы блок остался на месте.
 d.text((470, 168 + (96 - size) * 0.35), NAME, font=font(size), fill=(255, 255, 255))
-# Подпись подгоняем по ширине: у баннера края обрезаются в разных местах
-# карточки, и текст, доходящий до кромки, там теряет последние буквы.
 TAG = 'Книга приходит сообщениями'
 size = 32
 while size > 18 and d.textlength(TAG, font=font(size)) > 470:
@@ -180,11 +253,13 @@ p = os.path.join(OUT, 'play-feature-1024x500.png')
 written.append((p, save(ban.convert('RGB'), p)))
 
 # ---------- лист для просмотра: как иконка выглядит мелко ----------
+# Проверялось на 48 пикселях: на этом размере от рисунка остаётся силуэт,
+# и силуэт обязан читаться. Верхний ряд — маска-квадрат, нижний — круг.
 sheet = Image.new('RGB', (760, 300), (24, 24, 34))
 x = 40
 for side in (192, 96, 72, 48):
     base = Image.new('RGBA', (side, side), BG + (255,))
-    base.alpha_composite(glyph_rgba(side, 0.17))
+    base.alpha_composite(placed(TILE, side, 0.74))
     sq = Image.new('RGBA', (side, side), (0, 0, 0, 0))
     sq.paste(base, (0, 0), squircle_mask(side))
     sheet.paste(sq, (x, 30), sq)
@@ -196,6 +271,7 @@ p = os.path.join(OUT, 'preview.png')
 written.append((p, save(sheet, p)))
 
 total = sum(s for _, s in written)
+print('фон иконки #%02x%02x%02x, радиус знака %.0f' % (BG + (MARK_R,)))
 print('записано %d файлов, %.1f кБ' % (len(written), total / 1024.0))
 for path, size in written:
     print('  %-64s %5.1f кБ' % (path.replace('\\', '/'), size / 1024.0))

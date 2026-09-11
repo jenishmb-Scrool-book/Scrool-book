@@ -2,5 +2,17 @@
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/ic_launcher_background"/>
     <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
-    <monochrome android:drawable="@mipmap/ic_launcher_foreground"/>
+    <!--
+        <monochrome> здесь намеренно нет.
+
+        В теме Android 13+ система берёт от картинки одну прозрачность и
+        заливает её своим цветом. Знак нарисован свечением и переходами, и
+        любой силуэт, снятый с него порогом, превращается в пятно: экран
+        телефона сливается со стрелкой внутри, страницы книги — друг с другом.
+        Проверено на 96 и 48 точках — не читается ни на одном.
+
+        Без этой строки Android показывает обычную иконку, а не плохую
+        монохромную. Вернуть строку можно тогда, когда для темы будет
+        нарисован свой знак — не снятый с этого, а сделанный под заливку.
+    -->
 </adaptive-icon>
