@@ -1,6 +1,7 @@
 import {useStore} from '../store.jsx';
 import {useT} from '../i18n.js';
 import {APPS} from './Home.jsx';
+import {APP_NAME} from '../name.js';
 import AppIcon from '../ui/AppIcon.jsx';
 import StatusBar from '../ui/StatusBar.jsx';
 
@@ -88,7 +89,7 @@ export default function Intro({step, onStep, onDone}) {
           {/* Название одинаково в обоих языках: это имя продукта, оно же
               в <title> и в strings.xml. А вот подпись — на обоих сразу:
               человек ещё не сказал, на каком с ним говорить. */}
-          <div className="iname">СДВГ</div>
+          <div className="iname">{APP_NAME}</div>
           <div className="itag">
             <span>Книга, которая листается как лента</span>
             <span>A book you scroll like a feed</span>

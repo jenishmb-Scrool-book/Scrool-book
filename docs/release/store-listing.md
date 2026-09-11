@@ -14,12 +14,12 @@
 
 ### Название
 ```
-СДВГ
+Scrool Book
 ```
 
-Если понадобится отличить от одноимённых приложений, годится вариант
-`СДВГ — читалка` (14 знаков). Имя на самом телефоне от этого не меняется:
-там всегда «СДВГ».
+Если понадобится отличить от похожих, годится вариант
+`Scrool Book — читалка` (21 знак). Имя на самом телефоне от этого
+не меняется: там всегда «Scrool Book».
 
 ### Краткое описание (80)
 ```
@@ -34,7 +34,7 @@
 час, два. Дело не в силе воли: пролистывать ленту привычно, а разворот книги
 привычным не стал.
 
-СДВГ берёт эту привычку и разворачивает в обратную сторону. Вы добавляете
+Scrool Book берёт эту привычку и разворачивает в обратную сторону. Вы добавляете
 книгу, а приложение показывает её тем самым способом, которым вы и так листаете
 каждый день.
 
@@ -89,7 +89,7 @@
 
 ### Name
 ```
-SDVG
+Scrool Book
 ```
 
 ### Short description (80)
@@ -105,7 +105,7 @@ The book is open, the page doesn't move, and the phone next to it scrolls by
 itself for an hour. It isn't willpower. Scrolling a feed is a habit; a two-page
 spread never became one.
 
-SDVG takes that habit and turns it around. You add a book, and the app shows it
+Scrool Book takes that habit and turns it around. You add a book, and the app shows it
 in the exact shape you already scroll through every day.
 
 SIX WAYS TO READ ONE BOOK

@@ -1,4 +1,4 @@
-package com.tirekai.sdvg;
+package com.tirekai.scroolbook;
 
 import com.getcapacitor.BridgeActivity;
 

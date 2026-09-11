@@ -26,8 +26,8 @@
 
 | Пункт | Где |
 |---|---|
-| Имя приложения «СДВГ» | `capacitor.config.json`, `res/values/strings.xml`, `index.html` |
-| ID пакета `com.tirekai.sdvg` | `capacitor.config.json`, `android/app/build.gradle`, `strings.xml`, `MainActivity.java` |
+| Имя приложения «Scrool Book» | `src/name.js`, `capacitor.config.json`, `res/values/strings.xml`, `index.html` — совпадение стережёт `src/name.test.js` |
+| ID пакета `com.tirekai.scroolbook` | `capacitor.config.json`, `android/app/build.gradle`, `strings.xml`, `MainActivity.java` вместе с путём к нему — совпадение стережёт `src/name.test.js` |
 | `targetSdk` 36 | `android/variables.gradle` — без этого новое приложение в Play не принимают |
 | Конфигурация подписи релиза | `android/app/build.gradle`, читает `android/keystore.properties` |
 | Тексты книг исключены из облачного бэкапа | `res/xml/backup_rules.xml`, `res/xml/data_extraction_rules.xml` |
@@ -76,7 +76,7 @@
 ## 1.3. Создание приложения
 
 1. `Все приложения` → `Создать приложение`.
-2. Название: **СДВГ**. Язык по умолчанию: русский.
+2. Название: **Scrool Book**. Язык по умолчанию: русский.
 3. Тип: **приложение**. Платность: **бесплатное** — это выбирается один раз
    и назад не меняется.
 4. Подтвердить декларации.
@@ -177,9 +177,9 @@
 3. `Create new…`
 4. Заполнить:
    - **Key store path** — путь **вне репозитория**, например
-     `C:\Users\<вы>\keys\sdvg-upload.jks`
+     `C:\Users\<вы>\keys\scroolbook-upload.jks`
    - **Password / Confirm** — пароль хранилища
-   - **Alias** — `sdvg-upload`
+   - **Alias** — `scroolbook-upload`
    - **Password / Confirm** — пароль ключа, можно тот же
    - **Validity (years)** — **30**. Сертификат обязан быть действителен
      минимум до 22 октября 2033 года
@@ -191,7 +191,7 @@
 `keytool` уже лежит внутри Android Studio:
 
 ```bash
-"C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -genkeypair -v -keystore sdvg-upload.jks -alias sdvg-upload -keyalg RSA -keysize 2048 -validity 10000
+"C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -genkeypair -v -keystore scroolbook-upload.jks -alias scroolbook-upload -keyalg RSA -keysize 2048 -validity 10000
 ```
 
 Спросит пароль хранилища, потом имя, организацию, город, страну (двухбуквенным

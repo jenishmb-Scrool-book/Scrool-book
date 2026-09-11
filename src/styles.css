@@ -773,7 +773,10 @@ button,textarea,input{font:inherit;color:inherit}
 /* Шаг выбора языка. Единственный экран приложения без словаря: он показывается
    до того, как язык выбран, и написан на обоих сразу. */
 .ilang{justify-content:center;text-align:center;gap:0}
-.iname{font-size:2.5rem;font-weight:800;letter-spacing:2.5px;line-height:1}
+/* Разрядка мелкая намеренно: широкая читалась как логотип, пока имя было
+   аббревиатурой из четырёх букв. Два латинских слова с ней не помещаются
+   в строку на узком экране при крупном кегле и разъезжаются на две. */
+.iname{font-size:2.5rem;font-weight:800;letter-spacing:.5px;line-height:1}
 .itag{margin-top:12px;font-size:.87rem;line-height:1.5;opacity:.6}
 .itag span{display:block}
 .ipick{margin:36px 0 12px;font-size:.72rem;font-weight:600;letter-spacing:1.4px;

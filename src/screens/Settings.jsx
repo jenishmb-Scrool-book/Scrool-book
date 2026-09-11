@@ -1,17 +1,13 @@
 import {useEffect, useState} from 'react';
 import {useStore} from '../store.jsx';
 import {useT} from '../i18n.js';
+import {APP_NAME} from '../name.js';
 import {clearWallpaper, getWallpaper, setWallpaper, shrink} from '../wallpaper.js';
 import {appInfo, cancelNotifications, ensureNotifications} from '../native.js';
 import {pageAt} from '../lib/pages.js';
 import Screen from '../ui/Screen.jsx';
 import StatusBar from '../ui/StatusBar.jsx';
 import Header from '../ui/Header.jsx';
-
-// Имя приложения для случая «уведомление включили, книги ещё нет».
-// В i18n его нет намеренно: это не строка интерфейса, а название продукта —
-// одинаковое в обоих языках (index.html <title>, strings.xml app_name).
-const APP = 'СДВГ';
 
 // Переключатель из нескольких кнопок. Ползунка нет намеренно: три градации
 // кегля покрывают почти всех, а точное значение — это лишний выбор на экране,
@@ -34,7 +30,7 @@ function Seg({value, options, onPick}) {
 function details(info, ui, len) {
   const s = window.screen || {};
   return [
-    'СДВГ ' + (info.version || '?') + (info.build ? ' (' + info.build + ')' : ''),
+    APP_NAME + ' ' + (info.version || '?') + (info.build ? ' (' + info.build + ')' : ''),
     info.id || '',
     navigator.userAgent,
     // Плотность округляем: у неё бывает хвост вида 2.0000000596046448,
@@ -112,7 +108,7 @@ export default function Settings({go, back}) {
     const page = current ? pageAt(offset, current.len) : 1;
     const ok = await ensureNotifications({
       title: t('notif.title', {page}),
-      body: t('notif.body', {title: (current && current.title) || APP})
+      body: t('notif.body', {title: (current && current.title) || APP_NAME})
     });
     // Флаг ставим только после реального разрешения. «Включено» без разрешения —
     // худший из исходов: уведомлений нет, а системный диалог второй раз не придёт,

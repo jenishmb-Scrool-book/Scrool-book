@@ -21,7 +21,7 @@ const BG = '#0b0b12';
 // подписка на backButton осталась бы висеть в нативном слое — и на каждый
 // hot-reload их копилось бы всё больше. Ключ через Symbol.for переживает
 // подмену модуля, поэтому старую подписку всегда есть чем снять.
-const SLOT = Symbol.for('sdvg.native.state');
+const SLOT = Symbol.for('scroolbook.native.state');
 let state = globalThis[SLOT];
 if (!state) {
   state = { back: null, queue: Promise.resolve() };

@@ -43,7 +43,7 @@ vi.mock('@capacitor/status-bar', () => ({
 /** Свежий модуль: состояние подписки лежит на globalThis и переживает импорт. */
 async function load() {
   vi.resetModules();
-  delete globalThis[Symbol.for('sdvg.native.state')];
+  delete globalThis[Symbol.for('scroolbook.native.state')];
   return import('./native.js');
 }
 
