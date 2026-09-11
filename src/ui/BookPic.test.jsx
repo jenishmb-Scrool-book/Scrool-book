@@ -24,6 +24,7 @@ const PARA = ['Первый абзац книги.', 'Второй абзац к
 const TEXT = PARA.join('\n\n') + '\n\n' + 'Ещё абзац для длины. '.repeat(60);
 const AT = TEXT.indexOf(PARA[2]);
 const SRC = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==';
+const PIC = {w: 900, h: 600};
 
 /**
  * Книга с одной картинкой на третьем абзаце. Курсор ставим туда же: тогда
@@ -33,7 +34,8 @@ const SRC = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==';
 async function seed({file = true} = {}) {
   await saveText('b1', TEXT);
   if (file) await savePic('b1', 0, SRC);
-  await savePix('b1', [{at: AT, k: 0}]);
+  // Размер в записи — то, откуда рамка берёт свои пропорции.
+  await savePix('b1', [{at: AT, k: 0, w: PIC.w, h: PIC.h}]);
   await saveMeta({
     books: [{id: 'b1', title: 'Книга', len: TEXT.length, toc: 1, pics: 1}],
     cur: 'b1',
@@ -130,7 +132,7 @@ describe('picsOf() — какой карточке досталась карти
       const {chunks, picsOf} = h.result.current;
       const i = chunks.findIndex(c => c.at <= AT && AT < c.end);
       expect(i, 'размер ' + size).toBeGreaterThanOrEqual(0);
-      expect(picsOf(i), 'размер ' + size).toEqual([{at: AT, k: 0}]);
+      expect(picsOf(i), 'размер ' + size).toEqual([{at: AT, k: 0, ...PIC}]);
       h.unmount();
     }
   });

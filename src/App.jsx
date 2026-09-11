@@ -15,6 +15,7 @@ import Tweets from './screens/Tweets.jsx';
 import Chapters from './screens/Chapters.jsx';
 import Library from './screens/Library.jsx';
 import Settings from './screens/Settings.jsx';
+import PicView, {PicProvider} from './ui/PicView.jsx';
 
 export const SCREENS = {
   home: Home,
@@ -47,6 +48,10 @@ export default function App() {
   const [arg, setArg] = useState(null);      // параметр экрана: с какой строки списка вошли
   const [restored, setRestored] = useState(false);   // место из прошлого запуска уже разобрано
   const [step, setStep] = useState(0);       // шаг вступления; 0 — выбор языка
+  // Картинка, открытая во весь экран. Держим здесь, а не в карточке: карточка
+  // прокручивается вместе с лентой, а открытая картинка уезжать не должна.
+  // Отсюда же её видит и аппаратная «назад» — для неё это шаг, а не выход.
+  const [shot, setShot] = useState('');
 
   // История переходов. Была таблица «откуда куда» на два экрана, и она врала
   // везде, где переход не один: в настройки приходят и из дома, и с нижней
@@ -120,6 +125,9 @@ export default function App() {
     // у дома фон градиентный, background-color там пустой, и покрасить бар в
     // него значило бы получить чёрную полоску поверх красивого перехода.
     const color = [
+      // Открытая картинка лежит поверх всего и сама почти чёрная — полоска
+      // наверху принимает её цвет, а не цвет спрятанной под ней шапки.
+      shot ? '#000000' : null,
       scr && scr.dataset.barColor,
       pick(document.querySelector(BARS)),
       pick(scr),
@@ -143,7 +151,7 @@ export default function App() {
     // `introDone` здесь потому, что вступление сменяется домом БЕЗ смены
     // `screen`: он всё это время и так «home». Без него полоска осталась бы
     // того цвета, который замерили на вступлении.
-  }, [screen, ui.skin, ui.theme, introDone]);
+  }, [screen, ui.skin, ui.theme, introDone, shot]);
 
   // Первый запуск: вместо пустого экрана подкладываем текст, объясняющий механику.
   // Живёт здесь, а не в сторе: это онбординг, а не хранилище.
@@ -169,6 +177,9 @@ export default function App() {
   const argRef = useRef(arg);
   argRef.current = arg;
 
+  const shotRef = useRef(shot);
+  shotRef.current = shot;
+
   // Вступление живёт мимо истории переходов: это не экран приложения, а то,
   // что стоит перед ним. Поэтому «назад» на нём ходит по его собственным шагам.
   const introRef = useRef(false);
@@ -177,6 +188,7 @@ export default function App() {
   stepRef.current = step;
 
   const go = (id, opt) => {
+    setShot('');                 // на новом экране открытой картинке делать нечего
     // Читать нечего — вместо пустого экрана уводим в библиотеку.
     if (!NO_BOOK_OK.includes(id) && !textRef.current.length) id = 'library';
     const from = screenRef.current;
@@ -222,6 +234,12 @@ export default function App() {
     let dead = false;
     // С дома «назад» отдаёт false — приложение сворачивается.
     const onBack = () => {
+      // Открытая картинка закрывается первой: она лежит поверх экрана, и выйти
+      // из приложения, не закрыв её, — это выход в обход того, что на экране.
+      if (shotRef.current) {
+        setShot('');
+        return true;
+      }
       // Во вступлении — шаг назад по нему же. С первого шага сворачиваем:
       // позади него ничего нет, и держать человека на экране, с которого не
       // выйти, не станет ни одно приложение.
@@ -277,7 +295,10 @@ export default function App() {
   const Current = SCREENS[screen] || Home;
   return (
     <div id="phone">
-      <Current go={go} back={goBack} arg={arg} />
+      <PicProvider value={setShot}>
+        <Current go={go} back={goBack} arg={arg} />
+      </PicProvider>
+      {shot ? <PicView src={shot} onClose={() => setShot('')} /> : null}
       {error ? <div className="err">{error}</div> : null}
     </div>
   );

@@ -1,6 +1,7 @@
 import {useEffect, useState} from 'react';
 import {useStore} from '../store.jsx';
 import {useT} from '../i18n.js';
+import {useOpenPic} from './PicView.jsx';
 
 // Картинка из книги — на карточке, которой досталось её смещение.
 //
@@ -21,6 +22,7 @@ import {useT} from '../i18n.js';
  */
 function One({pic, cls}) {
   const {getPic} = useStore();
+  const openPic = useOpenPic();
   const t = useT();
   const [src, setSrc] = useState(null);           // null — ещё грузим, '' — нечего показывать
 
@@ -38,8 +40,23 @@ function One({pic, cls}) {
   }, [getPic, pic.k]);
 
   if (src === '') return null;
+
+  // Пропорции рамки — пропорции самой картинки: её размер стор прочитал из
+  // заголовка файла ещё при импорте. Отсюда две вещи сразу: высота известна до
+  // загрузки, и картинка стоит во всю ширину карточки, а не полоской посреди
+  // полей. У книг, добавленных раньше, размера нет — там останутся запасные
+  // пропорции из стилей.
+  const ar = pic.w > 0 && pic.h > 0 ? {'--arw': pic.w, '--arh': pic.h} : undefined;
+
+  // Во весь экран открывается только картинка в собственной рамке. Превью
+  // ролика и квадратик в списке переписок живут в чужой: там нажатие открывает
+  // сам ролик и сам разговор, и перехватывать его нельзя.
+  const big = !cls && src ? () => openPic(src) : undefined;
+
   return (
-    <figure className={cls ? 'bpic ' + cls : 'bpic'}>
+    <figure className={cls ? 'bpic ' + cls : 'bpic'} style={ar}
+            onClick={big} role={big ? 'button' : undefined}
+            aria-label={big ? t('pic.open') : undefined}>
       {/* Только `<img src=...>`: содержимое книги в разметку не попадает
           никогда, ни здесь, ни где-либо ещё. Сам `src` собран из белого
           списка типов в lib/img.js, а не из строки, взятой в файле. */}

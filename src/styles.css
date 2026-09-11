@@ -1005,30 +1005,109 @@ button,textarea,input{font:inherit;color:inherit}
 
    У рамки есть высота ДО того, как картинка доехала. Иначе её появление
    раздвигало бы ленту под пальцем, а вместе с ней уезжало бы и место чтения:
-   за прокруткой здесь следит курсор. */
-.bpic{margin:0;height:210px;overflow:hidden;background:var(--pic-bg);
-  display:grid;place-items:center}
-.bpic img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
-/* Рамка уже есть у экрана — влезаем в неё (превью ролика 16:9, плеер). */
-.bpic.fill{position:absolute;inset:0;height:auto;background:#000;z-index:0}
-/* Строка списка переписок: превью присланного фото, больше туда и не влезет. */
-.bpic.thumb{width:46px;height:46px;flex:none;border-radius:9px}
+   за прокруткой здесь следит курсор.
+
+   Высота эта — не число из стилей, а пропорции самой картинки: `--arw` и
+   `--arh` ставит карточка, а размер в точках стор прочитал из заголовка файла
+   ещё при импорте. Раньше высота была записана здесь числом, и любая картинка
+   показывалась полоской: разворот сжимался, портрет превращался в спичечный
+   коробок между широкими полями. Теперь рамка ровно по картинке, полей нет
+   вовсе, а `--pic-max` ограничивает её долю экрана — чтобы иллюстрация не
+   выдавила из карточки сам текст.
+
+   4:5 — запасные пропорции. Они достаются картинке, чей заголовок не
+   прочитался, и книгам, добавленным до того, как размер стали читать. */
+.bpic{--pic-max:52dvh;margin:0 auto;width:100%;
+  aspect-ratio:var(--arw,4)/var(--arh,5);
+  max-height:var(--pic-max);
+  max-width:calc(var(--pic-max) * var(--arw,4) / var(--arh,5));
+  overflow:hidden;background:var(--pic-bg);display:grid;place-items:center;cursor:zoom-in}
+.bpic img{display:block;max-width:100%;max-height:100%;width:auto;height:auto}
+/* Рамка уже есть у экрана — влезаем в неё (превью ролика 16:9, плеер).
+   Свои пропорции здесь ни при чём: их задаёт чужая рамка.
+
+   Размер картинке приходится назначать явно, и через `inset`, а не процентами:
+   доля высоты у вложенной картинки здесь не разрешается вовсе — ни `height`,
+   ни `max-height`, — и портретная иллюстрация вылезала за кромку превью,
+   которое показывало её верхнюю треть. От `inset` размер берётся у рамки, а
+   `contain` оставляет по бокам чёрные поля — ровно как настоящий плеер на
+   вертикальном ролике. */
+.bpic.fill{position:absolute;inset:0;aspect-ratio:auto;
+  max-width:none;max-height:none;background:#000;z-index:0;cursor:pointer}
+.bpic.fill img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+/* Строка списка переписок: превью присланного фото, больше туда и не влезет.
+   Здесь единственное место, где картинка обрезается, и обрезается по центру:
+   на сорока шести точках вписанный портрет превращается в полоску шириной с
+   палец. Потерять на превью нечего — та же картинка стоит целиком внутри
+   переписки, куда эта строка и ведёт. */
+.bpic.thumb{position:relative;width:46px;height:46px;flex:none;aspect-ratio:auto;
+  max-width:none;max-height:none;border-radius:9px;cursor:pointer}
+.bpic.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 
 /* Лента: кадр крупный — здесь картинка и есть пост. */
-.post .bpic{height:290px}
-/* Короткие посты и комментарии: рамка со скруглением, как вложение в реплике. */
-.tw .bpic{height:190px;border-radius:14px;margin:6px 0 2px}
-.cmt .bpic{height:150px;border-radius:11px;margin:2px 0 7px}
+.post .bpic{--pic-max:62dvh}
+/* Короткие посты и комментарии: рамка со скруглением, как вложение в реплике.
+   Здесь она прижата влево, а не по центру: это вложение в колонке текста, и
+   отступ слева у них общий. По центру стоит только картинка в ленте — там она
+   и есть пост, а колонки текста рядом с ней нет. */
+.tw .bpic{--pic-max:42dvh;border-radius:14px;margin:6px 0 2px}
+.cmt .bpic{--pic-max:30dvh;border-radius:11px;margin:2px 0 7px}
 /* В пузыре переписки — над текстом, скруглением чуть меньше самого пузыря. */
-.msg .bpic{height:160px;border-radius:calc(var(--bub) - 7px);margin:1px 0 7px;background:#00000038}
+.msg .bpic{--pic-max:44dvh;border-radius:calc(var(--bub) - 7px);margin:1px 0 7px;
+  background:#00000038}
 /* Полноэкранные движки: картинка забирает верх, текст остаётся внизу. Фон у
    рамки прозрачный — под ней уже лежит кадр ленты со своим затемнением, и
    вторая подложка читалась бы как чёрная дыра посреди кадра. Зато самой
    картинке нужны край и тень: без них светлый снимок на светлом кадре
    сливается с ним, и непонятно, где он кончается. */
-.reel .bpic,#stories .bpic{flex:none;background:#0000;height:38%;margin-bottom:12px}
+/* Долю экрана здесь задаёт `--pic-max`, а не `height`: собственная высота у
+   рамки отменила бы её пропорции, и картинка вылезла бы за край — рамка
+   обрезает по себе. Разница видна как раз на портретных иллюстрациях, то есть
+   на большинстве книжных. И мера именно `dvh`, а не проценты: проценты внутри
+   гибкой раскладки не разрешаются у вложенной картинки, и ограничение по
+   высоте молча перестаёт действовать. */
+.reel .bpic,#stories .bpic{--pic-max:36dvh;flex:none;background:#0000;margin-bottom:12px}
 .reel .bpic img,#stories .bpic img{border-radius:14px;box-shadow:0 6px 20px #00000066}
-#stories .bpic{position:relative;z-index:2;height:40%;margin-bottom:6px}
+#stories .bpic{--pic-max:38dvh;position:relative;z-index:2;margin-bottom:6px}
+/* В историях картинка под зонами перелистывания (z-index 4) и остаётся там
+   намеренно: нажатие по половине экрана листает, и это движение здесь главное.
+   Открыть картинку целиком можно с любого другого экрана — место в книге у них
+   общее, и та же иллюстрация стоит на той же карточке в ленте. */
+#stories .bpic{cursor:default}
 /* Без картинки текст занимает три четверти экрана, с картинкой — столько,
    сколько осталось: иначе длинный фрагмент выдавил бы её за кромку. */
 .reel.haspic .txt{max-height:38%}
+
+/* ===== картинка во весь экран ===== */
+/* Лежит поверх всего «телефона», а не внутри карточки: карточка прокручивается,
+   а открытая картинка уезжать вместе с ней не должна. Фон почти чёрный и
+   непрозрачный — иллюстрацию смотрят, а не сравнивают с тем, что под ней.
+
+   Цвета тут свои, не из палитры, и это намеренно: в светлой теме белая
+   подложка врала бы о самой картинке — её поля читались бы как часть рисунка. */
+.shot{position:absolute;inset:0;z-index:20;display:flex;background:#000;
+  animation:shotin .16s ease-out}
+@keyframes shotin{from{opacity:0}}
+@media (prefers-reduced-motion:reduce){.shot{animation:none}}
+
+/* Рамка просмотра. В обычном виде картинка вписана целиком, в увеличенном —
+   больше рамки, и рамка становится прокруткой. Выравнивание при этом
+   переезжает в начало: у flex-контейнера с прокруткой центрированный ребёнок,
+   который больше родителя, обрезается с верхнего края и доехать туда нельзя. */
+.sbox{flex:1;display:flex;align-items:center;justify-content:center;overflow:auto;
+  overscroll-behavior:contain}
+/* `flex:none` обязателен: без него увеличенная картинка — сжимаемый элемент
+   гибкой раскладки, и она ужимается обратно до своей натуральной ширины,
+   то есть увеличение молча не работает на картинках мельче двух экранов. */
+.sbox img{display:block;flex:none;max-width:100%;max-height:100%;width:auto;height:auto;
+  cursor:zoom-in}
+.sbox.zoom{align-items:flex-start;justify-content:flex-start}
+.sbox.zoom img{max-width:none;max-height:none;width:calc(100% * var(--zoom,2.5));height:auto;
+  cursor:zoom-out}
+
+/* Крестик. Подложка ему нужна: без неё белый значок пропадает на светлой
+   картинке ровно тогда, когда закрыть её и хотят. */
+.sx{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));right:10px;
+  width:38px;height:38px;padding:0;border:0;border-radius:50%;
+  background:#000000a6;color:#fff;font-size:.95rem;line-height:1;cursor:pointer;
+  backdrop-filter:blur(6px)}

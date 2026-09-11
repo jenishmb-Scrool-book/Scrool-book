@@ -58,7 +58,7 @@ Scrool Book берёт эту привычку и разворачивает в 
 
 ЧТО ЕЩЁ ЕСТЬ
 
-• Свои книги: вставить текстом или открыть файл .txt, .fb2, .epub
+• Свои книги: вставить текстом или открыть файл .txt, .fb2, .fb2.zip, .epub
 • Оглавление с переходом по главам — даже если в файле разметки не было
 • «Осталось ≈ 20 мин» вместо процентов: вопрос обычно не «далеко ли я»,
   а «успею ли сейчас»
@@ -128,7 +128,7 @@ not six separate readers.
 
 ALSO INSIDE
 
-• Your own books: paste text or open a .txt, .fb2 or .epub file
+• Your own books: paste text or open a .txt, .fb2, .fb2.zip or .epub file
 • Chapter navigation, even when the file had no markup
 • "≈ 20 min left" instead of a percentage
 • Dark and light themes, three text sizes, Russian and English

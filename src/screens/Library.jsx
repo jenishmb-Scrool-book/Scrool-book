@@ -6,8 +6,8 @@ import StatusBar from '../ui/StatusBar.jsx';
 import Header from '../ui/Header.jsx';
 import {percent} from '../ui/Progress.jsx';
 import {pageCount} from '../lib/pages.js';
-import {parseFb2} from '../lib/fb2.js';
-import {parseEpub} from '../lib/epub.js';
+import {parseBook} from '../lib/book.js';
+import {isNative} from '../native.js';
 
 // Стор возвращает Promise; но если реализация вдруг синхронная — не падаем.
 const later = v => Promise.resolve(v);
@@ -16,18 +16,14 @@ const later = v => Promise.resolve(v);
 // «файл не разобрался»: пользователю незачем знать, XML там сломался или ZIP.
 const ERR = {zip: 'lib.parse_failed_zip', unsupported: 'lib.unsupported'};
 
-/**
- * Файл → {title, text}. Парсер выбираем по расширению, а не по MIME: Android
- * отдаёт для .fb2 и .epub то application/octet-stream, то пустую строку.
- */
-const parseFile = async f => {
-  const ext = (/\.(\w+)$/.exec(f.name) || ['', ''])[1].toLowerCase();
-  if (ext === 'fb2') return parseFb2(await f.arrayBuffer());
-  if (ext === 'epub') return parseEpub(await f.arrayBuffer());
-  // Без расширения считаем текстом: хуже, чем отказ, только отказ по ошибке.
-  if (!ext || ext === 'txt' || ext === 'md') return {title: '', text: await f.text()};
-  throw Object.assign(new Error('неизвестное расширение: ' + ext), {code: 'unsupported'});
-};
+// Что показывать в системном выборе файла.
+//
+// На телефоне — всё. Фильтр по расширению там не помогает, а мешает: Android
+// сопоставляет расширение с типом по своей таблице, а `fb2` в ней нет, и книга
+// в системном выборе оказывается серой — той самой, ради которой фильтр и
+// ставили. Что за файл принесли, мы всё равно узнаём по его первым байтам.
+// В браузере таблицы нет и расширение работает как написано — там фильтруем.
+const ACCEPT = '.txt,.md,.fb2,.epub,.zip';
 
 // Библиотека: только книги. Настройки живут отдельным экраном — этот файл
 // иначе становится местом, где сходятся сразу несколько несвязанных задач.
@@ -76,7 +72,7 @@ export default function Library({go, back}) {
     if (!f || busy) return;
     setMsg('');
     setBusy('lib.busy_file');
-    parseFile(f)
+    parseBook(f)
       .then(r => {
         if (!String(r.text || '').trim()) {
           setBusy('');
@@ -132,7 +128,7 @@ export default function Library({go, back}) {
           <button onClick={fromPaste} disabled={!!busy}>{t('lib.add')}</button>
           <label className={'filebtn' + (busy ? ' off' : '')}>
             {t('lib.file')}
-            <input type="file" accept=".txt,.md,.fb2,.epub" onChange={fromFile} disabled={!!busy} />
+            <input type="file" accept={isNative() ? '*/*' : ACCEPT} onChange={fromFile} disabled={!!busy} />
           </label>
         </div>
         {busy ? <div className="hint busy">{t(busy)}</div> : null}

@@ -67,6 +67,32 @@ export function toB64(bytes) {
   return btoa(s);
 }
 
+/**
+ * Первые `n` байт из base64-строки.
+ *
+ * Нужно, чтобы прочитать заголовок картинки и узнать её размер, не разворачивая
+ * в байты всю иллюстрацию: в книге их бывает три сотни, и разворачивать каждую
+ * целиком значило бы держать в памяти всю книгу ещё раз. Режем по границе
+ * четвёрки — из неё как раз получаются три байта, и обрезанный так кусок
+ * остаётся законной base64-строкой.
+ *
+ * @param {string} b64 base64 без пробелов и без префикса `data:`
+ * @param {number} n сколько байт нужно
+ * @returns {Uint8Array} байты (может выйти короче `n`, если строка кончилась)
+ */
+export function headOf(b64, n) {
+  const s = String(b64 || '');
+  const cut = s.slice(0, Math.min(s.length, Math.ceil(Math.max(0, n) / 3) * 4));
+  try {
+    const bin = atob(cut);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  } catch {
+    return new Uint8Array();      // строка не base64 — размеров из неё не будет
+  }
+}
+
 /** Сколько байт стоит за base64-строкой. Хвостовые «=» — добивка, не данные. */
 export function sizeOfB64(b64) {
   const s = String(b64 || '');

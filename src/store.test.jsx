@@ -552,8 +552,14 @@ describe('оглавление и подрезка текста', () => {
    и другое, включая случай, когда картинка не легла. */
 
 const TEXT_P = 'Раз, два.\n\nТри, четыре.\n\nПять, шесть.';
-const DATA = 'AAAAAAAAAAAA';                       // содержимое парсер уже проверил
+// Настоящий заголовок PNG, и только он: из него стор читает размер картинки,
+// чтобы рамка в ленте знала свою высоту ещё до того, как та загрузилась.
+// Самой картинки за заголовком нет — её содержимое проверил парсер.
+const DATA = 'iVBORw0KGgoAAAANSUhEUgAAAlgAAAOECAIAAAA=';
+const W = 600, H = 900;
 const png = at => ({at, type: 'image/png', data: DATA});
+/** Запись в списке картинок: место, номер файла и размер в точках. */
+const rec = (at, k = 0) => ({at, k, w: W, h: H});
 
 const addWith = async (h, text, images) => {
   let id;
@@ -568,10 +574,18 @@ describe('картинки', () => {
     const at = TEXT_P.indexOf('Три');
     await addWith(h, TEXT_P, [png(at)]);
 
-    expect(h.result.current.pics).toEqual([{at, k: 0}]);
+    expect(h.result.current.pics).toEqual([rec(at)]);
     let src;
     await act(async () => {src = await h.result.current.getPic(0);});
     expect(src).toBe('data:image/png;base64,' + DATA);
+  });
+
+  // Формат из белого списка, но заголовок оборван или незнаком: картинку
+  // берём, размера у неё просто не будет — рамка возьмёт запасные пропорции.
+  it('размер не прочитался — картинка всё равно на месте', async () => {
+    const h = await mount();
+    await addWith(h, TEXT_P, [{at: 0, type: 'image/png', data: 'AAAAAAAAAAAA'}]);
+    expect(h.result.current.pics).toEqual([{at: 0, k: 0, w: 0, h: 0}]);
   });
 
   it('книга без картинок ничего лишнего в хранилище не пишет', async () => {
@@ -588,14 +602,14 @@ describe('картинки', () => {
     const b = TEXT_P.indexOf('Пять');
     await addWith(h, TEXT_P, [png(a), png(b)]);
 
-    expect(h.result.current.pics).toEqual([{at: a, k: 0}, {at: b, k: 0}]);
+    expect(h.result.current.pics).toEqual([rec(a), rec(b)]);
     expect(keys().filter(k => k.includes('.pic.'))).toHaveLength(1);
   });
 
   it('смещение за концом текста подрезается по нему', async () => {
     const h = await mount();
     await addWith(h, TEXT_P, [png(99999)]);
-    expect(h.result.current.pics).toEqual([{at: TEXT_P.length - 1, k: 0}]);
+    expect(h.result.current.pics).toEqual([rec(TEXT_P.length - 1)]);
   });
 
   // Парсер считал смещения по своему тексту, а хранится подрезанный — ровно
@@ -604,7 +618,7 @@ describe('картинки', () => {
     const h = await mount();
     const lead = '\n\n   ';
     await addWith(h, lead + TEXT_P, [png(lead.length + TEXT_P.indexOf('Три'))]);
-    expect(h.result.current.pics).toEqual([{at: TEXT_P.indexOf('Три'), k: 0}]);
+    expect(h.result.current.pics).toEqual([rec(TEXT_P.indexOf('Три'))]);
   });
 
   it('картинка переживает перезапуск', async () => {
@@ -614,7 +628,7 @@ describe('картинки', () => {
     h.unmount();
 
     h = await mount();
-    expect(h.result.current.pics).toEqual([{at, k: 0}]);
+    expect(h.result.current.pics).toEqual([rec(at)]);
     let src;
     await act(async () => {src = await h.result.current.getPic(0);});
     expect(src).toMatch(/^data:image\/png;base64,/);
@@ -641,7 +655,7 @@ describe('картинки', () => {
     localStorage.setItem('scroll.book.' + id + '.pix',
       JSON.stringify([{at: 3, k: 0}, {at: 5}, {at: 5, k: -1}, null, {at: 'нет', k: 0}]));
     const again = await mount();
-    expect(again.result.current.pics).toEqual([{at: 0, k: 0}, {at: 3, k: 0}]);
+    expect(again.result.current.pics).toEqual([{at: 0, k: 0, w: 0, h: 0}, {at: 3, k: 0, w: 0, h: 0}]);
   });
 
   it('удаление книги уносит и её картинки', async () => {
@@ -663,7 +677,7 @@ describe('картинки', () => {
     expect(h.result.current.pics).toEqual([]);
 
     await act(async () => {await h.result.current.openBook(first);});
-    expect(h.result.current.pics).toEqual([{at: 0, k: 0}]);
+    expect(h.result.current.pics).toEqual([rec(0)]);
   });
 
   // Текст важнее иллюстрации: место кончилось — книга всё равно должна лечь.

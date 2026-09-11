@@ -35,7 +35,7 @@ const ru = {
   'intro.t2': 'Читаешь тем же движением, каким листаешь',
   'intro.b2': 'В клипах — свайп вверх, в историях — тап справа, в переписке и ленте — обычная прокрутка. Размер куска везде свой: от двух предложений до целой страницы.',
   'intro.t3': 'Место в книге одно на все экраны',
-  'intro.b3': 'Прочитал десять кусков в клипах, зашёл в переписку — продолжаешь с той же строки. Свои книги добавляй в «Библиотеке»: .txt, .fb2 или .epub. Интернет не нужен.',
+  'intro.b3': 'Прочитал десять кусков в клипах, зашёл в переписку — продолжаешь с той же строки. Свои книги добавляй в «Библиотеке»: .txt, .fb2, .fb2.zip или .epub. Интернет не нужен.',
   'intro.note': 'Первая книга уже открыта — это подробная инструкция, и читается она так же, как всё остальное.',
 
   'home.now': 'Читаешь сейчас',
@@ -64,6 +64,10 @@ const ru = {
   // Подпись для читалки с экрана: сама картинка ей ничего не скажет, а
   // «изображение» без пояснения в потоке текста читается как обрыв.
   'pic.alt': 'Картинка из книги',
+  'pic.open': 'Открыть картинку целиком',
+  'pic.close': 'Закрыть картинку',
+  'pic.zoom_in': 'Увеличить',
+  'pic.zoom_out': 'Уменьшить',
   'reader.end': 'Конец текста',
   'reader.resume': 'Вернуться к месту',
 
@@ -153,8 +157,8 @@ const ru = {
   'lib.pages': '{n} стр.',
   'lib.confirm_delete': 'Удалить «{title}»?',
   'lib.parse_failed': 'Не удалось разобрать файл',
-  'lib.parse_failed_zip': 'Этот EPUB не открылся. Обнови «Android System WebView» в Play Маркете или возьми книгу в .fb2',
-  'lib.unsupported': 'Формат не поддерживается: нужен .txt, .fb2 или .epub',
+  'lib.parse_failed_zip': 'Архив не распаковался. Обнови «Android System WebView» в Play Маркете или возьми книгу отдельным файлом .fb2',
+  'lib.unsupported': 'Формат не поддерживается: нужен .txt, .fb2, .fb2.zip или .epub',
   'lib.chapters': '{n} глав',
   'lib.no_text': 'В файле не нашлось текста',
 
@@ -207,7 +211,7 @@ const en = {
   'intro.t2': 'You read with the gesture you already scroll with',
   'intro.b2': 'In clips — swipe up, in stories — tap on the right, in chat and feed — plain scrolling. The size of the piece differs everywhere: from two sentences to a whole page.',
   'intro.t3': 'One place in the book for every screen',
-  'intro.b3': 'Read ten pieces in clips, open the chat — you carry on from the same line. Add your own books in the Library: .txt, .fb2 or .epub. No internet needed.',
+  'intro.b3': 'Read ten pieces in clips, open the chat — you carry on from the same line. Add your own books in the Library: .txt, .fb2, .fb2.zip or .epub. No internet needed.',
   'intro.note': 'The first book is already open — it is the long version of this, and it reads like everything else here.',
 
   'home.now': 'Currently reading',
@@ -233,6 +237,10 @@ const en = {
   'chats.tab_calls': 'Calls',
   'chats.tab_people': 'People',
   'pic.alt': 'Picture from the book',
+  'pic.open': 'Open the picture full screen',
+  'pic.close': 'Close the picture',
+  'pic.zoom_in': 'Zoom in',
+  'pic.zoom_out': 'Zoom out',
   'reader.end': 'End of text',
   'reader.resume': 'Back to your place',
 
@@ -314,8 +322,8 @@ const en = {
   'lib.pages': '{n} pages',
   'lib.confirm_delete': 'Delete “{title}”?',
   'lib.parse_failed': 'Could not parse the file',
-  'lib.parse_failed_zip': 'This EPUB would not open. Update “Android System WebView” in the Play Store, or use a .fb2 copy',
-  'lib.unsupported': 'Unsupported format: use .txt, .fb2 or .epub',
+  'lib.parse_failed_zip': 'The archive would not unpack. Update “Android System WebView” in the Play Store, or use a plain .fb2 copy',
+  'lib.unsupported': 'Unsupported format: use .txt, .fb2, .fb2.zip or .epub',
   'lib.chapters': '{n} chapters',
   'lib.no_text': 'No text found in the file',
 

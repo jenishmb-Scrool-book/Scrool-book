@@ -1,53 +1,7 @@
 import {describe, it, expect} from 'vitest';
 import {parseEpub} from './epub.js';
 import {toB64} from './img.js';
-
-/* ===== сборка ZIP прямо в тесте =====
-   Готовый .epub в репозиторий не кладём: бинарник нельзя прочитать глазами и
-   нельзя поправить в дифе. Пишем методом 0 (stored) — тогда сами тесты не
-   зависят от наличия DecompressionStream в окружении, а deflate проверяется
-   отдельно и только там, где CompressionStream есть. */
-
-const u8 = str => new TextEncoder().encode(str);
-
-const u16 = n => [n & 0xff, (n >> 8) & 0xff];
-const u32 = n => [n & 0xff, (n >>> 8) & 0xff, (n >>> 16) & 0xff, (n >>> 24) & 0xff];
-
-/** files: [{name, data: Uint8Array, method?: 0|8, raw?: Uint8Array}] */
-function zip(files) {
-  const local = [], central = [];
-  let off = 0;
-  for (const f of files) {
-    const name = u8(f.name);
-    const body = f.data;
-    const usize = f.usize === undefined ? body.length : f.usize;
-    const head = [
-      ...u32(0x04034b50), ...u16(20), ...u16(0), ...u16(f.method || 0),
-      ...u16(0), ...u16(0),                    // время и дата — читателю не нужны
-      ...u32(0),                               // CRC не считаем: распаковщик его не проверяет
-      ...u32(body.length), ...u32(usize),
-      ...u16(name.length), ...u16(0)
-    ];
-    central.push([
-      ...u32(0x02014b50), ...u16(20), ...u16(20), ...u16(0), ...u16(f.method || 0),
-      ...u16(0), ...u16(0), ...u32(0),
-      ...u32(body.length), ...u32(usize),
-      ...u16(name.length), ...u16(0), ...u16(0),
-      ...u16(0), ...u16(0), ...u32(0), ...u32(off),
-      ...name
-    ]);
-    local.push([...head, ...name, ...body]);
-    off += head.length + name.length + body.length;
-  }
-  const cdOff = off;
-  const cd = central.flat();
-  const eocd = [
-    ...u32(0x06054b50), ...u16(0), ...u16(0),
-    ...u16(files.length), ...u16(files.length),
-    ...u32(cd.length), ...u32(cdOff), ...u16(0)
-  ];
-  return new Uint8Array([...local.flat(), ...cd, ...eocd]);
-}
+import {u8, zipOf as book, zip} from './zip.fixture.js';
 
 const CONTAINER = '<?xml version="1.0"?>'
   + '<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">'
@@ -70,10 +24,6 @@ const page = body =>
   '<?xml version="1.0" encoding="utf-8"?>'
   + '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>служебный заголовок</title></head>'
   + '<body>' + body + '</body></html>';
-
-/** Собирает epub из карты «путь → строка». */
-const book = map => zip(Object.entries(map).map(([name, data]) =>
-  ({name, data: data instanceof Uint8Array ? data : u8(data)})));
 
 // Простейшая книга: OPF лежит в подпапке — самый частый источник ошибок
 // с относительными путями.

@@ -4,7 +4,8 @@ import {
   loadMeta, loadPic, loadPix, loadText, loadToc,
   saveMeta, savePic, savePix, saveText, saveToc
 } from './lib/storage.js';
-import {dataUrl} from './lib/img.js';
+import {dataUrl, headOf} from './lib/img.js';
+import {pixels} from './lib/size.js';
 import {detect} from './lib/toc.js';
 
 // Одно состояние на всё приложение: сырой текст книги и один курсор.
@@ -114,7 +115,13 @@ const readPix = (list, len) =>
     .filter(p => p && typeof p === 'object')
     .map(p => ({
       k: Math.trunc(Number(p && p.k)),
-      at: Math.min(Math.max(Math.trunc(Number(p && p.at)) || 0, 0), Math.max(0, len - 1))
+      at: Math.min(Math.max(Math.trunc(Number(p && p.at)) || 0, 0), Math.max(0, len - 1)),
+      // Размер в точках — пропорции рамки под картинку. У книг, добавленных до
+      // того, как их стали читать, его нет: там останется ноль, и рамка возьмёт
+      // запасные пропорции. Перечитывать ради этого чужие книги не станем —
+      // это все их иллюстрации заново, ради того, чтобы поля стали поуже.
+      w: Math.max(0, Math.trunc(Number(p && p.w)) || 0),
+      h: Math.max(0, Math.trunc(Number(p && p.h)) || 0)
     }))
     .filter(p => Number.isFinite(p.k) && p.k >= 0)
     .sort((a, b) => a.at - b.at);
@@ -144,6 +151,11 @@ const forget = id => {
   for (const key of [...cache.keys()]) if (key.startsWith(id + ':')) cache.delete(key);
 };
 
+// Сколько байт картинки разворачивать ради её размера. Всем форматам хватает
+// трёх десятков, кроме JPEG: там перед кадром лежат EXIF с превью и цветовой
+// профиль, и до размеров бывает несколько десятков килобайт.
+const HEAD = 64 * 1024;
+
 /**
  * Кладёт картинки книги в хранилище и отдаёт список «где какая».
  *
@@ -157,6 +169,7 @@ const forget = id => {
 async function writePics(id, images, lead) {
   const list = [];
   const seen = new Map();          // одинаковые данные → один файл на все ссылки
+  const dims = new Map();          // номер картинки → её размер в точках
   let count = 0;
   for (const img of Array.isArray(images) ? images : []) {
     if (!img || !img.type || !img.data) continue;
@@ -169,9 +182,15 @@ async function writePics(id, images, lead) {
         break;                     // место кончилось — дальше будут те же отказы
       }
       seen.set(img.data, k);
+      // Размер читаем здесь, один раз на импорт, и кладём рядом со смещением.
+      // Он нужен рамке в ленте ДО того, как картинка загрузилась, а узнать его
+      // в тот момент неоткуда: сама картинка ещё лежит в хранилище.
+      const px = pixels(headOf(img.data, HEAD));
+      if (px) dims.set(k, px);
       count += 1;
     }
-    list.push({at: (Math.trunc(Number(img.at)) || 0) - lead, k});
+    const px = dims.get(k);
+    list.push({at: (Math.trunc(Number(img.at)) || 0) - lead, k, w: px ? px.w : 0, h: px ? px.h : 0});
   }
   return {list, count};
 }
