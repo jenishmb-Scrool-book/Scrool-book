@@ -1,5 +1,5 @@
 import {useT} from '../i18n.js';
-import {WALLS} from '../wallpaper.js';
+import {THUMBS, WALLS} from '../wallpaper.js';
 
 // Решётка готовых обоев. Одна на два места: шаг первого запуска и настройки.
 //
@@ -11,6 +11,10 @@ import {WALLS} from '../wallpaper.js';
 // Отметка выбранного — рамка, а не галочка поверх кадра: галочка на светлом
 // снимке пропадает, и её пришлось бы подкладывать плашкой, то есть закрывать
 // собой то, что человек как раз и разглядывает.
+//
+// В плитке стоит миниатюра, а сохраняются обои. Плитки видны все двадцать
+// разом, и полноразмерный снимок в каждой — это четверть гигабайта
+// распакованных пикселей ради картинок шириной в палец.
 
 /**
  * @param {{value?: string, onPick: (src: string) => void}} props
@@ -25,7 +29,7 @@ export default function Walls({value, onPick}) {
           key={src}
           type="button"
           className={src === value ? 'on' : undefined}
-          style={{backgroundImage: `url(${src})`}}
+          style={{backgroundImage: `url(${THUMBS[i]})`}}
           aria-label={t('wall.n', {n: i + 1})}
           aria-pressed={src === value}
           onClick={() => onPick(src)}

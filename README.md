@@ -39,7 +39,8 @@ src/
 ├── ui/pics.js         970 снимков в четырёх лентах: посты, обложки, клипы, лица
 ├── ui/actions.js      куда ведёт каждая кнопка — одна таблица на всё приложение
 ├── ui/tabs.js         нижние панели всех «приложений»
-public/pics/           сами снимки: post/ wide/ tall/ face/, 12,3 МБ
+public/pics/           снимки лент: post/ wide/ tall/ face/, 12,3 МБ
+public/pics/wall/      двадцать обоев во весь экран, 1080x2340, 2,7 МБ
 tools/                 make-icons.py и fetch-pics.py — чем сделаны картинки
 tools/logo-source.png  рисунок владельца, из которого собирается иконка
 ├── ui/                оболочка экрана, шапка, прогресс, окно рендера карточек
@@ -138,7 +139,7 @@ www_backup/            ванильный прототип, эталон пов�
 ```bash
 npm install
 npm run dev      # http://localhost:5173
-npm test         # 451 тест
+npm test         # 455 тестов
 ```
 
 ## Сборка под Android

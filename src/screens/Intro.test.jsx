@@ -271,6 +271,6 @@ describe('обои на первом запуске', () => {
     await toWalls();
     await go();
     expect(here()).toBe('home');
-    await waitFor(() => expect(wallOf()).toContain('pics/tall/'));
+    await waitFor(() => expect(wallOf()).toContain('pics/wall/'));
   });
 });
