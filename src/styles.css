@@ -736,6 +736,18 @@ button,textarea,input{font:inherit;color:inherit}
 .wallprev{height:120px;border-radius:12px;background-size:cover;background-position:center;
   margin:-12px 0 10px;border:1px solid var(--glass-line)}
 
+/* Решётка готовых обоев. Пять столбцов, четыре ряда — все двадцать видно
+   разом, без прокрутки внутри прокрутки. Плитки в пропорции экрана телефона:
+   в квадрате обои выглядят не тем, чем станут, и выбирать приходится вслепую.
+   Отметка — рамка снаружи кадра: галочка поверх светлого снимка пропадает,
+   а плашка под неё закрыла бы ровно то, что человек разглядывает. */
+.walls{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:0 0 12px}
+.walls button{aspect-ratio:9/16;padding:0;border:0;border-radius:9px;cursor:pointer;
+  background:var(--btn-2) center/cover no-repeat;
+  box-shadow:0 0 0 1px var(--glass-line) inset}
+.walls button.on{box-shadow:0 0 0 2px var(--accent),0 0 0 4px var(--bg)}
+.walls button:active{filter:brightness(.86)}
+
 /* ===== вступление ===== */
 /* Единственный экран, который человек видит ровно один раз, — и именно поэтому
    он обязан выглядеть законченным: по нему судят обо всём остальном ещё до
@@ -772,6 +784,12 @@ button,textarea,input{font:inherit;color:inherit}
 
 /* Шаг выбора языка. Единственный экран приложения без словаря: он показывается
    до того, как язык выбран, и написан на обоих сразу. */
+/* Шаг обоев. Заголовок прижат кверху, а не по центру, как на карточках:
+   решётка занимает больше половины экрана, и выключенное центрирование
+   оставляет ей место целиком. */
+.iwall{justify-content:flex-start;padding-top:14px;gap:9px}
+.iwall .walls{margin-top:6px}
+
 .ilang{justify-content:center;text-align:center;gap:0}
 /* Разрядка мелкая намеренно: широкая читалась как логотип, пока имя было
    аббревиатурой из четырёх букв. Два латинских слова с ней не помещаются

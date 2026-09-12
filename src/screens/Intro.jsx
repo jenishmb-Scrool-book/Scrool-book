@@ -1,9 +1,12 @@
+import {useEffect, useState} from 'react';
 import {useStore} from '../store.jsx';
 import {useT} from '../i18n.js';
 import {APPS} from './Home.jsx';
 import {APP_NAME} from '../name.js';
+import {DEFAULT_WALL, getWallpaper, setWallpaper} from '../wallpaper.js';
 import AppIcon from '../ui/AppIcon.jsx';
 import StatusBar from '../ui/StatusBar.jsx';
+import Walls from '../ui/Walls.jsx';
 
 // Первый запуск: сперва язык, потом короткое объяснение.
 //
@@ -16,8 +19,9 @@ import StatusBar from '../ui/StatusBar.jsx';
 // что прочитать её можно, только уже понимая, куда попал: домашний экран с
 // чужими на вид значками объясняет ровно ничего, а «Продолжить» на нём ведёт
 // в ленту, которая выглядит как чужое приложение. Здесь три карточки на
-// полминуты, а подробности — в той самой книге, и на последней карточке об
-// этом сказано прямо.
+// полминуты, а подробности — в той самой книге, и на третьей карточке об
+// этом сказано прямо. Четвёртым шагом идут обои — единственное место, где
+// человек на первом запуске что-то делает сам.
 
 // Мини-домашний экран: те же значки, тем же порядком, что и на настоящем.
 // Показать их раньше слов — самый короткий способ сказать, чем это притворяется.
@@ -62,7 +66,64 @@ const PAGES = [
   {t: 'intro.t3', b: 'intro.b3', art: <Shared />, note: 'intro.note'}
 ];
 
-export const STEPS = PAGES.length + 1;      // плюс шаг выбора языка
+/** Обои — последний шаг. Номер, а не «конец списка»: по нему идёт ветвление. */
+const WALL = PAGES.length + 1;
+
+export const STEPS = WALL + 1;              // язык, карточки, обои
+
+// Шаг обоев.
+//
+// Стоит последним, и это не «куда осталось место». Первые три карточки говорят,
+// что это не телефон, а книга; четвёртая — первое, что человек здесь делает
+// сам, и сразу после неё открывается тот самый экран, который он только что
+// собрал. Спросить обои до объяснения значило бы спросить про фон экрана,
+// которого человек ещё не видел.
+//
+// Двадцать снимков уже лежат в сборке — это те же кадры, которыми набиты
+// ленты (см. `wallpaper.js`). Ни загрузки, ни разрешения на галерею: выбор
+// из готового делается одним нажатием, а своя картинка ждёт в настройках и
+// требует системного выбора файла — на первом запуске это лишний шаг.
+function WallStep({onDone}) {
+  const t = useT();
+  const [wall, setWall] = useState('');
+
+  useEffect(() => {
+    let live = true;
+    getWallpaper().then(w => live && setWall(w)).catch(() => {});
+    return () => {live = false;};
+  }, []);
+
+  // Пишем сразу, не дожидаясь кнопки внизу: нажатие по снимку и есть выбор,
+  // а подтверждать выбор, который уже виден, нечего. Невышедшая запись ничего
+  // не ломает — обоев просто не будет, останутся те, что и так стояли.
+  const pick = src => {
+    setWall(src);
+    setWallpaper(src).catch(() => {});
+  };
+
+  return (
+    <div className="screen on intro" id="intro">
+      <StatusBar />
+      {/* Кнопки «пропустить» здесь нет, и пустая строка оставлена ради высоты.
+          Пропускать нечего: не нажать ни по одному снимку — это и есть отказ,
+          а обои по умолчанию всё равно стоят. Вторая кнопка с тем же исходом
+          заставляла бы выбирать между «ничего» и «ничего». */}
+      <div className="ihead" />
+      <div className="ibody iwall">
+        <h1>{t('intro.t4')}</h1>
+        <p>{t('intro.b4')}</p>
+        <Walls value={wall || DEFAULT_WALL} onPick={pick} />
+      </div>
+      <div className="ifoot">
+        <div className="idots">
+          {PAGES.map((_, i) => <i key={i} />)}
+          <i className="on" />
+        </div>
+        <button className="igo" onClick={onDone}>{t('intro.start')}</button>
+      </div>
+    </div>
+  );
+}
 
 /**
  * @param {number} step 0 — язык, дальше карточки
@@ -102,9 +163,10 @@ export default function Intro({step, onStep, onDone}) {
     );
   }
 
+  if (step >= WALL) return <WallStep onDone={onDone} />;
+
   const k = Math.min(Math.max(step, 1), PAGES.length) - 1;
   const page = PAGES[k];
-  const last = k === PAGES.length - 1;
 
   return (
     <div className="screen on intro" id="intro">
@@ -112,7 +174,7 @@ export default function Intro({step, onStep, onDone}) {
       {/* Строка сверху есть всегда, даже когда кнопки в ней нет: иначе
           на последней карточке весь экран подпрыгивал бы на её высоту. */}
       <div className="ihead">
-        {last ? null : <button className="iskip" onClick={onDone}>{t('intro.skip')}</button>}
+        <button className="iskip" onClick={onDone}>{t('intro.skip')}</button>
       </div>
       <div className="ibody">
         {page.art}
@@ -123,10 +185,9 @@ export default function Intro({step, onStep, onDone}) {
       <div className="ifoot">
         <div className="idots">
           {PAGES.map((_, i) => <i key={i} className={i === k ? 'on' : undefined} />)}
+          <i />
         </div>
-        <button className="igo" onClick={() => (last ? onDone() : onStep(step + 1))}>
-          {last ? t('intro.start') : t('intro.next')}
-        </button>
+        <button className="igo" onClick={() => onStep(step + 1)}>{t('intro.next')}</button>
       </div>
     </div>
   );

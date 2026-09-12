@@ -20,10 +20,14 @@ const TEXT = 'Раз, два, три, четыре, пять. Вышел зай�
 // Аппаратная «назад» приходит из нативного слоя, а он в браузере не
 // выполняется вовсе. Подменяем его целиком, кроме одного: запоминаем
 // обработчик, который на телефоне дёргает система, — чтобы дёрнуть его самим.
-const NAT = vi.hoisted(() => ({onBack: null}));
+const NAT = vi.hoisted(() => ({onBack: null, notify: [], answer: 'on'}));
 vi.mock('./native.js', async orig => ({
   ...(await orig()),
-  initNative: async ({onBack} = {}) => {NAT.onBack = onBack;}
+  initNative: async ({onBack} = {}) => {NAT.onBack = onBack;},
+  // Напоминание переставляется при каждом запуске, и настоящая функция в
+  // тестах всегда отвечает «негде»: платформа тут не телефон. Подменяем, чтобы
+  // увидеть и сам вызов, и то, с каким текстом он уходит.
+  refreshNotifications: async payload => {NAT.notify.push(payload); return NAT.answer;}
 }));
 
 const wrapper = ({children}) => <StoreProvider>{children}</StoreProvider>;
@@ -73,7 +77,11 @@ const seed = (place, ui) =>
     })
   ]);
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  NAT.notify.length = 0;
+  NAT.answer = 'on';
+});
 
 describe('место при перезапуске', () => {
   // Пустое хранилище — это первый запуск, а он начинается со вступления.
@@ -192,5 +200,63 @@ describe('аппаратная «назад»', () => {
 
     await act(async () => {expect(await NAT.onBack()).toBe(true);});
     expect(here()).toBe('home');
+  });
+});
+
+// Напоминание при запуске.
+//
+// Будильник живёт в Android, а не в приложении: обновление из Play снимает
+// запланированные alarm'ы, и напоминание, включённое месяц назад, после
+// первого же обновления молча перестаёт приходить — при переключателе,
+// который по-прежнему стоит на «Вкл».
+describe('напоминание при запуске', () => {
+  /** Книга, место в ней и состояние переключателя — как после прошлого запуска. */
+  const seedNotify = (notify, at = 0) =>
+    Promise.all([
+      saveText('b1', TEXT),
+      saveMeta({
+        books: [{id: 'b1', title: 'Книга', len: TEXT.length, toc: 1}],
+        cur: 'b1', at: {b1: at}, last: 'reels', place: null,
+        ui: {theme: 'system', lang: 'ru', font: 'md', notify, skin: 'tg'}
+      })
+    ]);
+
+  it('включённое переставляется заново', async () => {
+    await seedNotify('on');
+    await boot();
+    await waitFor(() => expect(NAT.notify).toHaveLength(1));
+  });
+
+  it('в текст уезжает та страница, на которой остановились', async () => {
+    await seedNotify('on', 1900);
+    await boot();
+    await waitFor(() => expect(NAT.notify).toHaveLength(1));
+    // Страница 2, а не 1: иначе напоминание полгода зовёт в начало книги.
+    expect(NAT.notify[0].title).toBe(DICT.ru['notif.title'].replace('{page}', '2'));
+    expect(NAT.notify[0].body).toContain('Книга');
+  });
+
+  it('выключенное не трогаем', async () => {
+    await seedNotify('off');
+    await boot();
+    expect(here()).toBe('home');
+    expect(NAT.notify).toHaveLength(0);
+  });
+
+  // Разрешение отзывают в настройках телефона, и приложение узнаёт об этом
+  // только здесь. «Вкл» без разрешения — надпись, которой нельзя верить.
+  it('отозванное разрешение гасит переключатель', async () => {
+    await seedNotify('on');
+    NAT.answer = 'denied';
+    await boot();
+    await waitFor(() => expect(rawMeta().ui.notify).toBe('off'));
+  });
+
+  it('в браузере переключатель не гасится', async () => {
+    await seedNotify('on');
+    NAT.answer = 'nowhere';
+    await boot();
+    await waitFor(() => expect(NAT.notify).toHaveLength(1));
+    expect(rawMeta().ui.notify).toBe('on');
   });
 });

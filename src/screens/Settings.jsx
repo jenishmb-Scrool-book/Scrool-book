@@ -2,12 +2,21 @@ import {useEffect, useState} from 'react';
 import {useStore} from '../store.jsx';
 import {useT} from '../i18n.js';
 import {APP_NAME} from '../name.js';
-import {clearWallpaper, getWallpaper, setWallpaper, shrink} from '../wallpaper.js';
-import {appInfo, cancelNotifications, ensureNotifications} from '../native.js';
+import {WALLS, clearWallpaper, getWallpaper, setWallpaper, shrink} from '../wallpaper.js';
+import {NOTIFY, appInfo, cancelNotifications, ensureNotifications} from '../native.js';
 import {pageAt} from '../lib/pages.js';
 import Screen from '../ui/Screen.jsx';
 import StatusBar from '../ui/StatusBar.jsx';
 import Header from '../ui/Header.jsx';
+import Walls from '../ui/Walls.jsx';
+
+// Что сказать, когда напоминание не включилось. Ключ на каждый исход, потому
+// что причины разные: одну чинят в настройках телефона, вторую не чинят вовсе.
+const WHY = {
+  [NOTIFY.denied]: 'set.notif_denied',
+  [NOTIFY.nowhere]: 'set.notif_nowhere',
+  [NOTIFY.failed]: 'set.notif_failed'
+};
 
 // Переключатель из нескольких кнопок. Ползунка нет намеренно: три градации
 // кегля покрывают почти всех, а точное значение — это лишний выбор на экране,
@@ -106,16 +115,26 @@ export default function Settings({go, back}) {
       return;
     }
     const page = current ? pageAt(offset, current.len) : 1;
-    const ok = await ensureNotifications({
+    const how = await ensureNotifications({
       title: t('notif.title', {page}),
       body: t('notif.body', {title: (current && current.title) || APP_NAME})
     });
     // Флаг ставим только после реального разрешения. «Включено» без разрешения —
     // худший из исходов: уведомлений нет, а системный диалог второй раз не придёт,
     // и починить это из приложения человек уже не сможет.
-    if (ok) setUi({notify: 'on'});
-    else setNotifMsg(t('set.notif_denied'));
+    if (how === NOTIFY.on) setUi({notify: 'on'});
+    else setNotifMsg(t(WHY[how] || 'set.notif_failed'));
   };
+
+  // Готовые обои пишутся путём, своя картинка — data-URI. Разницы дальше нет
+  // никакой: и то и другое уезжает в `url()`, и то и другое лежит под одним
+  // ключом. Поэтому выбор из решётки стирает свою картинку сам собой.
+  const pickWall = src => setWallpaper(src).then(() => setWall(src)).catch(() => {});
+
+  // Своя картинка или готовая. Разница нужна трём подписям: «Заменить» при
+  // выбранном готовом снимке обещало бы, что где-то лежит своя картинка, а
+  // «Убрать» рядом с решёткой снимало бы то, что в ней же и отмечено.
+  const own = !!wall && !WALLS.includes(wall);
 
   return (
     <Screen id="settings">
@@ -144,14 +163,15 @@ export default function Settings({go, back}) {
         />
 
         <div className="sect">{t('set.wallpaper')}</div>
+        <Walls value={wall} onPick={pickWall} />
         <div className="row">
           <label className="filebtn">
-            {wall ? t('set.wall_replace') : t('set.wall_pick')}
+            {own ? t('set.wall_replace') : t('set.wall_pick')}
             <input type="file" accept="image/*" onChange={fromImage} />
           </label>
-          {wall ? <button className="ghost" onClick={dropWall}>{t('set.wall_drop')}</button> : null}
+          {own ? <button className="ghost" onClick={dropWall}>{t('set.wall_drop')}</button> : null}
         </div>
-        {wall ? <div className="wallprev" style={{backgroundImage: `url(${wall})`}} /> : null}
+        {own ? <div className="wallprev" style={{backgroundImage: `url(${wall})`}} /> : null}
         {msg ? <div className="hint">{msg}</div> : null}
         <div className="hint">{t('set.wall_hint')}</div>
 

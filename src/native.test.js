@@ -12,7 +12,14 @@ const H = vi.hoisted(() => ({
   native: true,
   subs: [],      // подписки, поднятые плагином App
   bar: [],       // вызовы статус-бара
-  exits: 0       // сколько раз приложение попросили закрыться
+  exits: 0,      // сколько раз приложение попросили закрыться
+  // Уведомления: что отвечает система и что ей сказали.
+  allow: 'granted',   // ответ обоих методов про разрешение
+  asked: 0,           // сколько раз показали СИСТЕМНЫЙ диалог
+  checked: 0,         // сколько раз тихо проверили
+  planned: [],        // поставленные будильники
+  dropped: [],        // снятые
+  boom: ''            // какой вызов должен упасть
 }));
 
 vi.mock('@capacitor/core', () => ({
@@ -28,6 +35,27 @@ vi.mock('@capacitor/app', () => ({
       return Promise.resolve(sub);
     },
     exitApp: () => {H.exits += 1;}
+  }
+}));
+
+// Плагин уведомлений приезжает динамическим import — vi.mock ловит и такой.
+vi.mock('@capacitor/local-notifications', () => ({
+  LocalNotifications: {
+    requestPermissions: async () => {
+      H.asked += 1;
+      if (H.boom === 'ask') throw new Error('плагин упал');
+      return {display: H.allow};
+    },
+    checkPermissions: async () => {
+      H.checked += 1;
+      if (H.boom === 'check') throw new Error('плагин упал');
+      return {display: H.allow};
+    },
+    schedule: async o => {
+      if (H.boom === 'schedule') throw new Error('будильник не встал');
+      H.planned.push(...o.notifications);
+    },
+    cancel: async o => {H.dropped.push(...o.notifications);}
   }
 }));
 
@@ -59,6 +87,12 @@ beforeEach(() => {
   H.subs.length = 0;
   H.bar.length = 0;
   H.exits = 0;
+  H.allow = 'granted';
+  H.asked = 0;
+  H.checked = 0;
+  H.planned.length = 0;
+  H.dropped.length = 0;
+  H.boom = '';
 });
 
 describe('нативный слой', () => {
@@ -124,5 +158,105 @@ describe('нативный слой', () => {
     await initNative({onBack: () => true});
     await destroyNative();
     expect(H.subs[0].removed).toBe(true);
+  });
+});
+
+// Ежедневное напоминание.
+//
+// Своих тестов у него не было вовсе, и именно здесь владелец увидел, что
+// «включить напоминание не работает»: в браузере плагина нет, включение
+// возвращало то же «нет», что и отказ Android, а переключатель показывал
+// сообщение про настройки телефона, которых в браузере не существует.
+describe('напоминание', () => {
+  it('включение спрашивает разрешение и ставит будильник на 12:00', async () => {
+    const {ensureNotifications, NOTIFY} = await load();
+    await expect(ensureNotifications({title: 'Стр. 7', body: 'Книга ждёт'}))
+      .resolves.toBe(NOTIFY.on);
+
+    expect(H.asked).toBe(1);
+    expect(H.planned).toHaveLength(1);
+    const [n] = H.planned;
+    expect(n.title).toBe('Стр. 7');
+    expect(n.body).toBe('Книга ждёт');
+    // Секунды обязательны: незаданные поля плагин берёт из текущего времени,
+    // и без них напоминание приходило бы в 12:00:37.
+    expect(n.schedule.on).toEqual({hour: 12, minute: 0, second: 0});
+  });
+
+  it('перед новым будильником снимает прошлый', async () => {
+    const {ensureNotifications} = await load();
+    await ensureNotifications();
+    expect(H.dropped).toHaveLength(1);
+    // Один и тот же id: повторное включение заменяет напоминание, а не
+    // заводит второе.
+    expect(H.dropped[0].id).toBe(H.planned[0].id);
+  });
+
+  it('отказ Android — будильника нет и вранья тоже', async () => {
+    const {ensureNotifications, NOTIFY} = await load();
+    H.allow = 'denied';
+    await expect(ensureNotifications()).resolves.toBe(NOTIFY.denied);
+    expect(H.planned).toHaveLength(0);
+  });
+
+  it('в браузере отвечает «негде», а не «отказано»', async () => {
+    const {ensureNotifications, NOTIFY} = await load();
+    H.native = false;
+    await expect(ensureNotifications()).resolves.toBe(NOTIFY.nowhere);
+    expect(H.asked).toBe(0);
+  });
+
+  it('упавший плагин — это «не вышло», а не отказ', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const {ensureNotifications, NOTIFY} = await load();
+    H.boom = 'schedule';
+    await expect(ensureNotifications()).resolves.toBe(NOTIFY.failed);
+    warn.mockRestore();
+  });
+
+  // Перестановка при запуске. Будильник снимается обновлением приложения из
+  // Play, и без неё напоминание, включённое месяц назад, молча перестаёт
+  // приходить — при переключателе, который стоит на «Вкл».
+  it('перестановка ставит будильник заново', async () => {
+    const {refreshNotifications, NOTIFY} = await load();
+    await expect(refreshNotifications({title: 'Стр. 240'})).resolves.toBe(NOTIFY.on);
+    expect(H.planned).toHaveLength(1);
+    expect(H.planned[0].title).toBe('Стр. 240');
+  });
+
+  // Системный диалог Android показывается ОДИН раз за всю жизнь установки.
+  // Потратить его на старте приложения — значит отобрать у того места, где
+  // человек сам нажал «Вкл», и больше его туда не вернуть.
+  it('перестановка не показывает системный диалог', async () => {
+    const {refreshNotifications} = await load();
+    await refreshNotifications();
+    expect(H.asked).toBe(0);
+    expect(H.checked).toBe(1);
+  });
+
+  it('отозванное разрешение перестановка замечает', async () => {
+    const {refreshNotifications, NOTIFY} = await load();
+    H.allow = 'denied';
+    await expect(refreshNotifications()).resolves.toBe(NOTIFY.denied);
+    expect(H.planned).toHaveLength(0);
+  });
+
+  it('в браузере перестановка молчит', async () => {
+    const {refreshNotifications, NOTIFY} = await load();
+    H.native = false;
+    await expect(refreshNotifications()).resolves.toBe(NOTIFY.nowhere);
+    expect(H.checked).toBe(0);
+  });
+
+  it('выключение снимает будильник', async () => {
+    const {cancelNotifications} = await load();
+    await cancelNotifications();
+    expect(H.dropped).toHaveLength(1);
+  });
+
+  it('в браузере выключение не бросает', async () => {
+    const {cancelNotifications} = await load();
+    H.native = false;
+    await expect(cancelNotifications()).resolves.toBeUndefined();
   });
 });

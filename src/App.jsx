@@ -1,9 +1,11 @@
 import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {useStore} from './store.jsx';
-import {initNative, setBarColor} from './native.js';
+import {NOTIFY, initNative, refreshNotifications, setBarColor} from './native.js';
 import {isLight, rgbOf} from './ui/color.js';
 import {seedOf} from './seed.js';
-import {DICT} from './i18n.js';
+import {APP_NAME} from './name.js';
+import {pageAt} from './lib/pages.js';
+import {DICT, useT} from './i18n.js';
 import Intro from './screens/Intro.jsx';
 import Home from './screens/Home.jsx';
 import Chats, {Chat} from './screens/Chats.jsx';
@@ -42,8 +44,9 @@ const BARS = '.screen .mhdr, .screen .chdr, .screen .yhdr, .screen .thdr, .scree
 const pick = el => (el ? getComputedStyle(el).backgroundColor : null);
 
 export default function App() {
-  const {ready, books, text, ui, addBook, setLastApp, place, setPlace, error,
-         introDone, endIntro} = useStore();
+  const {ready, books, text, ui, current, offset, setUi, addBook, setLastApp,
+         place, setPlace, error, introDone, endIntro} = useStore();
+  const t = useT();
   const [screen, setScreen] = useState('home');
   const [arg, setArg] = useState(null);      // параметр экрана: с какой строки списка вошли
   const [restored, setRestored] = useState(false);   // место из прошлого запуска уже разобрано
@@ -166,6 +169,41 @@ export default function App() {
     const first = seedOf(ui.lang);
     addBook(first.title, first.text);
   }, [ready, introDone, books.length, ui.lang, addBook]);
+
+  // Напоминание переставляется при каждом запуске — если оно включено.
+  //
+  // Будильник живёт в Android, а не у нас, и переживает не всё: обновление
+  // приложения из Play снимает запланированные alarm'ы, и напоминание, которое
+  // человек включил месяц назад, после первого же обновления перестаёт
+  // приходить молча. Снаружи это ровно то, о чём говорит владелец: переключатель
+  // стоит на «Вкл», а уведомлений нет.
+  //
+  // Заодно обновляется страница в тексте уведомления: она собирается в момент
+  // планирования и иначе замерзает на той, что была при включении.
+  //
+  // Ничего не спрашиваем: системный диалог показывается один раз за всю жизнь
+  // установки, и здесь его тратить нельзя — он нужен тому месту, где человек
+  // сам нажал «Вкл». Зато отозванное в настройках телефона разрешение гасит
+  // переключатель: «Вкл» без разрешения — это надпись, которой нельзя верить.
+  //
+  // Ждём текста, а не только гидрации: до него `current.len` ещё нули, и в
+  // уведомление уехала бы первая страница вместо той, на которой остановились.
+  const renotified = useRef(false);
+  useEffect(() => {
+    if (!ready || !introDone || renotified.current || !text.length) return;
+    // Попытка засчитывается и при выключенном напоминании: иначе включение из
+    // настроек тут же дёргало бы перестановку поверх только что поставленного
+    // будильника — снять и поставить заново то же самое.
+    renotified.current = true;
+    if (ui.notify !== 'on') return;
+    const page = current ? pageAt(offset, current.len) : 1;
+    refreshNotifications({
+      title: t('notif.title', {page}),
+      body: t('notif.body', {title: (current && current.title) || APP_NAME})
+    })
+      .then(how => {if (how === NOTIFY.denied) setUi({notify: 'off'});})
+      .catch(() => {});
+  }, [ready, introDone, ui.notify, text.length, current, offset, t, setUi]);
 
   // Рефы, чтобы обработчик аппаратной «назад» видел свежее состояние,
   // не переподписываясь на каждый рендер.

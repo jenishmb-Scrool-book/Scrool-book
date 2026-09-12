@@ -4,10 +4,9 @@ import {useT} from '../i18n.js';
 import Screen from '../ui/Screen.jsx';
 import StatusBar from '../ui/StatusBar.jsx';
 import {percent, useLeft} from '../ui/Progress.jsx';
-import {getWallpaper, setWallpaper, shrink} from '../wallpaper.js';
+import {DEFAULT_WALL, getWallpaper, setWallpaper, shrink} from '../wallpaper.js';
 import {APP_NAMES} from '../ui/skins.js';
 import {dayLine, hhmm, useNow} from '../ui/clock.js';
-import {pic} from '../ui/pics.js';
 import AppIcon from '../ui/AppIcon.jsx';
 import Glyph from '../ui/Glyph.jsx';
 
@@ -54,12 +53,13 @@ const DOCK = [
   ['gear', 'app.settings', 'settings', 'linear-gradient(145deg,#5a5a6a,#33333f)']
 ];
 
-// Обои по умолчанию — снимок из тех же, которыми набиты ленты.
+// Обои по умолчанию лежат в `wallpaper.js`, рядом с остальными девятнадцатью:
+// на шаге первого запуска они показаны выбранными, и разойдись эти два места —
+// вступление отмечало бы галочкой не то, что стоит на экране.
 //
 // До этого фоном был градиент, гаснущий книзу в цвет приложения, и от этого
 // пустое место под иконками читалось как незаполненный блок, а не как обои.
 // Настоящий домашний экран тоже наполовину пустой — но там пустота это фотография.
-const WALL = pic('tall', 38);
 
 function Icon({glyph, label, background, round, onClick}) {
   return (
@@ -113,7 +113,7 @@ export default function Home({go}) {
     <Screen id="home">
       {/* Затемняющая накладка обязательна: обои — произвольное фото, своё или
           наше, и без неё белые подписи иконок на светлом кадре пропадают. */}
-      <div className="wall" style={{backgroundImage: `url(${wall || WALL})`}} />
+      <div className="wall" style={{backgroundImage: `url(${wall || DEFAULT_WALL})`}} />
       <StatusBar />
       {/* Часы с датой в левом верхнем углу — то, по чему домашний экран Android
           узнаётся раньше всего остального, раньше даже иконок. */}

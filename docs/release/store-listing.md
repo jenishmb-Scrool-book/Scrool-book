@@ -63,7 +63,7 @@ Scrool Book берёт эту привычку и разворачивает в 
 • «Осталось ≈ 20 мин» вместо процентов: вопрос обычно не «далеко ли я»,
   а «успею ли сейчас»
 • Тёмная и светлая темы, три размера шрифта, русский и английский
-• Свои обои на домашнем экране
+• Обои домашнего экрана: двадцать готовых или своя картинка
 • Напоминание раз в сутки — если сами включите
 
 ЧЕГО НЕТ
@@ -132,7 +132,7 @@ ALSO INSIDE
 • Chapter navigation, even when the file had no markup
 • "≈ 20 min left" instead of a percentage
 • Dark and light themes, three text sizes, Russian and English
-• Your own home-screen wallpaper
+• Home-screen wallpaper: twenty ready-made ones or a picture of your own
 • A once-a-day reminder, if you turn it on
 
 WHAT ISN'T HERE

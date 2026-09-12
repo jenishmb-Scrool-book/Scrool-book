@@ -25,7 +25,9 @@ src/
 ├── store.jsx          весь стейт: книги, курсор, оглавление, настройки
 ├── name.js            название продукта: одно место на JS, конфиг и Android
 ├── screens/           Intro, Home, Chats, Reels, Stories, Feed, Video, Tweets, Chapters, Library, Settings
-├── screens/Intro.jsx  первый запуск: выбор языка и три карточки объяснения
+├── screens/Intro.jsx  первый запуск: язык, три карточки объяснения, выбор обоев
+├── wallpaper.js       обои: двадцать готовых из тех же снимков плюс своя картинка
+├── ui/Walls.jsx       решётка готовых обоев — во вступлении и в настройках
 ├── ui/skins.js        имена «приложений» и состав экрана у каждого мессенджера
 ├── ui/Tabbar.jsx      нижняя панель навигации
 ├── ui/color.js        разбор цвета: под него красится системный статус-бар
@@ -136,7 +138,7 @@ www_backup/            ванильный прототип, эталон пов�
 ```bash
 npm install
 npm run dev      # http://localhost:5173
-npm test         # 431 тест
+npm test         # 451 тест
 ```
 
 ## Сборка под Android

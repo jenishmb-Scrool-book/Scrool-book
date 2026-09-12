@@ -42,7 +42,7 @@ export const SEED = `Как это работает
 
 Внизу видно, сколько осталось: не проценты, а время. Вопрос обычно не «далеко ли я», а «успею ли сейчас».
 
-В настройках есть тема, размер шрифта, свои обои и напоминание раз в сутки — если сам включишь.
+В настройках есть тема, размер шрифта, обои — двадцать готовых или своя картинка — и напоминание раз в сутки, если сам включишь.
 
 Приложение работает без интернета: разрешения выходить в сеть у него просто нет. Книги остаются на твоём телефоне, отправить их некуда.
 
@@ -78,7 +78,7 @@ The contents open with the button in the header: “⋮” in chat, “☰” on
 
 At the bottom you can see what is left: not per cent, but time. The question is usually not “how far along am I”, it is “can I finish this now”.
 
-Settings hold the theme, the text size, your own wallpaper and one reminder a day — if you switch it on yourself.
+Settings hold the theme, the text size, the wallpaper — twenty ready-made ones or a picture of your own — and one reminder a day, if you switch it on yourself.
 
 The app works without the internet: it simply has no permission to go online. Your books stay on your phone, there is nowhere to send them.
 
