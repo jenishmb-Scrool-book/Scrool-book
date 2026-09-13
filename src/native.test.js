@@ -39,8 +39,15 @@ vi.mock('@capacitor/app', () => ({
 }));
 
 // Плагин уведомлений приезжает динамическим import — vi.mock ловит и такой.
-vi.mock('@capacitor/local-notifications', () => ({
-  LocalNotifications: {
+//
+// Заглушка — не простой объект, а Proxy, устроенный как у Capacitor
+// (registerPlugin в @capacitor/core): ЛЮБОЕ имя, которого нет среди методов,
+// отдаёт обёртку нативного вызова, и та отклоняется «not implemented». В том
+// числе имя `then`. Простой объект это скрывал: на нём зависание, из-за
+// которого «Вкл» и «Выкл» на телефоне не делали ничего, в тестах не
+// воспроизводилось вовсе.
+vi.mock('@capacitor/local-notifications', () => {
+  const methods = {
     requestPermissions: async () => {
       H.asked += 1;
       if (H.boom === 'ask') throw new Error('плагин упал');
@@ -56,8 +63,17 @@ vi.mock('@capacitor/local-notifications', () => ({
       H.planned.push(...o.notifications);
     },
     cancel: async o => {H.dropped.push(...o.notifications);}
-  }
-}));
+  };
+  const LocalNotifications = new Proxy(methods, {
+    get(target, prop) {
+      if (prop === '$$typeof' || typeof prop === 'symbol') return undefined;
+      if (prop === 'toJSON') return () => ({});
+      if (prop in target) return target[prop];
+      return () => Promise.reject(new Error(`"LocalNotifications.${prop}()" is not implemented on android`));
+    }
+  });
+  return {LocalNotifications};
+});
 
 vi.mock('@capacitor/status-bar', () => ({
   StatusBar: {

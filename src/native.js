@@ -165,14 +165,22 @@ const NOTIFY_ID = 1;
 // стартовый чанк dev-сервера ради кода, который в браузере никогда не выполнится.
 // Побочная выгода: если плагин ещё не установлен (свежий clone без npm install),
 // приложение всё равно поднимется — здесь будет null, а не падение на импорте.
+//
+// Плагин отдаётся в коробке `{plugin}`, а не голым, и это не вкус, а поломка,
+// которая уже случилась. Плагин Capacitor — это Proxy, который на ЛЮБОЕ имя
+// отдаёт обёртку нативного вызова, в том числе на `then`. Async-функция,
+// вернувшая такой объект, принимает его за промис и вызывает `then`: обёртка
+// отклоняется «not implemented», а resolve не вызывает никто. `await` не
+// завершается никогда — и «Вкл», и «Выкл» на телефоне молча не делали ничего.
+// В браузере сюда не доходит, а в тестах плагин был простым объектом.
 async function notifications() {
-  if (!Capacitor.isNativePlatform()) return null;
+  if (!Capacitor.isNativePlatform()) return {plugin: null};
   try {
     const {LocalNotifications} = await import('@capacitor/local-notifications');
-    return LocalNotifications;
+    return {plugin: LocalNotifications};
   } catch (err) {
     console.warn('[native] плагин уведомлений недоступен:', err);
-    return null;
+    return {plugin: null};
   }
 }
 
@@ -225,7 +233,7 @@ async function schedule(plugin, payload) {
  */
 export async function ensureNotifications(payload = {}) {
   lastError = '';
-  const plugin = await notifications();
+  const {plugin} = await notifications();
   if (!plugin) return NOTIFY.nowhere;
 
   try {
@@ -277,7 +285,7 @@ const TEST_ID = 2;
  */
 export async function testNotification(payload = {}) {
   lastError = '';
-  const plugin = await notifications();
+  const {plugin} = await notifications();
   if (!plugin) return NOTIFY.nowhere;
 
   try {
@@ -320,7 +328,7 @@ export async function testNotification(payload = {}) {
  * @returns {Promise<string>} один из NOTIFY. Исключений не бросает.
  */
 export async function refreshNotifications(payload = {}) {
-  const plugin = await notifications();
+  const {plugin} = await notifications();
   if (!plugin) return NOTIFY.nowhere;
 
   try {
@@ -341,7 +349,7 @@ export async function refreshNotifications(payload = {}) {
  * @returns {Promise<void>}
  */
 export async function cancelNotifications() {
-  const plugin = await notifications();
+  const {plugin} = await notifications();
   if (!plugin) return;
   try {
     await plugin.cancel({notifications: [{id: NOTIFY_ID}]});
