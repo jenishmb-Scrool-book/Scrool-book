@@ -13,10 +13,10 @@ if (keystorePropsFile.exists()) {
 }
 
 android {
-    namespace "com.tirekai.scroolbook"
+    namespace "com.tirekai.scrollbook"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.tirekai.scroolbook"
+        applicationId "com.tirekai.scrollbook"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

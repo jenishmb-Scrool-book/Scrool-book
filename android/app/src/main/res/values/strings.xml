@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Scrool Book</string>
-    <string name="title_activity_main">Scrool Book</string>
-    <string name="package_name">com.tirekai.scroolbook</string>
-    <string name="custom_url_scheme">com.tirekai.scroolbook</string>
+    <string name="app_name">Scroll Book</string>
+    <string name="title_activity_main">Scroll Book</string>
+    <string name="package_name">com.tirekai.scrollbook</string>
+    <string name="custom_url_scheme">com.tirekai.scrollbook</string>
 </resources>

@@ -1,6 +1,6 @@
 {
-  "appId": "com.tirekai.scroolbook",
-  "appName": "Scrool Book",
+  "appId": "com.tirekai.scrollbook",
+  "appName": "Scroll Book",
   "webDir": "dist",
   "android": {
     "backgroundColor": "#0b0b12",

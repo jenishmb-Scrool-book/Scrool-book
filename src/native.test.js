@@ -71,7 +71,7 @@ vi.mock('@capacitor/status-bar', () => ({
 /** Свежий модуль: состояние подписки лежит на globalThis и переживает импорт. */
 async function load() {
   vi.resetModules();
-  delete globalThis[Symbol.for('scroolbook.native.state')];
+  delete globalThis[Symbol.for('scrollbook.native.state')];
   return import('./native.js');
 }
 
@@ -258,5 +258,64 @@ describe('напоминание', () => {
     const {cancelNotifications} = await load();
     H.native = false;
     await expect(cancelNotifications()).resolves.toBeUndefined();
+  });
+
+  // «Не удалось» без причины владелец уже получил на телефоне — и разобрать
+  // по нему было нечего. Причина от плагина обязана доехать до экрана.
+  it('причина неудачи доступна экрану и сбрасывается успехом', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const {ensureNotifications, notifyError, NOTIFY} = await load();
+    H.boom = 'schedule';
+    await expect(ensureNotifications()).resolves.toBe(NOTIFY.failed);
+    expect(notifyError()).toBe('будильник не встал');
+    H.boom = '';
+    await ensureNotifications();
+    expect(notifyError()).toBe('');
+    warn.mockRestore();
+  });
+});
+
+// Пробное напоминание. Без него полуденное проверяется только ожиданием до
+// завтра, а переключатель на «Вкл» без уведомления читается как поломка.
+describe('пробное напоминание', () => {
+  it('приходит через пять секунд и не трогает ежедневное', async () => {
+    const {ensureNotifications, testNotification, NOTIFY} = await load();
+    await ensureNotifications({title: 'Стр. 7'});
+    const before = Date.now();
+    await expect(testNotification({title: 'Проверка'})).resolves.toBe(NOTIFY.on);
+
+    expect(H.asked).toBe(1);             // системный диалог — только от включения
+    expect(H.dropped).toHaveLength(1);   // и снятие было только его
+    const [daily, test] = H.planned;
+    expect(test.id).not.toBe(daily.id);
+    expect(test.title).toBe('Проверка');
+    // Через будильник, а не мимо него: иначе проверка прошла бы и там, где
+    // полуденное не ставится.
+    const wait = test.schedule.at.getTime() - before;
+    expect(wait).toBeGreaterThanOrEqual(5000);
+    expect(wait).toBeLessThan(6000);
+  });
+
+  it('без разрешения не ставится и говорит об отказе', async () => {
+    const {testNotification, NOTIFY} = await load();
+    H.allow = 'denied';
+    await expect(testNotification()).resolves.toBe(NOTIFY.denied);
+    expect(H.planned).toHaveLength(0);
+    expect(H.asked).toBe(0);
+  });
+
+  it('упавший плагин — «не вышло» с причиной', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const {testNotification, notifyError, NOTIFY} = await load();
+    H.boom = 'schedule';
+    await expect(testNotification()).resolves.toBe(NOTIFY.failed);
+    expect(notifyError()).toBe('будильник не встал');
+    warn.mockRestore();
+  });
+
+  it('в браузере отвечает «негде»', async () => {
+    const {testNotification, NOTIFY} = await load();
+    H.native = false;
+    await expect(testNotification()).resolves.toBe(NOTIFY.nowhere);
   });
 });

@@ -21,7 +21,7 @@ const BG = '#0b0b12';
 // подписка на backButton осталась бы висеть в нативном слое — и на каждый
 // hot-reload их копилось бы всё больше. Ключ через Symbol.for переживает
 // подмену модуля, поэтому старую подписку всегда есть чем снять.
-const SLOT = Symbol.for('scroolbook.native.state');
+const SLOT = Symbol.for('scrollbook.native.state');
 let state = globalThis[SLOT];
 if (!state) {
   state = { back: null, queue: Promise.resolve() };
@@ -224,6 +224,7 @@ async function schedule(plugin, payload) {
  * @returns {Promise<string>} один из NOTIFY. Исключений не бросает.
  */
 export async function ensureNotifications(payload = {}) {
+  lastError = '';
   const plugin = await notifications();
   if (!plugin) return NOTIFY.nowhere;
 
@@ -235,6 +236,65 @@ export async function ensureNotifications(payload = {}) {
   } catch (err) {
     // Не смогли — значит не включили. Врать переключателю нельзя.
     console.warn('[native] не удалось запланировать напоминание:', err);
+    lastError = reason(err);
+    return NOTIFY.failed;
+  }
+}
+
+// Что именно сказал плагин, когда не вышло.
+//
+// «Не удалось поставить напоминание» без причины не помогает никому: причин у
+// Android много, а лог с телефона тестировщика не снять. Причина уходит на
+// экран рядом с переключателем — по снимку экрана её уже можно разобрать.
+let lastError = '';
+const reason = err => String((err && err.message) || err || '').slice(0, 200);
+
+/** Причина последней неудачи словами плагина. Пусто — неудачи не было. */
+export const notifyError = () => lastError;
+
+// Пробное напоминание живёт под своим id: ежедневное оно не снимает и не
+// подменяет.
+const TEST_ID = 2;
+
+/**
+ * Прислать пробное напоминание через пять секунд.
+ *
+ * Полуденное иначе проверяется только ожиданием до завтра, а переключатель,
+ * сдвинутый на «Вкл», снаружи ничем не отличается от сломанного. Пробное идёт
+ * тем же путём — разрешение, будильник Android, канал уведомлений, — поэтому
+ * пришло пробное, придёт и ежедневное.
+ *
+ * Пять секунд, а не «сразу»: без `schedule` плагин показывает уведомление
+ * мимо будильника, и проверка прошла бы, даже если будильник не ставится.
+ * За пять секунд человек успевает свернуть приложение и увидеть уведомление
+ * так же, как увидит его в полдень.
+ *
+ * Разрешение только проверяется: кнопка видна при включённом напоминании, то
+ * есть разрешение уже дано, а если его отозвали — об этом и надо сказать.
+ *
+ * @param {{title?: string, body?: string}} [payload]
+ * @returns {Promise<string>} один из NOTIFY. Исключений не бросает.
+ */
+export async function testNotification(payload = {}) {
+  lastError = '';
+  const plugin = await notifications();
+  if (!plugin) return NOTIFY.nowhere;
+
+  try {
+    const {display} = await plugin.checkPermissions();
+    if (display !== 'granted') return NOTIFY.denied;
+    await plugin.schedule({
+      notifications: [{
+        id: TEST_ID,
+        title: String(payload.title || ''),
+        body: String(payload.body || ''),
+        schedule: {at: new Date(Date.now() + 5000), allowWhileIdle: true}
+      }]
+    });
+    return NOTIFY.on;
+  } catch (err) {
+    console.warn('[native] не удалось прислать пробное напоминание:', err);
+    lastError = reason(err);
     return NOTIFY.failed;
   }
 }

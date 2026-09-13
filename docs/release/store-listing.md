@@ -14,12 +14,12 @@
 
 ### Название
 ```
-Scrool Book
+Scroll Book
 ```
 
 Если понадобится отличить от похожих, годится вариант
-`Scrool Book — читалка` (21 знак). Имя на самом телефоне от этого
-не меняется: там всегда «Scrool Book».
+`Scroll Book — читалка` (21 знак). Имя на самом телефоне от этого
+не меняется: там всегда «Scroll Book».
 
 ### Краткое описание (80)
 ```
@@ -34,7 +34,7 @@ Scrool Book
 час, два. Дело не в силе воли: пролистывать ленту привычно, а разворот книги
 привычным не стал.
 
-Scrool Book берёт эту привычку и разворачивает в обратную сторону. Вы добавляете
+Scroll Book берёт эту привычку и разворачивает в обратную сторону. Вы добавляете
 книгу, а приложение показывает её тем самым способом, которым вы и так листаете
 каждый день.
 
@@ -89,7 +89,7 @@ Scrool Book берёт эту привычку и разворачивает в 
 
 ### Name
 ```
-Scrool Book
+Scroll Book
 ```
 
 ### Short description (80)
@@ -105,7 +105,7 @@ The book is open, the page doesn't move, and the phone next to it scrolls by
 itself for an hour. It isn't willpower. Scrolling a feed is a habit; a two-page
 spread never became one.
 
-Scrool Book takes that habit and turns it around. You add a book, and the app shows it
+Scroll Book takes that habit and turns it around. You add a book, and the app shows it
 in the exact shape you already scroll through every day.
 
 SIX WAYS TO READ ONE BOOK

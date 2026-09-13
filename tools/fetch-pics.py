@@ -129,7 +129,7 @@ def catalog():
     ids, page = [], 1
     while page < 30:
         url = 'https://picsum.photos/v2/list?page=%d&limit=100' % page
-        req = urllib.request.Request(url, headers={'User-Agent': 'scroolbook-assets/1.0'})
+        req = urllib.request.Request(url, headers={'User-Agent': 'scrollbook-assets/1.0'})
         with urllib.request.urlopen(req, timeout=30) as r:
             rows = json.load(r)
         if not rows:
@@ -147,7 +147,7 @@ def cache_one(pid):
         return True
     url = 'https://picsum.photos/id/%d/%d/%d' % (pid, CACHE_LONG, CACHE_LONG)
     try:
-        req = urllib.request.Request(url, headers={'User-Agent': 'scroolbook-assets/1.0'})
+        req = urllib.request.Request(url, headers={'User-Agent': 'scrollbook-assets/1.0'})
         with urllib.request.urlopen(req, timeout=45) as r:
             raw = r.read()
         Image.open(io.BytesIO(raw)).convert('RGB').save(dst, 'JPEG', quality=88)
@@ -257,7 +257,7 @@ def wall_one(job):
     dst = os.path.join(OUT, name, '%03d.webp' % k)
     url = 'https://picsum.photos/id/%d/%d/%d' % (pid, w, h)
     try:
-        req = urllib.request.Request(url, headers={'User-Agent': 'scroolbook-assets/1.0'})
+        req = urllib.request.Request(url, headers={'User-Agent': 'scrollbook-assets/1.0'})
         with urllib.request.urlopen(req, timeout=60) as r:
             raw = r.read()
         im = Image.open(io.BytesIO(raw)).convert('RGB')

@@ -3,7 +3,7 @@ import {useStore} from '../store.jsx';
 import {useT} from '../i18n.js';
 import {APP_NAME} from '../name.js';
 import {WALLS, clearWallpaper, getWallpaper, setWallpaper, shrink} from '../wallpaper.js';
-import {NOTIFY, appInfo, cancelNotifications, ensureNotifications} from '../native.js';
+import {NOTIFY, appInfo, cancelNotifications, ensureNotifications, notifyError, testNotification} from '../native.js';
 import {pageAt} from '../lib/pages.js';
 import Screen from '../ui/Screen.jsx';
 import StatusBar from '../ui/StatusBar.jsx';
@@ -16,6 +16,13 @@ const WHY = {
   [NOTIFY.denied]: 'set.notif_denied',
   [NOTIFY.nowhere]: 'set.notif_nowhere',
   [NOTIFY.failed]: 'set.notif_failed'
+};
+
+// Причина от плагина дописывается только к «не вышло»: у отказа и у браузера
+// причина уже названа словами, а у сорванной записи её знает только Android.
+const whyText = (t, how) => {
+  const err = how === NOTIFY.failed ? notifyError() : '';
+  return t(WHY[how] || 'set.notif_failed') + (err ? ' (' + err + ')' : '');
 };
 
 // Переключатель из нескольких кнопок. Ползунка нет намеренно: три градации
@@ -122,8 +129,20 @@ export default function Settings({go, back}) {
     // Флаг ставим только после реального разрешения. «Включено» без разрешения —
     // худший из исходов: уведомлений нет, а системный диалог второй раз не придёт,
     // и починить это из приложения человек уже не сможет.
-    if (how === NOTIFY.on) setUi({notify: 'on'});
-    else setNotifMsg(t(WHY[how] || 'set.notif_failed'));
+    if (how === NOTIFY.on) {
+      setUi({notify: 'on'});
+      // Без этой строки успех выглядит как ничего: переключатель сдвинулся, а
+      // уведомления нет, и человек решает, что не работает. Полдень сегодня
+      // уже прошёл — первое придёт завтра: так будильник и встанет.
+      const day = new Date().getHours() < 12 ? 'set.notif_today' : 'set.notif_tomorrow';
+      setNotifMsg(t('set.notif_done', {day: t(day)}));
+    } else setNotifMsg(whyText(t, how));
+  };
+
+  const tryNotify = async () => {
+    setNotifMsg('');
+    const how = await testNotification({title: t('notif.test_title'), body: t('notif.test_body')});
+    setNotifMsg(how === NOTIFY.on ? t('set.notif_test_sent') : whyText(t, how));
   };
 
   // Готовые обои пишутся путём, своя картинка — data-URI. Разницы дальше нет
@@ -181,6 +200,11 @@ export default function Settings({go, back}) {
           options={[['on', t('set.notif_on')], ['off', t('set.notif_off')]]}
           onPick={pickNotify}
         />
+        {ui.notify === 'on' ? (
+          <div className="row">
+            <button className="ghost" onClick={tryNotify}>{t('set.notif_test')}</button>
+          </div>
+        ) : null}
         {notifMsg ? <div className="hint">{notifMsg}</div> : null}
         <div className="hint">{t('set.notif_hint')}</div>
 
