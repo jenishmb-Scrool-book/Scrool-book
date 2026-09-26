@@ -53,7 +53,7 @@ const BARS = '.screen .mhdr, .screen .chdr, .screen .yhdr, .screen .thdr, .scree
 const pick = el => (el ? getComputedStyle(el).backgroundColor : null);
 
 export default function App() {
-  const {ready, books, text, ui, current, offset, setUi, addBook, setLastApp,
+  const {ready, books, text, ui, current, offset, setUi, addBook, lastApp, setLastApp,
          place, setPlace, error, dismissError, introDone, endIntro} = useStore();
   const t = useT();
   const [screen, setScreen] = useState('home');
@@ -281,7 +281,15 @@ export default function App() {
       }
     }
     if (READERS.includes(id)) setLastApp(id);
-    setArg(opt && 'arg' in opt ? opt.arg : null);
+    const next = opt && 'arg' in opt ? opt.arg : null;
+    // Место — сразу, в том же обработчике, а не эффектом после перерисовки.
+    // Новый экран на первой же отрисовке читает место прокрутки (`place.at`),
+    // и эффектом оно приезжало поздно: экран брал прокрутку ПРЕДЫДУЩЕГО —
+    // карточку и пиксели из чужой нарезки. В переписке это открывало разговор
+    // сдвинутым, и замер по нижнему краю тут же уносил курсор на экран вперёд,
+    // засчитывая непрочитанное. Новый экран — новое место, без прокрутки.
+    setPlace({id, arg: next});
+    setArg(next);
     // Подсветку несёт только переход из поиска; любой другой её снимает.
     setHit(opt && opt.hit ? opt.hit : null);
     setScreen(id);
@@ -294,7 +302,9 @@ export default function App() {
     const prev = hist.current.pop();
     if (!prev) return false;
     if (READERS.includes(prev.screen)) setLastApp(prev.screen);
-    setArg(prev.arg == null ? null : prev.arg);
+    const arg = prev.arg == null ? null : prev.arg;
+    setPlace({id: prev.screen, arg});         // то же, что в `go`: место — сразу
+    setArg(arg);
     setHit(null);
     setScreen(prev.screen);
     return true;
@@ -302,10 +312,24 @@ export default function App() {
   const backRef = useRef(back);
   backRef.current = back;
 
+  // Куда «назад», когда истории нет — экран восстановлен после перезапуска.
+  // Не всегда на дом: у трёх экранов есть родитель, и настоящее приложение
+  // вернуло бы именно к нему. Оглавление — спутник чтения, из него назад в
+  // «приложение», где читали; плеер — в список роликов; переписка — в список
+  // чатов. Выйти на дом из оглавления, в котором только что открыл страницу, —
+  // значит потерять и «приложение», и место в нём.
+  const lastRef = useRef(lastApp);
+  lastRef.current = lastApp;
+  const parentOf = id =>
+    id === 'toc' ? lastRef.current || 'reels'
+      : id === 'player' ? 'video'
+      : id === 'chat' ? 'chats'
+      : 'home';
+
   // То, что экраны вешают на «‹» в шапке. Раньше каждый экран знал, куда
   // возвращаться, своим списком — и врал: настройки всегда уводили в
   // библиотеку, хотя попасть в них можно с нижней панели любого движка.
-  const goBack = () => { if (!backRef.current()) goRef.current('home'); };
+  const goBack = () => { if (!backRef.current()) goRef.current(parentOf(screenRef.current)); };
 
   useEffect(() => {
     let off;
@@ -328,8 +352,9 @@ export default function App() {
       }
       if (screenRef.current === 'home') return false;
       if (backRef.current()) return true;
-      // Истории нет (например, экран восстановлен после перезапуска) — на дом.
-      goRef.current('home');
+      // Истории нет (например, экран восстановлен после перезапуска) — к
+      // родителю экрана, а у остальных на дом.
+      goRef.current(parentOf(screenRef.current));
       return true;
     };
     Promise.resolve(initNative({onBack}))

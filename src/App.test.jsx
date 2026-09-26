@@ -356,3 +356,80 @@ describe('счёт дня на домашнем экране', () => {
     expect(line()).toBeNull();
   });
 });
+
+describe('переход на другой экран', () => {
+  // Место прокрутки принадлежит экрану. Новый экран на первой отрисовке читал
+  // место ПРЕДЫДУЩЕГО — оно менялось эффектом уже после — и открывался с чужой
+  // прокруткой: переписка сдвигалась, а замер по нижнему краю уносил курсор на
+  // экран вперёд. Видно это и по кнопке «Вернуться к месту»: она горит, когда
+  // видимое отстаёт от курсора, — то есть по записи с чужого экрана.
+  it('не берёт место прокрутки с прошлого экрана', async () => {
+    // В ленте листали назад и там же остановились: запись прокрутки на
+    // начале книги, курсор — далеко впереди.
+    await Promise.all([
+      saveText('b1', TEXT),
+      saveMeta({
+        books: [{id: 'b1', title: 'Книга', len: TEXT.length, toc: 1}],
+        cur: 'b1', at: {b1: 1500}, last: 'feed',
+        place: {id: 'feed', arg: null, at: 0, y: 0}
+      })
+    ]);
+    await boot();
+    expect(here()).toBe('feed');
+    expect(document.querySelector('.resume')).not.toBeNull();   // своя запись — своя кнопка
+    // «Сообщения» на нижней панели ленты — в переписку.
+    const mail = [...document.querySelectorAll('.tabbar span')]
+      .find(el => el.getAttribute('aria-label') === DICT.ru['a11y.chats']);
+    await act(async () => {mail.click();});
+    expect(here()).toBe('chats');
+    expect(document.querySelector('.resume')).toBeNull();       // чужой записи нет
+    expect(rawMeta().at.b1).toBe(1500);
+    await waitFor(() => expect(rawMeta().place).toEqual({id: 'chats', arg: null, at: null, y: 0}));
+  });
+
+  it('«назад» из оглавления после второго захода — в тот же экран, а не на дом', async () => {
+    await seed({id: 'home', arg: null});
+    await boot();
+    const open = async label => {
+      const el = [...document.querySelectorAll('#home .grid .icon')].find(e => e.textContent.includes(label));
+      await act(async () => {el.click();});
+    };
+    await open('Telegran');
+    expect(here()).toBe('chats');
+    await act(async () => {document.querySelector('.prog .counter.tap').click();});
+    expect(here()).toBe('toc');
+    await act(async () => {document.querySelectorAll('#toc .body .ch')[1].click();});
+    expect(here()).toBe('chats');
+    await act(async () => {document.querySelector('.prog .counter.tap').click();});
+    expect(here()).toBe('toc');
+    await act(async () => {document.querySelector('#toc .hdr .back').click();});
+    expect(here()).toBe('chats');
+  });
+});
+
+describe('«назад» без истории', () => {
+  // После перезапуска истории переходов нет. Раньше «назад» тогда всегда
+  // вёл на дом; у оглавления, плеера и переписки есть родитель, и туда и надо.
+  const cases = [
+    [{id: 'toc', arg: 'pages'}, 'feed'],
+    [{id: 'player', arg: null}, 'video'],
+    [{id: 'chat', arg: null}, 'chats'],
+    [{id: 'settings', arg: null}, 'home']
+  ];
+  for (const [place, want] of cases) {
+    it(place.id + ' → ' + want, async () => {
+      await Promise.all([
+        saveText('b1', TEXT),
+        saveMeta({
+          books: [{id: 'b1', title: 'Книга', len: TEXT.length, toc: 1}],
+          cur: 'b1', at: {b1: 0}, last: 'feed', place
+        })
+      ]);
+      await boot();
+      expect(here()).toBe(place.id);
+      await act(async () => {expect(await NAT.onBack()).toBe(true);});
+      expect(here()).toBe(want);
+    });
+  }
+});
+
