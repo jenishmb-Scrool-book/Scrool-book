@@ -217,3 +217,24 @@ describe('список страниц большой книги', () => {
     expect(parseInt(bottom.style.height, 10)).toBeGreaterThan(0);
   });
 });
+
+describe('начало книги в главах', () => {
+  // До первой главы — название, эпиграф, предисловие — во вкладке «Главы»
+  // раньше не было помечено ничего.
+  it('пока читаешь до первой главы, помечено «Начало книги»', async () => {
+    const book = 'Предисловие автора.\n\nГлава 1\n\n' + 'Текст первой главы. '.repeat(50)
+      + '\n\nГлава 2\n\n' + 'Текст второй главы. '.repeat(50);
+    await Promise.all([
+      saveText('b1', book),
+      saveMeta({
+        books: [{id: 'b1', title: 'Книга', len: book.length, toc: 0}],
+        cur: 'b1', at: {b1: 0}, last: 'feed', intro: 1, place: {id: 'toc', arg: null}
+      })
+    ]);
+    render(<App />, {wrapper});
+    await waitFor(() => expect(document.querySelector('.boot')).toBeNull());
+    await act(async () => {});
+    const on = document.querySelector('#toc .body .ch.on b');
+    expect(on.textContent).toBe(DICT.ru['toc.start']);
+  });
+});

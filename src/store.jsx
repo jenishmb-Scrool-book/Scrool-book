@@ -653,7 +653,11 @@ export function StoreProvider({children}) {
     let pix = null;
 
     if (prev.cur === id) {
-      const first = books[0] || null;
+      // Соседняя по списку, а не первая: удалив прочитанное, человек обычно
+      // идёт к следующей, а «Как это работает» в начале списка открывалась бы
+      // каждый раз.
+      const at0 = prev.books.findIndex(b => b.id === id);
+      const first = books[Math.min(Math.max(at0, 0), books.length - 1)] || null;
       next.cur = first ? first.id : null;
       txt = first ? String((await loadText(first.id)) ?? '') : '';
       toc = first ? await bookToc(first, txt) : [];

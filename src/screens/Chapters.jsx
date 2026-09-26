@@ -304,6 +304,17 @@ export default function Chapters({go, back, arg}) {
                foot={chapters.length ? null : <div className="hint">{t('toc.empty')}</div>} />
       ) : (
         <div className="body">
+          {/* До первой главы (название, эпиграф, предисловие) раньше не было
+              помечено ничего — как будто читаешь вне книги. */}
+          {here < 0 && chapters.length && chapters[0].at > 0 ? (
+            <div className="ch on" onClick={() => jump(0)}>
+              <div className="ct">
+                <b>{t('toc.start')}</b>
+                <span>{t('toc.page', {n: 1})} · {t('toc.here')}</span>
+              </div>
+              <i><Glyph name="next" /></i>
+            </div>
+          ) : null}
           {chapters.map((c, i) => (
             <div className={i === here ? 'ch on' : 'ch'} key={c.at} onClick={() => jump(c.at)}>
               <div className="ct">

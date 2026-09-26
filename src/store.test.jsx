@@ -890,3 +890,18 @@ describe('восстановление из облачной копии', () => 
   });
 });
 
+describe('удаление открытой книги', () => {
+  it('открывается соседняя по списку, а не первая', async () => {
+    const h = await mount();
+    await add(h, 'Первая', 'Текст первой.');
+    const b = await add(h, 'Вторая', 'Текст второй.');
+    const c = await add(h, 'Третья', 'Текст третьей.');
+    await act(async () => {await h.result.current.openBook(b);});
+    await act(async () => {await h.result.current.deleteBook(b);});
+    expect(h.result.current.current.id).toBe(c);
+    await act(async () => {await h.result.current.deleteBook(c);});
+    // Последнюю в списке удалили — соседняя теперь та, что перед ней.
+    expect(h.result.current.current.title).toBe('Первая');
+  });
+});
+

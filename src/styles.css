@@ -433,6 +433,9 @@ button,textarea,input{font:inherit;color:inherit}
 #chats[data-skin="wa"] .fab{border-radius:17px}
 /* Там, где внизу панель вкладок, кнопка поднимается над ней. */
 #chats[data-skin="wa"] .fab,#chats[data-skin="ms"] .fab{bottom:76px}
+/* Под кнопкой «новое сообщение» — запас в конце списка: строка списка — это
+   текст книги, и последняя не должна оставаться под круглой кнопкой. */
+#chats .body{padding-bottom:84px}
 
 /* Переписка */
 #chat .body{padding:2px 10px 10px;background-color:var(--chat-bg)}
