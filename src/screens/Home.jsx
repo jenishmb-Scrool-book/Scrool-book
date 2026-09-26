@@ -4,7 +4,7 @@ import {useT} from '../i18n.js';
 import Screen from '../ui/Screen.jsx';
 import StatusBar from '../ui/StatusBar.jsx';
 import {percent, useLeft} from '../ui/Progress.jsx';
-import {DEFAULT_WALL, getWallpaper, setWallpaper, shrink} from '../wallpaper.js';
+import {DEFAULT_WALL, getWallpaper} from '../wallpaper.js';
 import {APP_NAMES} from '../ui/skins.js';
 import {dayLine, hhmm, useNow} from '../ui/clock.js';
 import {streakOf, todayOf} from '../lib/streak.js';
@@ -51,7 +51,7 @@ export const APPS = [
 const DOCK = [
   ['books', 'app.books', 'library', 'linear-gradient(145deg,#6f6f86,#33334a)'],
   ['list', 'app.chapters', 'toc', 'linear-gradient(145deg,#4fb0a5,#1c6f68)'],
-  ['image', 'app.wall', null, 'linear-gradient(145deg,#e0699a,#8a3f7a)'],
+  ['image', 'app.wall', 'walls', 'linear-gradient(145deg,#e0699a,#8a3f7a)'],
   ['gear', 'app.settings', 'settings', 'linear-gradient(145deg,#5a5a6a,#33333f)']
 ];
 
@@ -107,23 +107,14 @@ export default function Home({go}) {
 
   // Скин запоминается в сторе, а не в состоянии экрана: иначе «Продолжить»
   // после перезапуска открывало бы чтение в чужой обёртке.
+  // «Обои» в доке — настройки, прокрученные к решётке обоев. Раньше значок
+  // открывал системный выбор картинки из галереи, а во вступлении человек
+  // выбирал из двадцати готовых — и искал их потом именно здесь. Своя
+  // картинка из галереи лежит там же, под решёткой.
   const open = (to, skin) => {
     if (skin && skin !== ui.skin) setUi({skin});
-    go(to);
-  };
-
-  // Обои предлагаем прямо здесь, а не только в настройках: подтянуть настоящие
-  // обои телефона нельзя (с Android 14 система их приложениям не отдаёт совсем),
-  // поэтому единственный способ получить «свой» экран — попросить картинку.
-  // Иконка в доке для этого честнее плашки: она подписана, стоит там же, где
-  // остальные наши экраны, и не занимает половину рабочего стола.
-  const pickWall = e => {
-    const f = e.target.files && e.target.files[0];
-    e.target.value = '';
-    if (!f) return;
-    shrink(f)
-      .then(uri => setWallpaper(uri).then(() => setWall(uri)))
-      .catch(() => {});      // не смогли разобрать картинку — остаются прежние обои
+    if (to === 'walls') go('settings', {arg: 'wall'});
+    else go(to);
   };
 
   return (
@@ -171,20 +162,10 @@ export default function Home({go}) {
           одна, обещают ещё два экрана — а их нет, и обещание видно как
           неточность. Настоящий лаунчер с одним экраном точек тоже не рисует. */}
       <div className="dock">
-        {DOCK.map(([glyph, label, to, background], k) =>
-          to ? (
-            <Icon key={k} glyph={glyph} label={t(label)} background={background}
-                  onClick={() => open(to)} />
-          ) : (
-            // «Обои» — не переход, а выбор файла, поэтому это <label> с
-            // input внутри: нативный выбор картинки открывает сам WebView.
-            <label className="icon" key={k}>
-              <AppIcon name={glyph} background={background} />
-              <span>{t(label)}</span>
-              <input type="file" accept="image/*" onChange={pickWall} />
-            </label>
-          )
-        )}
+        {DOCK.map(([glyph, label, to, background], k) => (
+          <Icon key={k} glyph={glyph} label={t(label)} background={background}
+                onClick={() => open(to)} />
+        ))}
       </div>
       {/* Строка поиска ищет по книге — сразу на вкладке поиска в оглавлении,
           с поднятой клавиатурой. Раньше она вела просто в оглавление, то есть

@@ -53,12 +53,12 @@ const scroll = (box, top) => act(async () => {
 beforeEach(() => localStorage.clear());
 
 describe('плеер', () => {
-  it('прокрутка вниз по комментариям двигает курсор, вверх — нет', async () => {
+  it('прокрутка вниз по комментариям двигает курсор, вверх — нет', {timeout: 20000}, async () => {
     const box = await boot();
     const at = [...document.querySelectorAll('.cmt')].map(el => Number(el.dataset.at));
     await scroll(box, 1000 + 4 * 200);                   // пятый комментарий у кромки
     // Запас по времени: под параллельным прогоном таймеры дебаунсов опаздывают.
-    await waitFor(() => expect(rawMeta().at.b1).toBe(at[4]), {timeout: 4000});
+    await waitFor(() => expect(rawMeta().at.b1).toBe(at[4]), {timeout: 10000});
     await scroll(box, 1000 + 1 * 200);                   // вернулись ко второму
     await sleep(600);
     expect(rawMeta().at.b1).toBe(at[4]);                 // место осталось на пятом
@@ -92,12 +92,12 @@ describe('ролик', () => {
     expect(rawMeta().at.b1).toBe(0);                                   // курсор на месте
   });
 
-  it('▶, когда все комментарии прочитаны, — следующая страница', async () => {
+  it('▶, когда все комментарии прочитаны, — следующая страница', {timeout: 20000}, async () => {
     const box = await boot();
     box.scrollTo = () => {};
     const at = [...document.querySelectorAll('.cmt')].map(el => Number(el.dataset.at));
     await scroll(box, 1000 + (at.length - 1) * 200);
-    await waitFor(() => expect(rawMeta().at.b1).toBe(at[at.length - 1]), {timeout: 4000});
+    await waitFor(() => expect(rawMeta().at.b1).toBe(at[at.length - 1]), {timeout: 10000});
     const desc = document.querySelector('.dtxt').textContent;
     await act(async () => {document.querySelector('#player .pl').click();});
     expect(document.querySelector('.dtxt').textContent).not.toBe(desc);

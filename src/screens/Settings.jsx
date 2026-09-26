@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react';
+import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {useStore} from '../store.jsx';
 import {useT} from '../i18n.js';
 import {APP_NAME} from '../name.js';
@@ -59,7 +59,7 @@ function details(info, ui, len) {
   ].filter(Boolean).join('\n');
 }
 
-export default function Settings({go, back}) {
+export default function Settings({go, back, arg}) {
   const {ui, setUi, current, offset, text} = useStore();
   const t = useT();
   const [wall, setWall] = useState('');
@@ -68,6 +68,15 @@ export default function Settings({go, back}) {
   const [info, setInfo] = useState({version: '', build: '', id: ''});
   const [copied, setCopied] = useState('');
   const [fallback, setFallback] = useState('');
+
+  // Пришли с «Обоев» в доке — сразу к решётке: прокручивать настройки до
+  // середины в поисках обоев — лишний шаг ровно для того, кто за ними пришёл.
+  const wallRef = useRef(null);
+  useLayoutEffect(() => {
+    const el = wallRef.current;
+    const box = el && el.closest('.body');
+    if (arg === 'wall' && box) box.scrollTop = Math.max(0, el.offsetTop - 8);
+  }, []);
 
   useEffect(() => {
     let live = true;
@@ -186,7 +195,7 @@ export default function Settings({go, back}) {
           onPick={lang => setUi({lang})}
         />
 
-        <div className="sect">{t('set.wallpaper')}</div>
+        <div className="sect" ref={wallRef}>{t('set.wallpaper')}</div>
         <Walls value={wall} onPick={pickWall} />
         <div className="row">
           <label className="filebtn">
