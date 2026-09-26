@@ -52,10 +52,12 @@ function details(info, ui, len) {
     navigator.userAgent,
     // Плотность округляем: у неё бывает хвост вида 2.0000000596046448,
     // и в письме это выглядит как мусор, а не как сведения.
-    'экран ' + (s.width || '?') + '×' + (s.height || '?') +
+    // Подписи — одинаковые на обоих языках: сведения читает разработчик, а
+    // русские слова в английском интерфейсе выглядели ошибкой перевода.
+    'screen ' + (s.width || '?') + '×' + (s.height || '?') +
       ' @' + Math.round((window.devicePixelRatio || 1) * 100) / 100,
-    'тема ' + ui.theme + ', шрифт ' + ui.font + ', язык ' + ui.lang + ', обёртка ' + ui.skin,
-    'книга ' + len + ' знаков'
+    'theme=' + ui.theme + ' font=' + ui.font + ' lang=' + ui.lang + ' skin=' + ui.skin,
+    'book ' + len + ' chars'
   ].filter(Boolean).join('\n');
 }
 

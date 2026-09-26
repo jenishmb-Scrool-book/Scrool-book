@@ -20,7 +20,7 @@ export const SEED = `Как это работает
 
 Дальше выбирай, чем листать.
 
-Переписка — тут два способа сразу. В списке чатов каждая строка это кусок книги от очередного человека: можно просто идти по контактам сверху вниз и читать. А зайдёшь в чат — там разговор: одну реплику говорит собеседник, следующую ты, между ними смайлики. Обёрток тут три, они переключаются в настройках.
+Переписка — тут два способа сразу. В списке чатов каждая строка это кусок книги от очередного человека: можно просто идти по контактам сверху вниз и читать. А зайдёшь в чат — там разговор: одну реплику говорит собеседник, следующую ты, между ними смайлики. Мессенджеров три — это три значка на домашнем экране, и открываются они в своём оформлении.
 
 Клипы — на весь экран, свайпом вверх.
 
@@ -58,7 +58,7 @@ You paste in your own book, or any text at all. The app cuts it into short piece
 
 Then pick what you flip through.
 
-Chat — two ways at once here. In the chat list every row is a piece of the book from another person: you can simply go down the contacts and read. Open a chat and it turns into a conversation: one line is theirs, the next one yours, with emoji in between. There are three wrappers, switched in settings.
+Chat — two ways at once here. In the chat list every row is a piece of the book from another person: you can simply go down the contacts and read. Open a chat and it turns into a conversation: one line is theirs, the next one yours, with emoji in between. There are three messengers — three icons on the home screen, each opening in its own look.
 
 Clips — full screen, swipe up.
 
