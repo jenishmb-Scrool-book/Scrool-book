@@ -462,3 +462,29 @@ describe('книга без текста', () => {
   });
 });
 
+describe('история после поиска', () => {
+  // Путь, на котором тестировщик терялся: дом → строка поиска → находка
+  // (открываются клипы) → лупа (снова оглавление) → «назад». Раньше это вело
+  // на дом: второе открытие оглавления разматывало историю до первого.
+  it('«назад» из оглавления возвращает в «приложение», где читали', async () => {
+    await seed({id: 'home', arg: null});
+    await boot();
+    await act(async () => {document.querySelector('.qsearch').click();});
+    expect(here()).toBe('toc');
+    const input = document.querySelector('.qbox input');
+    await act(async () => {fireEvent.change(input, {target: {value: 'зайчик'}});});
+    await waitFor(() => expect(document.querySelector('.snip')).not.toBeNull());
+    await act(async () => {document.querySelector('.snip').closest('.ch').click();});
+    expect(here()).toBe('reels');
+    await act(async () => {document.querySelectorAll('.tabbar span')[1].click();});   // «Подписки» → оглавление
+    expect(here()).toBe('toc');
+    await act(async () => {expect(await NAT.onBack()).toBe(true);});
+    expect(here()).toBe('reels');
+    // А с клипов «назад» — не по кругу, а к выходу.
+    await act(async () => {await NAT.onBack();});
+    await act(async () => {await NAT.onBack();});
+    expect(here()).toBe('home');
+    await act(async () => {expect(await NAT.onBack()).toBe(false);});
+  });
+});
+
