@@ -19,6 +19,7 @@ import Library from './screens/Library.jsx';
 import Settings from './screens/Settings.jsx';
 import PicView, {PicProvider} from './ui/PicView.jsx';
 import Crash from './ui/Crash.jsx';
+import {HitProvider} from './ui/Hit.jsx';
 
 export const SCREENS = {
   home: Home,
@@ -42,6 +43,10 @@ const DEPTH = 24;
 // Сколько висит плашка ошибки, если её не убрали нажатием.
 const ERR_MS = 8000;
 
+// Сколько горит маркер на найденном слове после перехода из поиска. Столько,
+// чтобы найти его глазами и начать читать, — дальше это уже просто текст.
+const HIT_MS = 10000;
+
 // Шапки, с которых снимается цвет для системного статус-бара. Порядок не важен:
 // на экране она всегда одна.
 const BARS = '.screen .mhdr, .screen .chdr, .screen .yhdr, .screen .thdr, .screen .fhdr, .screen .hdr';
@@ -63,6 +68,9 @@ export default function App() {
   // если упал сам дом, переход «на дом» экрана не меняет, и без счётчика
   // предохранитель так и остался бы в упавшем состоянии.
   const [fell, setFell] = useState(0);
+  // Найденное поиском: `{q, at}` — что искали и где нашли. Экраны чтения
+  // подсвечивают это слово (ui/Hit.jsx). Живёт до следующего перехода.
+  const [hit, setHit] = useState(null);
 
   // История переходов. Была таблица «откуда куда» на два экрана, и она врала
   // везде, где переход не один: в настройки приходят и из дома, и с нижней
@@ -173,6 +181,14 @@ export default function App() {
     return () => clearTimeout(id);
   }, [error, dismissError]);
 
+  // Маркер гаснет сам: подсветка, которая горит весь сеанс, перестаёт
+  // значить «вот оно» и становится пятном на тексте.
+  useEffect(() => {
+    if (!hit) return undefined;
+    const id = setTimeout(() => setHit(null), HIT_MS);
+    return () => clearTimeout(id);
+  }, [hit]);
+
   // Первый запуск: вместо пустого экрана подкладываем текст, объясняющий механику.
   // Живёт здесь, а не в сторе: это онбординг, а не хранилище.
   //
@@ -262,6 +278,8 @@ export default function App() {
     }
     if (READERS.includes(id)) setLastApp(id);
     setArg(opt && 'arg' in opt ? opt.arg : null);
+    // Подсветку несёт только переход из поиска; любой другой её снимает.
+    setHit(opt && opt.hit ? opt.hit : null);
     setScreen(id);
   };
   const goRef = useRef(go);
@@ -273,6 +291,7 @@ export default function App() {
     if (!prev) return false;
     if (READERS.includes(prev.screen)) setLastApp(prev.screen);
     setArg(prev.arg == null ? null : prev.arg);
+    setHit(null);
     setScreen(prev.screen);
     return true;
   };
@@ -359,7 +378,9 @@ export default function App() {
             упавшее состояние. См. ui/Crash.jsx — без предохранителя ошибка
             одного экрана оставляла белый лист при каждом запуске. */}
         <Crash key={screen + ':' + fell} onHome={() => {setFell(n => n + 1); go('home');}}>
-          <Current go={go} back={goBack} arg={arg} />
+          <HitProvider value={hit}>
+            <Current go={go} back={goBack} arg={arg} />
+          </HitProvider>
         </Crash>
       </PicProvider>
       {shot ? <PicView src={shot} onClose={() => setShot('')} /> : null}

@@ -18,6 +18,7 @@ import {indexAt} from '../lib/chunk.js';
 import Glyph from '../ui/Glyph.jsx';
 import BookPics from '../ui/BookPic.jsx';
 import Resume from '../ui/Resume.jsx';
+import Hit from '../ui/Hit.jsx';
 
 // «Видео» — три места, где читается одна и та же книга.
 //
@@ -128,7 +129,8 @@ export default function Video({go, back}) {
       <Progress offset={offset} len={text.length} go={go} />
       <div className="body" ref={boxRef}>
         {items.map(i => (
-          <Card key={i} i={i} title={chunks[i].text} here={i === pos} pics={picsOf(i)}
+          <Card key={i} i={i} here={i === pos} pics={picsOf(i)}
+                title={<Hit text={chunks[i].text} at={chunks[i].at} end={chunks[i].end} />}
                 onPlay={() => play(i)} onMenu={() => go('toc')} />
         ))}
       </div>
@@ -295,7 +297,7 @@ export function Player({go, back}) {
               ради чего экран существует, было бы издевательством. */}
           <div className="desc">
             <div className="dh">{t('video.desc')}</div>
-            <div className="dtxt">{desc ? desc.text : ''}</div>
+            <div className="dtxt">{desc ? <Hit text={desc.text} at={desc.at} end={desc.end} /> : ''}</div>
           </div>
 
           {/* Вторая половина — в комментариях. Читается тем же движением, что и
@@ -310,7 +312,8 @@ export function Player({go, back}) {
                 <span>{t('video.add_comment')}</span>
               </div>
               {list.map(k => (
-                <Comment key={k} i={k} at={cs[k].at} text={cs[k].text} pics={cpics(k)}
+                <Comment key={k} i={k} at={cs[k].at}
+                         text={<Hit text={cs[k].text} at={cs[k].at} end={cs[k].end} />} pics={cpics(k)}
                          onReply={() => go('chat', {arg: k})} />
               ))}
             </>

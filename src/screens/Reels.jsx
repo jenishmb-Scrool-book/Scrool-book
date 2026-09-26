@@ -12,6 +12,7 @@ import {grad, likes, comments, shares} from '../ui/visual.js';
 import {shot} from '../ui/pics.js';
 import Glyph from '../ui/Glyph.jsx';
 import BookPics from '../ui/BookPic.jsx';
+import Hit from '../ui/Hit.jsx';
 import Resume from '../ui/Resume.jsx';
 
 // «Клипы»: вертикальная лента на весь экран со snap'ом.
@@ -46,7 +47,7 @@ export default function Reels({go, back}) {
           <div className={picsOf(i).length ? 'reel haspic' : 'reel'} key={i} data-i={i}
                style={{background: shot('tall', i, grad(i))}}>
             <BookPics list={picsOf(i)} />
-            <div className="txt">{chunks[i].text}</div>
+            <div className="txt"><Hit text={chunks[i].text} at={chunks[i].at} end={chunks[i].end} /></div>
             <div className="cnt">{t('reels.handle')} · {t('reels.of', {i: i + 1, n: count})}</div>
             <div className="tag">{t('reels.tag')}</div>
             <div className="rail">

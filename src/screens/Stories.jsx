@@ -9,6 +9,7 @@ import {FACE, shot} from '../ui/pics.js';
 import {msgTime} from '../lib/fake.js';
 import Glyph from '../ui/Glyph.jsx';
 import BookPics from '../ui/BookPic.jsx';
+import Hit from '../ui/Hit.jsx';
 
 // «Истории»: карточка на весь экран, вперёд — тап по правой половине, назад — по левой.
 //
@@ -44,7 +45,7 @@ export default function Stories({go, back}) {
           <span className="back" onClick={back} role="button" aria-label={t('back')}><Glyph name="close" /></span>
         </div>
         <BookPics list={picsOf(pos)} />
-        <div className="stxt">{cur ? cur.text : ''}</div>
+        <div className="stxt">{cur ? <Hit text={cur.text} at={cur.at} end={cur.end} /> : ''}</div>
         <div className="sfoot">
           {last ? t('reader.end') : t('stories.of', {i: pos + 1, n: count})}
           <em>{t('stories.hint')}</em>

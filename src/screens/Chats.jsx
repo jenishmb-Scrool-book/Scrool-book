@@ -16,6 +16,7 @@ import {NAMES, callAt, contactAt, groupAt, msgTime} from '../lib/fake.js';
 import Glyph from '../ui/Glyph.jsx';
 import BookPics from '../ui/BookPic.jsx';
 import Resume from '../ui/Resume.jsx';
+import Hit from '../ui/Hit.jsx';
 
 // «Мессенджер» — один движок и четыре вкладки, и ЧИТАТЬ можно на двух из них.
 //
@@ -133,7 +134,10 @@ function Roster({mode, chunks, pos, setPos, eye, picsOf, onOpen}) {
               seed={c.seed}
               /* В группе превью всегда подписано отправителем — без этого
                  вкладка «Группы» ничем не отличалась бы от вкладки «Чаты». */
-              text={g ? c.from + ': ' + chunks[i].text : chunks[i].text}
+              text={<>
+                {g ? c.from + ': ' : null}
+                <Hit text={chunks[i].text} at={chunks[i].at} end={chunks[i].end} />
+              </>}
               time={msgTime(i)}
               /* Непрочитанное здесь не выдумано: всё, что ниже курсора, ты
                  действительно ещё не читал. Точка справа — ровно это. */
@@ -383,7 +387,7 @@ export function Chat({go, back, arg}) {
                 <div className="msg tail"><span className="dots"><i /><i /><i /></span></div>
               ) : (
                 <Bubble
-                  text={chunks[i].text}
+                  text={<Hit text={chunks[i].text} at={chunks[i].at} end={chunks[i].end} />}
                   pics={picsOf(i)}
                   time={msgTime(i)}
                   out={out}

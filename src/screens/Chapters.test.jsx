@@ -92,6 +92,21 @@ describe('поиск по книге', () => {
     expect(rawMeta().pace || null).toBeNull();
   });
 
+  it('на экране чтения найденное слово — под маркером, другой переход маркер снимает', async () => {
+    await boot({id: 'toc', arg: 'search'});
+    await ask('колючкин');
+    await waitFor(() => expect(document.querySelector('.snip')).not.toBeNull());
+    await act(async () => {document.querySelector('.snip').closest('.ch').click();});
+    expect(here()).toBe('feed');
+    const marks = [...document.querySelectorAll('mark.hit')];
+    expect(marks.map(m => m.textContent)).toEqual(['Колючкин']);
+    // Любой переход после этого — уже не «вот оно»: на новом экране маркера нет.
+    // Лупа на нижней панели ленты — второй значок.
+    await act(async () => {document.querySelectorAll('.tabbar span')[1].click();});
+    expect(here()).toBe('toc');
+    expect(document.querySelector('mark.hit')).toBeNull();
+  });
+
   it('одна буква — подсказка, чужое слово — «ничего не нашлось»', async () => {
     await boot({id: 'toc', arg: 'search'});
     expect(document.querySelector('#toc .hint').textContent).toBe(DICT.ru['toc.search_hint']);

@@ -125,7 +125,7 @@ function Search({text, onJump, bar}) {
           // частом слове находок на ней десяток, и закрашенным оказывается
           // полсписка. Процент рядом с номером и так говорит, где это.
           return (
-            <div className="ch" key={h.at} onClick={() => onJump(h.at)}>
+            <div className="ch" key={h.at} onClick={() => onJump(h.at, asked)}>
               <div className="ct">
                 <b>{t('toc.page_n', {n})}<i>{Math.round(percent(h.at, len))}%</i></b>
                 <span className="snip">{s.head}<mark>{s.hit}</mark>{s.tail}</span>
@@ -208,9 +208,10 @@ export default function Chapters({go, back, arg}) {
   }, [chapters, offset]);
 
   // Переход, а не чтение: перепрыгнутые страницы в счёт дня не идут.
-  const jump = at => {
+  // `q` — запрос, если пришли из поиска: экран чтения подсветит найденное.
+  const jump = (at, q) => {
     setOffset(at, {jump: true});
-    go(backTo);
+    go(backTo, q ? {hit: {q, at}} : undefined);
   };
 
   return (

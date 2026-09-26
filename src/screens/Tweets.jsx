@@ -15,6 +15,7 @@ import {APP_NAMES} from '../ui/skins.js';
 import {msgTime} from '../lib/fake.js';
 import Glyph from '../ui/Glyph.jsx';
 import BookPics from '../ui/BookPic.jsx';
+import Hit from '../ui/Hit.jsx';
 import Resume from '../ui/Resume.jsx';
 
 // «Короткие посты»: самый мелкий фрагмент из всех движков.
@@ -55,7 +56,7 @@ export default function Tweets({go, back}) {
               {/* Над текстом, а не под ним, как принято в этой ленте: в книге
                   картинка стояла перед абзацем, и порядок чтения важнее привычки. */}
               <BookPics list={picsOf(i)} />
-              <div className="tt">{chunks[i].text}</div>
+              <div className="tt"><Hit text={chunks[i].text} at={chunks[i].at} end={chunks[i].end} /></div>
               <div className="ta">
                 <span><Glyph name="comment" /> {comments(i)}</span>
                 <span><Glyph name="repost" /> {shares(i)}</span>

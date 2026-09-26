@@ -43,7 +43,8 @@
   --pill-fg:    #ffffff;
   --err-bg:     #5a1730;
   --err-line:   #ff2d5559;
-  --mark:       #7c5cff66;  /* подсветка найденного слова */
+  --mark:       #7c5cff66;  /* подсветка найденного слова в списке поиска */
+  --hit:        #ffd24a66;  /* маркер на найденном слове в самой книге */
   --shadow:     #000000;
   --shadow-ic:  #00000088;  /* тень под иконками */
 
@@ -84,6 +85,7 @@
     --err-bg:     #ffe0e8;
     --err-line:   #ff2d5559;
     --mark:       #6544e838;
+    --hit:        #ffcf338c;
     --shadow:     #6b6b7a;
     --shadow-ic:  #0000002e;
   }
@@ -120,6 +122,7 @@
   --err-bg:     #ffe0e8;
   --err-line:   #ff2d5559;
   --mark:       #6544e838;
+  --hit:        #ffcf338c;
   --shadow:     #6b6b7a;
   --shadow-ic:  #0000002e;
 }
@@ -1039,6 +1042,16 @@ button,textarea,input{font:inherit;color:inherit}
 .ch .ct span.snip{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;
   -webkit-line-clamp:3;line-height:1.45;opacity:.72}
 .snip mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
+
+/* Маркер на найденном слове в самой книге (ui/Hit.jsx). Жёлтый, а не цвет
+   приложения: это метафора текстовыделителя, и на любой из обёрток — зелёной,
+   красной, на снимке — он читается одинаково. Гаснет сам к концу своих десяти
+   секунд: App снимает его в тот же момент. */
+mark.hit{background:var(--hit);color:inherit;border-radius:3px;padding:0 1px;
+  box-decoration-break:clone;-webkit-box-decoration-break:clone;
+  animation:hitfade 10s ease-in forwards}
+@keyframes hitfade{0%,75%{background-color:var(--hit)}100%{background-color:transparent}}
+@media (prefers-reduced-motion:reduce){mark.hit{animation:none}}
 /* Правая вставка шапки: счётчик глав и кнопка «☰» на экранах-читалках. */
 .hdr .ic{font-size:.81rem;opacity:.6;white-space:nowrap;padding:2px 4px;cursor:pointer}
 

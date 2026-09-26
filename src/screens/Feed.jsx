@@ -15,6 +15,7 @@ import {APP_NAMES} from '../ui/skins.js';
 import {NAMES} from '../lib/fake.js';
 import Glyph from '../ui/Glyph.jsx';
 import BookPics from '../ui/BookPic.jsx';
+import Hit from '../ui/Hit.jsx';
 import Resume from '../ui/Resume.jsx';
 
 // «Лента»: те же куски постами. Текст лежит ровно на месте картинки —
@@ -66,7 +67,7 @@ export default function Feed({go, back}) {
             {/* Текст лежит поверх снимка, а не вместо него. Затемнение под ним
                 обязательно: на светлом кадре белые буквы иначе пропадают. */}
             <div className="pic" style={{background: shot('post', i, grad(i + 3))}}>
-              <span>{chunks[i].text}</span>
+              <span><Hit text={chunks[i].text} at={chunks[i].at} end={chunks[i].end} /></span>
             </div>
             <div className="acts"><Glyph name="heart" /><Glyph name="comment" /><Glyph name="share" /></div>
             <div className="cap likes">{t('feed.likes', {n: marks(i)})}</div>
