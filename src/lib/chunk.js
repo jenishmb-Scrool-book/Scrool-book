@@ -29,34 +29,77 @@ function paragraphs(src) {
   return out;
 }
 
+// Ровно те символы, что JS считает `\s` (и `trim()` — пробелом): пробелы
+// всех сортов и переводы строк. U+0085 сюда НЕ входит — как и в `\s`.
+function space(c) {
+  return c === 32 || (c >= 9 && c <= 13) || c === 0xa0 || c === 0x1680 ||
+    (c >= 0x2000 && c <= 0x200a) || c === 0x2028 || c === 0x2029 ||
+    c === 0x202f || c === 0x205f || c === 0x3000 || c === 0xfeff;
+}
+
 /**
  * Предложения внутри абзаца — уже со смещениями в исходной строке.
  * Резать можно прямо по оригиналу: разделитель это пробелы после знака
  * препинания, а схлопывание пробелов последовательность непробельных
  * символов не меняет.
+ *
+ * Текста предложения здесь НЕ делаем — только его границы и длину после
+ * схлопывания пробелов, одним проходом по символам. Раньше каждое предложение
+ * становилось двумя-тремя новыми строками, которые тут же склеивались в кусок
+ * и выбрасывались: на романе в три миллиона знаков это сотни тысяч строк и
+ * бо́льшая часть времени нарезки. Текст куска теперь собирается один раз, из
+ * его собственного среза, — и он тот же самый: между предложениями абзаца
+ * всегда есть пробел, и схлопнутый срез куска равен склейке предложений через
+ * пробел (это сплошь проверяет `chunk.oracle.test.js`).
+ *
+ * @returns {Array<{at: number, end: number, n: number}>} n — длина после схлопывания
  */
 function sentences(src, ps, pe) {
   const seg = src.slice(ps, pe);
-  const spans = [];
+  const out = [];
   let i = 0, m;
+  const span = (a, b) => {
+    let x = ps + a, y = ps + b;
+    while (x < y && space(src.charCodeAt(x))) x++;
+    while (y > x && space(src.charCodeAt(y - 1))) y--;
+    if (x === y) return;
+    let n = 0, gap = false;
+    for (let k = x; k < y; k++) {
+      if (space(src.charCodeAt(k))) {
+        if (!gap) {n++; gap = true;}
+      } else {
+        n++;
+        gap = false;
+      }
+    }
+    out.push({at: x, end: y, n});
+  };
   SENT.lastIndex = 0;
   while ((m = SENT.exec(seg))) {
-    spans.push([i, m.index]);
+    span(i, m.index);
     i = SENT.lastIndex;
   }
-  spans.push([i, seg.length]);
-
-  const out = [];
-  for (const [a, b] of spans) {
-    const raw = seg.slice(a, b);
-    const text = norm(raw);
-    if (!text) continue;
-    const lead = raw.length - raw.replace(/^\s+/, '').length;
-    const trail = raw.length - raw.replace(/\s+$/, '').length;
-    out.push({at: ps + a + lead, end: ps + b - trail, text});
-  }
+  span(i, seg.length);
   return out;
 }
+
+// Текст куска считается при первом обращении, а не при нарезке.
+//
+// Кусков у романа — десятки тысяч, а на экране за раз видно два десятка.
+// Готовить текст всех заранее значило бы делать десятки тысяч строк, которые
+// никто не прочитает, и половина времени нарезки уходила именно на это и на
+// уборку за ним. Собственные поля куска — только `at` и `end`; `text` —
+// свойство прототипа, которое при первом чтении считает текст из среза
+// исходника и кладёт его на сам кусок, чтобы второй раз не считать.
+// Прототип свой у каждой нарезки: на нём и лежит исходный текст, так что
+// кусок не несёт ссылку на книгу ни в одном собственном поле.
+const PIECE = {
+  get text() {
+    const v = norm(this.src.slice(this.at, this.end));
+    Object.defineProperty(this, 'text', {value: v});
+    return v;
+  }
+};
 
 /**
  * @param {string} text исходный текст книги
@@ -66,23 +109,68 @@ function sentences(src, ps, pe) {
 export function chunk(text, max = 280) {
   const src = String(text ?? '');
   const out = [];
+  function Piece(at, end) {
+    this.at = at;
+    this.end = end;
+  }
+  Piece.prototype = Object.create(PIECE, {src: {value: src}});
+  const flush = b => out.push(new Piece(b.at, b.end));
 
   for (const [ps, pe] of paragraphs(src)) {
     let buf = null;
     for (const s of sentences(src, ps, pe)) {
       if (!buf) {
         buf = s;
-      } else if ((buf.text + ' ' + s.text).length > max) {
-        out.push(buf);
+      } else if (buf.n + 1 + s.n > max) {
+        flush(buf);
         buf = s;
       } else {
-        buf = {at: buf.at, end: s.end, text: buf.text + ' ' + s.text};
+        buf = {at: buf.at, end: s.end, n: buf.n + 1 + s.n};
       }
     }
     // Одно предложение длиннее max резать не по чему: оно выйдет отдельным
     // куском длиннее max. Это лучше, чем рубить слово посередине или крутиться.
-    if (buf) out.push(buf);
+    if (buf) flush(buf);
   }
+  return out;
+}
+
+// Нарезки, уже посчитанные для текущей книги: размер → куски.
+//
+// Каждый экран режет книгу своим размером, и режет заново при каждом входе:
+// `useMemo` живёт, пока смонтирован экран. На романе в три миллиона знаков
+// это десятая доля секунды на компьютере и полсекунды на телефоне — на
+// КАЖДОМ переходе между «приложениями», а плеер режет книгу дважды. Книга же
+// одна и та же, и нарезка у неё под данный размер тоже одна.
+//
+// Кэш помнит одну книгу (новый текст его сбрасывает) и несколько последних
+// размеров: у огромной книги каждая нарезка — ещё один экземпляр её текста в
+// памяти, и держать все девять незачем — ходят обычно между двумя-тремя.
+const KEEP = 4;
+let memoText = null;
+const memo = new Map();
+
+/**
+ * То же, что `chunk`, но одна книга не режется одним размером дважды.
+ * Отдаёт общий массив — менять его нельзя.
+ */
+export function chunked(text, max = 280) {
+  const src = String(text ?? '');
+  // Сравнение строк: для той же самой строки движок отвечает сразу, по
+  // ссылке; целиком сравнивает, только когда книга сменилась.
+  if (src !== memoText) {
+    memoText = src;
+    memo.clear();
+  }
+  const hit = memo.get(max);
+  if (hit) {
+    memo.delete(max);          // самая свежая — в конец очереди на вылет
+    memo.set(max, hit);
+    return hit;
+  }
+  const out = chunk(src, max);
+  memo.set(max, out);
+  if (memo.size > KEEP) memo.delete(memo.keys().next().value);
   return out;
 }
 

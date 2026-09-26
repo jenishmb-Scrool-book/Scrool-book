@@ -27,6 +27,15 @@ import Glyph from '../ui/Glyph.jsx';
 /** Сколько знаков превью показываем у страницы. Одна строка на телефоне. */
 const PEEK = 64;
 
+// Список страниц рисуется окном, а не целиком. У романа в три миллиона знаков
+// страниц под две тысячи, и все разом — это секунда на компьютере и несколько
+// на телефоне, причём на каждом входе в оглавление. Строки одной высоты (номер
+// и превью в одну строку каждый), поэтому окно считается от прокрутки
+// делением, а место остальных строк держат две распорки.
+const ROW = 62;       // высота строки до первого замера
+const SPARE = 30;     // строк сверх видимых — с каждой стороны
+const SPAN = SPARE * 3;
+
 /**
  * Список условных страниц.
  *
@@ -41,17 +50,43 @@ function Pages({text, offset, onJump, foot}) {
   const total = pageCount(len);
   const here = pageAt(offset, len);
   const boxRef = useRef(null);
+  const [rowH, setRowH] = useState(ROW);
+  // Первая нарисованная строка (с нуля). Начинаем вокруг текущей страницы.
+  const [win, setWin] = useState(() => Math.max(0, here - 1 - SPARE));
+  const first = Math.max(0, Math.min(win, total - SPAN));
+  const last = Math.min(total, first + SPAN);
 
   // Открываемся на текущей странице. В книге на триста страниц список,
   // открытый с первой, — это тот же поиск вручную, от которого экран избавляет.
+  // Высоту строки меряем по нарисованной: она зависит от кегля. Прокрутку
+  // ставим после замера — иначе распорка сверху была бы посчитана по запасной
+  // высоте, и текущая страница оказалась бы не там.
+  const aimed = useRef(false);
   useLayoutEffect(() => {
     const box = boxRef.current;
-    const el = box && box.querySelector('.ch.on');
-    if (box && el) box.scrollTop = Math.max(0, el.offsetTop - box.clientHeight / 3);
-  }, []);
+    if (!box) return;
+    const row = box.querySelector('.ch');
+    const h = (row && row.offsetHeight) || ROW;
+    if (h !== rowH) {
+      setRowH(h);
+      return;
+    }
+    if (aimed.current) return;
+    aimed.current = true;
+    box.scrollTop = Math.max(0, (here - 1) * h - box.clientHeight / 3);
+  }, [rowH, here]);
+
+  // Окно едет за прокруткой, но не на каждый пиксель: перерисовываем, когда
+  // видимое ушло от середины окна больше чем на треть запаса.
+  const onScroll = () => {
+    const box = boxRef.current;
+    if (!box) return;
+    const f = Math.max(0, Math.floor(box.scrollTop / rowH) - SPARE);
+    if (Math.abs(f - first) > SPARE / 3) setWin(f);
+  };
 
   const rows = [];
-  for (let n = 1; n <= total; n++) {
+  for (let n = first + 1; n <= last; n++) {
     const at = (n - 1) * PAGE;
     // Страница режется по знакам, поэтому начинается она обычно посреди слова.
     // Прыгаем всё равно на сам разрез — иначе номер страницы разъедется с
@@ -71,7 +106,14 @@ function Pages({text, offset, onJump, foot}) {
     );
   }
 
-  return <div className="body" ref={boxRef}>{rows}{foot}</div>;
+  return (
+    <div className="body" ref={boxRef} onScroll={onScroll}>
+      <div style={{height: first * rowH}} />
+      {rows}
+      <div style={{height: (total - last) * rowH}} />
+      {foot}
+    </div>
+  );
 }
 
 /**

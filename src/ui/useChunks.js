@@ -1,5 +1,5 @@
 import {useCallback, useMemo} from 'react';
-import {chunk, indexAt} from '../lib/chunk.js';
+import {chunked, indexAt} from '../lib/chunk.js';
 import {useStore} from '../store.jsx';
 
 // Нарезка под конкретный экран. Стор хранит сырой текст и смещение в символах,
@@ -19,8 +19,9 @@ export default function useChunks(size = 280) {
   const {text, offset, setOffset, place, setSeen, flush, pics} = useStore();
 
   // Нарезка дорогая и синхронная — держим её на (text, size), а не на смещении:
-  // иначе книга резалась бы заново на каждом кадре скролла.
-  const chunks = useMemo(() => chunk(text, size), [text, size]);
+  // иначе книга резалась бы заново на каждом кадре скролла. `chunked` помнит
+  // её и между экранами: вернулся в клипы — клипы уже нарезаны.
+  const chunks = useMemo(() => chunked(text, size), [text, size]);
   const pos = useMemo(() => indexAt(chunks, offset), [chunks, offset]);
 
   const setPos = useCallback(i => {

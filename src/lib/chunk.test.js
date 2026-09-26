@@ -1,5 +1,5 @@
 import {describe, it, expect} from 'vitest';
-import {chunk, indexAt} from './chunk.js';
+import {chunk, chunked, indexAt} from './chunk.js';
 
 // Чанкер отдаёт объекты {text, at, end}. Старые проверки формы текста никуда не
 // делись — просто смотрят на .text; ниже к ним добавлены проверки смещений.
@@ -141,5 +141,35 @@ describe('indexAt()', () => {
     const to = big[indexAt(big, from.at)];
     expect(to.at).toBeLessThanOrEqual(from.at);
     expect(to.end).toBeGreaterThan(from.at);
+  });
+});
+
+describe('chunked()', () => {
+  const book = 'Раз. Два. Три.\n\nЧетыре. Пять.\n\n'.repeat(20);
+
+  it('режет так же, как chunk', () => {
+    expect(chunked(book, 30)).toEqual(chunk(book, 30));
+  });
+
+  it('тот же текст тем же размером второй раз не режет — отдаёт тот же массив', () => {
+    const a = chunked(book, 40);
+    expect(chunked(book, 40)).toBe(a);
+  });
+
+  it('другая книга сбрасывает кэш', () => {
+    const a = chunked(book, 50);
+    const other = chunked(book + ' Шесть.', 50);
+    expect(other).not.toBe(a);
+    expect(other.at(-1).text).toContain('Шесть.');
+  });
+
+  it('помнит несколько размеров сразу, а самый старый вытесняется', () => {
+    const b = 'Один. Два. Три. Четыре.\n\n'.repeat(10);
+    const first = chunked(b, 11);
+    for (const size of [12, 13, 14]) chunked(b, size);
+    expect(chunked(b, 11)).toBe(first);            // ещё в кэше: четыре размера
+    for (const size of [15, 16, 17, 18]) chunked(b, size);
+    expect(chunked(b, 11)).not.toBe(first);        // вытеснен, нарезан заново
+    expect(chunked(b, 11)).toEqual(first);
   });
 });

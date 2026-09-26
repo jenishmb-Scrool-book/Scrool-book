@@ -166,3 +166,29 @@ describe('дорога назад после перехода', () => {
     expect(document.querySelector('.ch.undo')).toBeNull();
   });
 });
+
+describe('список страниц большой книги', () => {
+  // Раньше рисовались все страницы разом: у романа их под две тысячи, и вход
+  // в оглавление стоил секунду на компьютере. Теперь — окно вокруг текущей.
+  it('рисует окно вокруг текущей страницы, а не все страницы', async () => {
+    const big = 'Слово за словом, строка за строкой. '.repeat(25000);   // ~500 страниц
+    const at = 1800 * 300;                                            // страница 301
+    await Promise.all([
+      saveText('b1', big),
+      saveMeta({
+        books: [{id: 'b1', title: 'Книга', len: big.length, toc: 1}],
+        cur: 'b1', at: {b1: at}, last: 'feed', intro: 1, place: {id: 'toc', arg: 'pages'}
+      })
+    ]);
+    render(<App />, {wrapper});
+    await waitFor(() => expect(document.querySelector('.boot')).toBeNull());
+    await act(async () => {});
+    const rows = document.querySelectorAll('#toc .body .ch');
+    expect(rows.length).toBeLessThanOrEqual(90);
+    expect(document.querySelector('.ch.on b').firstChild.textContent).toBe('Страница 301');
+    // Место остальных строк держат распорки: список прокручивается на всю книгу.
+    const [top, bottom] = [...document.querySelectorAll('#toc .body > div:not(.ch)')];
+    expect(parseInt(top.style.height, 10)).toBeGreaterThan(0);
+    expect(parseInt(bottom.style.height, 10)).toBeGreaterThan(0);
+  });
+});
