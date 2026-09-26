@@ -106,6 +106,8 @@ export default function Video({go, back}) {
     go('player');
   };
   const act = action => run(action, {go, boxRef, pos});
+  // Какой чипс горит. Раньше «Все» горел всегда, что бы ни нажали.
+  const [chip, setChip] = useState(0);
 
   return (
     <Screen id="video">
@@ -119,11 +121,15 @@ export default function Video({go, back}) {
               aria-label={t('toc.title')}><Glyph name="menu" /></span>
       </div>
       {/* Чипсы фильтров. Фильтровать в книге нечего, но у каждого нашлось
-          своё честное дело: «Все» — к началу списка, «Новое» — туда, где
-          читаешь, название книги — в оглавление. */}
+          своё честное дело: «Все» — к месту чтения, «Новое» — к первому
+          непрочитанному ролику сразу за ним, название книги — в оглавление. */}
       <div className="chips">
-        <span className="on" onClick={() => act('top')} role="button">{t('video.chip_all')}</span>
-        <span onClick={() => act('here')} role="button">{t('video.chip_new')}</span>
+        <span className={chip === 0 ? 'on' : undefined} role="button"
+              onClick={() => {setChip(0); act('top');}}>{t('video.chip_all')}</span>
+        <span className={chip === 1 ? 'on' : undefined} role="button"
+              onClick={() => {setChip(1); run('here', {go, boxRef, pos: Math.min(pos + 1, count - 1)});}}>
+          {t('video.chip_new')}
+        </span>
         <span onClick={() => go('toc')} role="button">{t('video.channel')}</span>
       </div>
       <Progress offset={offset} len={text.length} go={go} />

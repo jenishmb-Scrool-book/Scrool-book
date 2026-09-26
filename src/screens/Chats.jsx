@@ -232,7 +232,7 @@ export default function Chats({go, back, arg}) {
       const to = action.slice(4);
       // Тап по уже активной вкладке — наверх списка. Так ведут себя настоящие
       // панели, и это единственный способ вернуться к началу длинной ленты.
-      if (to === tab) run('top', {go});
+      if (to === tab) run('top', {go, pos});
       else setTab(to);
       return;
     }

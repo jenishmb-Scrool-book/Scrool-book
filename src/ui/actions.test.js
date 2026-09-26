@@ -45,7 +45,15 @@ describe('run()', () => {
     expect(go).not.toHaveBeenCalled();
   });
 
-  it('«top» прокручивает к началу списка', () => {
+  // Верх списка — начало окна рендера, случайный кусок книги позади места.
+  // «Главная» на своей вкладке ведёт к месту чтения.
+  it('«top» прокручивает к месту чтения', () => {
+    const box = body({cards: [0, 400, 800]});
+    run('top', {go: vi.fn(), boxRef: {current: box}, pos: 2});
+    expect(box.scrollTo).toHaveBeenCalledWith({top: 792, behavior: 'smooth'});
+  });
+
+  it('«top» там, где места чтения нет, — к началу списка', () => {
     const box = body({cards: [0, 400]});
     run('top', {go: vi.fn(), boxRef: {current: box}});
     expect(box.scrollTo).toHaveBeenCalledWith({top: 0, behavior: 'smooth'});
