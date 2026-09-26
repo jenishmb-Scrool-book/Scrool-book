@@ -7,6 +7,7 @@ import {
 import {dataUrl, headOf} from './lib/img.js';
 import {pixels} from './lib/size.js';
 import {detect} from './lib/toc.js';
+import {readPace, tally} from './lib/streak.js';
 
 // Одно состояние на всё приложение: сырой текст книги и один курсор.
 //
@@ -34,7 +35,8 @@ const ONOFF = ['on', 'off'];
 const SKINS = ['tg', 'wa', 'ms'];
 const UI = {theme: 'system', lang: 'ru', font: 'md', notify: 'off', skin: 'tg'};
 
-const EMPTY = {books: [], cur: null, at: {}, last: 'reels', ui: UI, place: null, intro: 0};
+// `pace` — сколько прочитано сегодня и сколько дней подряд (см. lib/streak.js).
+const EMPTY = {books: [], cur: null, at: {}, last: 'reels', ui: UI, place: null, intro: 0, pace: null};
 
 // Место, где закрыли приложение: экран, его параметр (вкладка мессенджера,
 // номер собеседника) и прокрутка на нём. Курсор хранился и раньше, но одного
@@ -339,6 +341,7 @@ export function StoreProvider({children}) {
         last: APPS.includes(raw.last) ? raw.last : 'reels',
         ui: readUi(raw.ui),
         place: readPlace(raw.place),
+        pace: readPace(raw.pace),
         // Вступление показывается ровно один раз и только тому, у кого
         // приложения ещё не было. Мета с книгами, но без этого поля, — это
         // обновление, а не первый запуск: человеку, дочитавшему полкниги,
@@ -400,13 +403,18 @@ export function StoreProvider({children}) {
   }, [flush]);
 
   /* ===== курсор ===== */
-  const setOffset = useCallback(n => {
+  // `jump` — переход, а не чтение: оглавление и поиск переносят место руками,
+  // и страницы, через которые перепрыгнули, прочитанными не считаются. Всё
+  // остальное, что двигает курсор вперёд, — чтение, и идёт в счёт дня.
+  const setOffset = useCallback((n, opt) => {
     const m = metaRef.current;
     const len = textRef.current.length;
     if (!m.cur || !len) return;
     const v = clamp(n, len);
-    if ((m.at[m.cur] || 0) === v) return;
-    applyMeta({...m, at: {...m.at, [m.cur]: v}});
+    const was = m.at[m.cur] || 0;
+    if (was === v) return;
+    const pace = opt && opt.jump ? m.pace : tally(m.pace, v - was);
+    applyMeta({...m, at: {...m.at, [m.cur]: v}, pace});
     schedule();
   }, [applyMeta, schedule]);
 
@@ -620,6 +628,9 @@ export function StoreProvider({children}) {
     // сколько прочитано у всех. Хранилось оно всегда — наружу не отдавалось.
     positions: meta.at,
     setOffset,
+    // Сколько прочитано сегодня и дней подряд — сырая запись; считать
+    // «сегодня» по ней должен тот, кто знает, который сейчас час.
+    pace: meta.pace || null,
     lastApp: meta.last,
     setLastApp,
     place: meta.place || null,

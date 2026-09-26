@@ -7,6 +7,8 @@ import {percent, useLeft} from '../ui/Progress.jsx';
 import {DEFAULT_WALL, getWallpaper, setWallpaper, shrink} from '../wallpaper.js';
 import {APP_NAMES} from '../ui/skins.js';
 import {dayLine, hhmm, useNow} from '../ui/clock.js';
+import {streakOf, todayOf} from '../lib/streak.js';
+import {CPM} from '../lib/pace.js';
 import AppIcon from '../ui/AppIcon.jsx';
 import Glyph from '../ui/Glyph.jsx';
 
@@ -71,12 +73,24 @@ function Icon({glyph, label, background, round, onClick}) {
 }
 
 export default function Home({go}) {
-  const {current, text, offset, lastApp, ui, setUi} = useStore();
+  const {current, text, offset, lastApp, ui, setUi, pace} = useStore();
   const t = useT();
   const [wall, setWall] = useState('');
   const now = useNow();
   const read = percent(offset, text.length) / 100;
   const left = useLeft(offset, text.length);
+
+  // Сколько прочитано сегодня и сколько дней подряд. Минутами, а не
+  // страницами: тем же счётом, что «осталось» справа, — два разных счёта в
+  // одной плашке пришлось бы переводить друг в друга в уме. Минута — меньшее,
+  // что показываем: «0 мин» после прочитанного абзаца читается как упрёк.
+  // Серия — от двух дней: «1 день подряд» — это просто «сегодня».
+  const today = todayOf(pace, now);
+  const streak = streakOf(pace, now);
+  const stats = [
+    today ? t('home.today', {m: Math.max(1, Math.round(today / CPM))}) : '',
+    streak > 1 ? t('home.streak', {n: streak}) : ''
+  ].filter(Boolean).join(' · ');
 
   // Обои читаются один раз за сессию — дальше отдаёт кеш в wallpaper.js.
   useEffect(() => {
@@ -133,6 +147,7 @@ export default function Home({go}) {
           {text.length ? <div className="lf">{left}</div> : null}
         </div>
         <div className="bar"><i style={{transform: `scaleX(${read.toFixed(4)})`}} /></div>
+        {stats ? <div className="ws">{stats}</div> : null}
         <button onClick={cont}>{t('home.continue')}</button>
       </div>
       <div className="grid">

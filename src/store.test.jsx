@@ -4,6 +4,7 @@ import {renderHook, act, waitFor} from '@testing-library/react';
 import {StoreProvider, useStore} from './store.jsx';
 import {saveMeta, saveText} from './lib/storage.js';
 import {DICT} from './i18n.js';
+import {dayKey} from './lib/streak.js';
 
 const wrapper = ({children}) => <StoreProvider>{children}</StoreProvider>;
 const rawMeta = () => JSON.parse(localStorage.getItem('scroll.meta') || 'null');
@@ -160,6 +161,45 @@ describe('setOffset', () => {
 
     await waitFor(() => expect(rawMeta().at[id]).toBe(12));
     expect(spy.mock.calls.filter(c => c[0] === 'scroll.meta')).toHaveLength(1);
+  });
+});
+
+describe('счёт дня', () => {
+  const TEXT = 'Слово. '.repeat(400);
+  const today = dayKey(new Date());
+
+  it('чтение вперёд идёт в счёт, назад — нет', async () => {
+    const h = await mount();
+    await add(h, 'Тест', TEXT);
+    expect(h.result.current.pace).toBeNull();
+    act(() => h.result.current.setOffset(700));
+    expect(h.result.current.pace).toEqual({d: today, n: 700, s: 1});
+    act(() => h.result.current.setOffset(300));
+    act(() => h.result.current.setOffset(500));
+    // Назад — ничего; вперёд после этого — перечитывание, и оно тоже чтение.
+    expect(h.result.current.pace.n).toBe(900);
+  });
+
+  it('прыжок из оглавления или поиска — переход, а не чтение', async () => {
+    const h = await mount();
+    await add(h, 'Тест', TEXT);
+    act(() => h.result.current.setOffset(2000, {jump: true}));
+    expect(h.result.current.offset).toBe(2000);
+    expect(h.result.current.pace).toBeNull();
+  });
+
+  it('переживает перезапуск, мусор из хранилища — не переживает', async () => {
+    const h = await mount();
+    await add(h, 'Тест', TEXT);
+    act(() => h.result.current.setOffset(100));
+    await waitFor(() => expect(rawMeta().pace).toEqual({d: today, n: 100, s: 1}));
+    h.unmount();
+    const again = await mount();
+    expect(again.result.current.pace).toEqual({d: today, n: 100, s: 1});
+    again.unmount();
+    localStorage.setItem('scroll.meta', JSON.stringify({...rawMeta(), pace: {d: 'вчера', n: 5}}));
+    const third = await mount();
+    expect(third.result.current.pace).toBeNull();
   });
 });
 

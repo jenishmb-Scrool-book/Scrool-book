@@ -5,6 +5,7 @@ import App from './App.jsx';
 import {StoreProvider} from './store.jsx';
 import {saveMeta, saveText} from './lib/storage.js';
 import {DICT} from './i18n.js';
+import {dayKey} from './lib/streak.js';
 
 // Возврат на то место, где закрыли приложение.
 //
@@ -310,5 +311,44 @@ describe('библиотека', () => {
     expect(rows[1]).toMatch(/· 100%$/);
     const bars = [...document.querySelectorAll('#library .book .pbar em')].map(e => e.style.transform);
     expect(bars[1]).toBe('scaleX(1.0000)');
+  });
+});
+
+describe('счёт дня на домашнем экране', () => {
+  const at = (pace) => Promise.all([
+    saveText('b1', TEXT),
+    saveMeta({
+      books: [{id: 'b1', title: 'Книга', len: TEXT.length, toc: 1}],
+      cur: 'b1', at: {b1: 0}, last: 'reels', place: {id: 'home', arg: null}, pace
+    })
+  ]);
+  const line = () => {
+    const el = document.querySelector('.widget .ws');
+    return el ? el.textContent : null;
+  };
+  const day = shift => dayKey(new Date(Date.now() + shift * 864e5));
+
+  it('сегодня — минуты и серия', async () => {
+    await at({d: day(0), n: 3300, s: 3});
+    await boot();
+    expect(line()).toBe('Сегодня 3 мин · 3 дня подряд');
+  });
+
+  it('вчерашняя серия жива, пока день не кончился', async () => {
+    await at({d: day(-1), n: 3300, s: 5});
+    await boot();
+    expect(line()).toBe('5 дней подряд');
+  });
+
+  it('один день — это просто «сегодня», без серии; ничего — ничего', async () => {
+    await at({d: day(0), n: 200, s: 1});
+    await boot();
+    expect(line()).toBe('Сегодня 1 мин');
+  });
+
+  it('позавчера — пусто', async () => {
+    await at({d: day(-2), n: 3300, s: 9});
+    await boot();
+    expect(line()).toBeNull();
   });
 });

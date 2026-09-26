@@ -261,6 +261,9 @@ button,textarea,input{font:inherit;color:inherit}
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .widget .lf{flex:none;font-size:.72rem;opacity:.78;padding-bottom:2px;white-space:nowrap}
 .widget .bar{height:4px;border-radius:2px;background:#ffffff47;overflow:hidden;margin:12px 0 13px}
+/* «Сегодня N мин · N дней подряд». Под полосой, а не в заголовке: это итог
+   дня, а не название книги, и тише всего остального в плашке. */
+.widget .ws{font-size:.72rem;opacity:.8;margin:-5px 0 11px}
 .widget .bar i{display:block;height:100%;width:100%;border-radius:2px;background:#fff;
   transform-origin:left;transform:scaleX(0);transition:transform .2s}
 .widget button{width:100%;border:0;border-radius:14px;padding:11px;cursor:pointer;
@@ -318,6 +321,7 @@ button,textarea,input{font:inherit;color:inherit}
   .glance b{font-size:2.2rem;letter-spacing:-1.2px}
   .widget{margin:10px 14px 0;padding:11px 14px 12px;border-radius:22px}
   .widget .bar{margin:9px 0 10px}
+  .widget .ws{margin:-4px 0 8px}
   .widget button{padding:9px;border-radius:12px}
   .grid{gap:12px 4px;padding:12px 10px 4px}
   .icon b{width:50px;height:50px;border-radius:14px}

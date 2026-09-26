@@ -207,8 +207,9 @@ export default function Chapters({go, back, arg}) {
     return k;
   }, [chapters, offset]);
 
+  // Переход, а не чтение: перепрыгнутые страницы в счёт дня не идут.
   const jump = at => {
-    setOffset(at);
+    setOffset(at, {jump: true});
     go(backTo);
   };
 
