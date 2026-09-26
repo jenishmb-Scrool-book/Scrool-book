@@ -188,6 +188,10 @@ export function Player({go, back}) {
   const {chunks: cs, picsOf: cpics} = useChunks(SIZE.comment);    // комментарии — короткие
   const boxRef = useRef(null);
   const [head, setHead] = useState(offset);
+  // Курсор для обработчика прокрутки: он вешается один раз, а сравнивать
+  // надо со свежим значением.
+  const offRef = useRef(offset);
+  offRef.current = offset;
   // Отметки под роликом. Живут, пока открыт экран: они ни на что не влияют,
   // но обязаны отзываться на нажатие — кнопка, которая не нажимается, ломает
   // обман вернее, чем кривой цвет.
@@ -224,7 +228,11 @@ export function Player({go, back}) {
           if (el.offsetTop < box.scrollTop + 60) last = el;
           else break;
         }
-        if (last) setOffset(Number(last.dataset.at));
+        // Только вперёд — как везде (см. useCardWindow). Вернулся ко второму
+        // комментарию перечитать — место остаётся на шестом: назад его
+        // переносит только оглавление, то есть прямая просьба.
+        const at = last ? Number(last.dataset.at) : -1;
+        if (at > offRef.current) setOffset(at);
       }, 120);
     };
     box.addEventListener('scroll', onScroll, {passive: true});

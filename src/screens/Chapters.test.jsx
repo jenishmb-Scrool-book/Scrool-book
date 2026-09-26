@@ -161,6 +161,31 @@ describe('дорога назад после перехода', () => {
     expect(document.querySelector('.ch.undo')).toBeNull();
   });
 
+  it('два перехода подряд: «вернуться» ведёт туда, где читали, а не на первую находку', async () => {
+    // Нажал не ту находку, вернулся в поиск, нажал другую. Место чтения —
+    // то, что было до ПЕРВОГО прыжка: между прыжками не читали.
+    await boot({id: 'toc', arg: 'pages'});
+    const pages = () => [...document.querySelectorAll('#toc .body .ch')];
+    await act(async () => {pages()[3].click();});                    // 1 → 4
+    await act(async () => {document.querySelector('.prog .counter.tap').click();});
+    await act(async () => {pages()[2].click();});                    // 4 → 3
+    await act(async () => {document.querySelector('.prog .counter.tap').click();});
+    expect(document.querySelector('.ch.undo b').textContent).toBe('Вернуться на страницу 1');
+  });
+
+  it('вернулся в поиск после перехода — запрос на месте, клавиатура не лезет', async () => {
+    await boot({id: 'toc', arg: 'search'});
+    await ask('колючкин');
+    await waitFor(() => expect(document.querySelector('.snip')).not.toBeNull());
+    await act(async () => {document.querySelector('.snip').closest('.ch').click();});
+    expect(here()).toBe('feed');
+    await act(async () => {document.querySelectorAll('.tabbar span')[1].click();});
+    expect(here()).toBe('toc');
+    expect(input().value).toBe('колючкин');
+    expect(document.activeElement).not.toBe(input());
+    await waitFor(() => expect(document.querySelectorAll('.snip')).toHaveLength(1));
+  });
+
   it('до первого перехода строки нет', async () => {
     await boot({id: 'toc', arg: 'pages'});
     expect(document.querySelector('.ch.undo')).toBeNull();

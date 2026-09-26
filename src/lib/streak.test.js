@@ -1,5 +1,5 @@
 import {describe, it, expect} from 'vitest';
-import {STEP, dayKey, readPace, streakOf, tally, todayOf} from './streak.js';
+import {FAST, STEP, credit, dayKey, readPace, streakOf, tally, todayOf} from './streak.js';
 
 const at = (y, m, d, h = 12) => new Date(y, m - 1, d, h);
 
@@ -92,5 +92,25 @@ describe('readPace()', () => {
       {d: '2026-09-26', n: 1, s: 0}, {d: '2026-09-26', n: 'много', s: 1}]) {
       expect(readPace(bad)).toBeNull();
     }
+  });
+});
+
+describe('credit()', () => {
+  it('засчитывает сдвиг целиком, если на него было время', () => {
+    expect(credit(500, 60000)).toBe(500);
+  });
+
+  it('бросок ленты засчитывается не целиком, а сколько можно было успеть', () => {
+    // Три тысячи знаков за две секунды не прочитать: втрое быстрее спокойного
+    // чтения — это около ста знаков за две секунды.
+    expect(credit(3000, 2000)).toBe(Math.floor(2000 * FAST));
+    expect(credit(3000, 2000)).toBeLessThan(200);
+  });
+
+  it('не больше STEP и не меньше нуля', () => {
+    expect(credit(STEP * 5, 1e9)).toBe(STEP);
+    expect(credit(-50, 1e9)).toBe(0);
+    expect(credit(100, -5)).toBe(0);
+    expect(credit(NaN, 1000)).toBe(0);
   });
 });

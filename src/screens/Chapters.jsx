@@ -131,9 +131,11 @@ function Pages({text, offset, onJump, foot}) {
  * Считается на `useDeferredValue`, а не по таймеру: буква в поле появляется
  * сразу, а проход по книге догоняет её, когда у телефона есть на это время.
  */
-function Search({text, onJump, bar}) {
+function Search({text, onJump, bar, initial}) {
   const t = useT();
-  const [q, setQ] = useState('');
+  // Начинаем с запроса, который привёл к последнему переходу: вернулся —
+  // и соседняя находка в одном нажатии, а не в наборе слова заново.
+  const [q, setQ] = useState(initial || '');
   const asked = useDeferredValue(q);
   const res = useMemo(() => find(text, asked), [text, asked]);
   const inRef = useRef(null);
@@ -142,8 +144,10 @@ function Search({text, onJump, bar}) {
   // Клавиатура поднимается сама: на эту вкладку приходят ровно затем, чтобы
   // набрать слово, — со строки поиска на домашнем экране или нажатием по самой
   // вкладке. Лишнее нажатие в поле было бы тем же самым вопросом второй раз.
+  // С уже набранным запросом клавиатуру не поднимаем: вернулись смотреть
+  // находки, а клавиатура закрыла бы их нижнюю половину.
   useEffect(() => {
-    if (inRef.current) inRef.current.focus();
+    if (inRef.current && !initial) inRef.current.focus();
   }, []);
 
   const clear = () => {
@@ -228,7 +232,7 @@ const TABS = [
 ];
 
 export default function Chapters({go, back, arg}) {
-  const {chapters, text, offset, setOffset, lastApp, jumpedFrom} = useStore();
+  const {chapters, text, offset, setOffset, lastApp, jumpedFrom, query, setQuery} = useStore();
   const t = useT();
   const len = text.length;
   const backTo = lastApp || 'reels';
@@ -253,6 +257,7 @@ export default function Chapters({go, back, arg}) {
   // `q` — запрос, если пришли из поиска: экран чтения подсветит найденное.
   const jump = (at, q) => {
     setOffset(at, {jump: true});
+    if (q) setQuery(q);
     go(backTo, q ? {hit: {q, at}} : undefined);
   };
 
@@ -289,7 +294,7 @@ export default function Chapters({go, back, arg}) {
         </div>
       ) : null}
       {tab === 'find' ? (
-        <Search text={text} onJump={jump} bar={<Progress offset={offset} len={len} />} />
+        <Search text={text} onJump={jump} initial={query} bar={<Progress offset={offset} len={len} />} />
       ) : <Progress offset={offset} len={len} />}
       {tab === 'find' ? null : tab === 'pages' ? (
         // Подсказка про главы стоит в конце списка, а не отдельной полосой

@@ -7,7 +7,8 @@ import {
 import {dataUrl, headOf} from './lib/img.js';
 import {pixels} from './lib/size.js';
 import {detect} from './lib/toc.js';
-import {readPace, tally} from './lib/streak.js';
+import {credit, readPace, tally} from './lib/streak.js';
+import {PAGE} from './lib/pages.js';
 
 // Одно состояние на всё приложение: сырой текст книги и один курсор.
 //
@@ -215,10 +216,13 @@ export function StoreProvider({children}) {
   const [text, setText] = useState('');
   const [chapters, setChapters] = useState([]);
   const [pics, setPics] = useState([]);
-  // Откуда прыгнули в последний раз: `{id, at}` — книга и место до перехода
-  // из оглавления или поиска. Не в мете и не в хранилище: это страховка на
-  // «нажал не туда», и нужна она сейчас, а не после перезапуска.
+  // Откуда прыгнули: `{id, at, to}` — книга, место чтения до перехода из
+  // оглавления или поиска и куда перешли. Не в мете и не в хранилище: это
+  // страховка на «нажал не туда», и нужна она сейчас, а не после перезапуска.
   const [jumped, setJumped] = useState(null);
+  // Последний запрос поиска, который привёл к переходу. Вернулся в поиск —
+  // запрос на месте: проверить соседнюю находку, не набирая слово заново.
+  const [query, setQuery] = useState('');
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(null);
 
@@ -230,6 +234,7 @@ export function StoreProvider({children}) {
   const dirty = useRef(false);       // есть несохранённые изменения меты
   const mounted = useRef(true);
   const openSeq = useRef(0);         // защита от гонки двух openBook подряд
+  const moved = useRef(Date.now());  // когда курсор двигался в последний раз — для счёта дня
 
   const applyMeta = useCallback(next => {
     metaRef.current = next;
@@ -418,12 +423,26 @@ export function StoreProvider({children}) {
     const was = m.at[m.cur] || 0;
     if (was === v) return;
     const jump = !!(opt && opt.jump);
-    const pace = jump ? m.pace : tally(m.pace, v - was);
+    // Засчитываем не весь сдвиг, а сколько можно было успеть прочитать с
+    // прошлого (см. `credit`): бросок ленты — не чтение.
+    const now = Date.now();
+    const pace = jump ? m.pace : tally(m.pace, credit(v - was, now - moved.current));
+    moved.current = now;
     applyMeta({...m, at: {...m.at, [m.cur]: v}, pace});
-    // Прыжок запоминает, откуда прыгнули, — чтобы было куда вернуться. Прыжок
-    // обратно (тем же путём) страховку снимает: возвращаться больше некуда.
+    // Прыжок запоминает, откуда прыгнули, — чтобы было куда вернуться.
+    //
+    // Второй прыжок подряд место чтения НЕ перезаписывает: нажал не ту
+    // находку, вернулся в поиск, нажал другую — и «вернуться» обязано вести
+    // туда, где читал, а не на промежуточную находку. «Подряд» — это когда
+    // после прошлого прыжка ушли от места посадки меньше чем на полстраницы,
+    // то есть не читали. Прыжок обратно на место чтения страховку снимает.
     if (jump && mounted.current) {
-      setJumped(j => (j && j.id === m.cur && j.at === v ? null : {id: m.cur, at: was}));
+      setJumped(j => {
+        const same = j && j.id === m.cur;
+        if (same && j.at === v) return null;
+        const idle = same && Math.abs(was - j.to) < PAGE / 2;
+        return {id: m.cur, at: idle ? j.at : was, to: v};
+      });
     }
     schedule();
   }, [applyMeta, schedule]);
@@ -642,6 +661,9 @@ export function StoreProvider({children}) {
     // открытой книги: у другой книги своё место, и «вернуться» туда значило бы
     // перенести курсор этой книги на чужую страницу.
     jumpedFrom: jumped && jumped.id === meta.cur ? jumped.at : null,
+    // Запрос поиска, который привёл к последнему переходу (в памяти).
+    query,
+    setQuery,
     // Сколько прочитано сегодня и дней подряд — сырая запись; считать
     // «сегодня» по ней должен тот, кто знает, который сейчас час.
     pace: meta.pace || null,
@@ -663,7 +685,7 @@ export function StoreProvider({children}) {
     // Ключ словаря, а не текст: см. `report`.
     error,
     dismissError
-  }), [ready, meta, text, chapters, pics, getPic, error, dismissError, jumped, setOffset, setLastApp,
+  }), [ready, meta, text, chapters, pics, getPic, error, dismissError, jumped, query, setOffset, setLastApp,
        setPlace, setSeen, flush, setUi, endIntro, addBook, openBook, deleteBook]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

@@ -54,7 +54,10 @@ export default function Library({go, back}) {
     setBusy('lib.busy');
     later(addBook((title || v.slice(0, 40)).trim(), v, chapters, images))
       .then(id => {
-        if (!id) return setMsg(t('lib.save_failed_space'));
+        // Причину неудачи показывает плашка стора — своими словами и верно:
+        // «кончилось место» здесь говорилось о любой неудаче записи, и рядом
+        // с плашкой это было второе сообщение об одном и том же.
+        if (!id) return;
         setText('');            // поле чистим только после успеха, иначе текст потерян навсегда
         go('home');
       })

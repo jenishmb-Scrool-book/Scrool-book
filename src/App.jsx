@@ -1,4 +1,4 @@
-import {useEffect, useLayoutEffect, useRef, useState} from 'react';
+import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {useStore} from './store.jsx';
 import {NOTIFY, initNative, refreshNotifications, setBarColor} from './native.js';
 import {isLight, rgbOf} from './ui/color.js';
@@ -180,6 +180,10 @@ export default function App() {
     const id = setTimeout(dismissError, ERR_MS);
     return () => clearTimeout(id);
   }, [error, dismissError]);
+
+  // Маркеру нужен и текст книги: какое по счёту вхождение подсвечивать, он
+  // считает по исходнику (см. ui/Hit.jsx).
+  const lit = useMemo(() => (hit ? {...hit, src: text} : null), [hit, text]);
 
   // Маркер гаснет сам: подсветка, которая горит весь сеанс, перестаёт
   // значить «вот оно» и становится пятном на тексте.
@@ -378,7 +382,7 @@ export default function App() {
             упавшее состояние. См. ui/Crash.jsx — без предохранителя ошибка
             одного экрана оставляла белый лист при каждом запуске. */}
         <Crash key={screen + ':' + fell} onHome={() => {setFell(n => n + 1); go('home');}}>
-          <HitProvider value={hit}>
+          <HitProvider value={lit}>
             <Current go={go} back={goBack} arg={arg} />
           </HitProvider>
         </Crash>

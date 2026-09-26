@@ -73,6 +73,13 @@ describe('find()', () => {
     expect(r.more).toBe(true);
   });
 
+  it('ровно CAP совпадений — это не «больше»', () => {
+    const r = find('ab '.repeat(CAP), 'ab', 5);
+    expect(r.total).toBe(CAP);
+    expect(r.more).toBe(false);
+    expect(find('ab '.repeat(CAP + 1), 'ab', 5).more).toBe(true);
+  });
+
   it('пустой запрос или текст — пусто, без падения', () => {
     expect(find('текст', '')).toEqual({hits: [], total: 0, more: false});
     expect(find('', 'текст')).toEqual({hits: [], total: 0, more: false});

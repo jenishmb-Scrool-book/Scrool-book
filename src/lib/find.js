@@ -66,9 +66,11 @@ export function find(text, query, limit = LIMIT) {
   let total = 0;
   let m;
   while ((m = re.exec(src)) !== null) {
+    // Досчитываем до CAP + 1: ровно CAP совпадений — это «нашлось 999», а не
+    // «больше 999».
+    if (total === CAP) return {hits, total, more: true};
     if (hits.length < limit) hits.push({at: m.index, len: m[0].length});
     total += 1;
-    if (total >= CAP) return {hits, total, more: true};
   }
   return {hits, total, more: false};
 }

@@ -168,16 +168,39 @@ describe('счёт дня', () => {
   const TEXT = 'Слово. '.repeat(400);
   const today = dayKey(new Date());
 
+  // Часы подменяем: засчитывается столько, сколько можно было прочитать с
+  // прошлого сдвига, и тест задаёт это время сам.
+  const clock = () => {
+    let t = Date.now();          // от настоящего «сейчас»: стор уже запомнил его при монтировании
+    vi.spyOn(Date, 'now').mockImplementation(() => t);
+    return ms => {t += ms;};
+  };
+
   it('чтение вперёд идёт в счёт, назад — нет', async () => {
     const h = await mount();
+    const wait = clock();
     await add(h, 'Тест', TEXT);
     expect(h.result.current.pace).toBeNull();
+    wait(60000);
     act(() => h.result.current.setOffset(700));
     expect(h.result.current.pace).toEqual({d: today, n: 700, s: 1});
+    wait(60000);
     act(() => h.result.current.setOffset(300));
+    wait(60000);
     act(() => h.result.current.setOffset(500));
     // Назад — ничего; вперёд после этого — перечитывание, и оно тоже чтение.
     expect(h.result.current.pace.n).toBe(900);
+  });
+
+  it('бросок ленты сразу после прошлого сдвига засчитывается чуть-чуть', async () => {
+    const h = await mount();
+    const wait = clock();
+    await add(h, 'Тест', TEXT);
+    wait(60000);
+    act(() => h.result.current.setOffset(100));
+    wait(1000);                                     // секунда — и две тысячи знаков
+    act(() => h.result.current.setOffset(2100));
+    expect(h.result.current.pace.n).toBeLessThan(200);
   });
 
   it('прыжок из оглавления или поиска — переход, а не чтение', async () => {
@@ -191,6 +214,8 @@ describe('счёт дня', () => {
   it('переживает перезапуск, мусор из хранилища — не переживает', async () => {
     const h = await mount();
     await add(h, 'Тест', TEXT);
+    const wait = clock();
+    wait(60000);
     act(() => h.result.current.setOffset(100));
     await waitFor(() => expect(rawMeta().pace).toEqual({d: today, n: 100, s: 1}));
     h.unmount();

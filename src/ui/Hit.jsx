@@ -8,16 +8,23 @@ import {pattern} from '../lib/find.js';
 // было искать глазами. В клипах это абзац, в «видео» — описание на 600 знаков:
 // то самое чтение по диагонали, от которого поиск и должен был избавить.
 //
-// Что подсвечивать, решает App: он кладёт сюда `{q, at}` — запрос и смещение
-// находки — при переходе из поиска и снимает через десять секунд или на
-// первом же другом переходе. Экраны ничего не знают: они оборачивают кусок
-// книги в `<Hit>`, и тот сам решает, его ли это находка.
+// Что подсвечивать, решает App: он кладёт сюда `{q, at, src}` — запрос,
+// смещение находки и текст книги — при переходе из поиска и снимает через
+// десять секунд или на первом же другом переходе. Экраны ничего не знают: они
+// оборачивают кусок книги в `<Hit>`, и тот сам решает, его ли это находка.
 
 const Ctx = createContext(null);
 export const HitProvider = Ctx.Provider;
 
 /**
  * Текст куска с найденным словом под маркером — если находка лежит в нём.
+ *
+ * Маркер горит на ОДНОМ вхождении — на том, к которому привёл поиск. Запрос
+ * «он» встречается в куске на 600 знаков раз десять, и десять жёлтых пятен
+ * уже не говорят «вот оно». Какое по счёту, считаем по исходному тексту:
+ * сколько совпадений лежит в книге от начала куска до находки. Тот же шаблон
+ * в схлопнутом тексте куска находит те же совпадения в том же порядке —
+ * пробел в нём и так совпадает с любым промежутком.
  *
  * @param {string} text  текст куска, как его показывает экран (пробелы схлопнуты)
  * @param {number} at    смещение начала куска в книге
@@ -33,15 +40,21 @@ export default function Hit({text, at, end}) {
   if (!hit || typeof text !== 'string' || !(hit.at >= at && hit.at < end)) return text;
   const re = pattern(hit.q);
   if (!re) return text;
-  const out = [];
-  let last = 0;
-  let m;
-  while ((m = re.exec(text)) !== null) {
-    out.push(text.slice(last, m.index));
-    out.push(<mark className="hit" key={m.index}>{m[0]}</mark>);
-    last = m.index + m[0].length;
+  let k = 0;
+  if (typeof hit.src === 'string') {
+    const before = hit.src.slice(at, hit.at);
+    while (re.exec(before) !== null) k++;
+    re.lastIndex = 0;
   }
-  if (!out.length) return text;
-  out.push(text.slice(last));
-  return out;
+  let m;
+  for (let i = 0; (m = re.exec(text)) !== null; i++) {
+    if (i < k) continue;
+    const end = m.index + m[0].length;
+    return [
+      text.slice(0, m.index),
+      <mark className="hit" key={m.index}>{m[0]}</mark>,
+      text.slice(end)
+    ];
+  }
+  return text;
 }
