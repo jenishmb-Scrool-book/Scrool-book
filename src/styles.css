@@ -573,6 +573,7 @@ button,textarea,input{font:inherit;color:inherit}
   color:#fff}/* карточка всегда на цветном градиенте — текст белый в любой теме */
 .reel .txt{font-size:1.31rem;line-height:1.45;font-weight:600;text-shadow:0 2px 14px #000a;
   max-height:76%;overflow:auto;word-break:break-word}
+.reel .txt.fit{font-size:1.1rem}
 .reel .cnt{margin-top:14px;font-size:.75rem;opacity:.65}
 .rail{position:absolute;right:8px;bottom:46px;display:flex;flex-direction:column;
   gap:18px;align-items:center;font-size:1.56rem}

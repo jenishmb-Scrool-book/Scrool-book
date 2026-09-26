@@ -1,3 +1,4 @@
+import {useLayoutEffect, useMemo} from 'react';
 import {useStore} from '../store.jsx';
 import {useT} from '../i18n.js';
 import Screen from '../ui/Screen.jsx';
@@ -5,7 +6,7 @@ import Progress from '../ui/Progress.jsx';
 import Tabbar from '../ui/Tabbar.jsx';
 import useCardWindow from '../ui/useCardWindow.js';
 import useChunks from '../ui/useChunks.js';
-import {SIZE} from '../ui/sizes.js';
+import {reelSize} from '../ui/sizes.js';
 import {run} from '../ui/actions.js';
 import {TABS} from '../ui/tabs.js';
 import {grad, likes, comments, shares} from '../ui/visual.js';
@@ -18,11 +19,25 @@ import Resume from '../ui/Resume.jsx';
 // «Клипы»: вертикальная лента на весь экран со snap'ом.
 // Карточка ровно height:100% — иначе snap ловит середину и текст режется.
 export default function Reels({go, back}) {
-  const {text, offset} = useStore();
+  const {text, offset, ui} = useStore();
   const t = useT();
-  const {chunks, pos, setPos, eye, picsOf} = useChunks(SIZE.reels);
+  // Кусок — под экран и кегль: клип обязан поместиться целиком (см. reelSize).
+  const size = useMemo(() => reelSize(ui.font, window.innerWidth, window.innerHeight), [ui.font]);
+  const {chunks, pos, setPos, eye, picsOf} = useChunks(size);
   const count = chunks.length;
   const {boxRef, items, away, toPos} = useCardWindow({count, pos, setPos, eye, ahead: 2, cardSelector: '.reel'});
+
+  // Одно предложение длиннее куска резать нельзя, и такое всё равно не
+  // влезает в карточку. Ему — кегль на ступень меньше: мельче, зато целиком,
+  // без невидимой прокрутки внутри клипа. Меряем до того, как кадр нарисован.
+  useLayoutEffect(() => {
+    const box = boxRef.current;
+    if (!box) return;
+    for (const el of box.querySelectorAll('.reel .txt')) {
+      el.classList.remove('fit');
+      if (el.scrollHeight > el.clientHeight + 1) el.classList.add('fit');
+    }
+  }, [items, size, boxRef]);
   const act = action => run(action, {go, boxRef, pos});
 
   return (
