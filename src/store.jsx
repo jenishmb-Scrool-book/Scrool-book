@@ -215,6 +215,10 @@ export function StoreProvider({children}) {
   const [text, setText] = useState('');
   const [chapters, setChapters] = useState([]);
   const [pics, setPics] = useState([]);
+  // Откуда прыгнули в последний раз: `{id, at}` — книга и место до перехода
+  // из оглавления или поиска. Не в мете и не в хранилище: это страховка на
+  // «нажал не туда», и нужна она сейчас, а не после перезапуска.
+  const [jumped, setJumped] = useState(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(null);
 
@@ -413,8 +417,14 @@ export function StoreProvider({children}) {
     const v = clamp(n, len);
     const was = m.at[m.cur] || 0;
     if (was === v) return;
-    const pace = opt && opt.jump ? m.pace : tally(m.pace, v - was);
+    const jump = !!(opt && opt.jump);
+    const pace = jump ? m.pace : tally(m.pace, v - was);
     applyMeta({...m, at: {...m.at, [m.cur]: v}, pace});
+    // Прыжок запоминает, откуда прыгнули, — чтобы было куда вернуться. Прыжок
+    // обратно (тем же путём) страховку снимает: возвращаться больше некуда.
+    if (jump && mounted.current) {
+      setJumped(j => (j && j.id === m.cur && j.at === v ? null : {id: m.cur, at: was}));
+    }
     schedule();
   }, [applyMeta, schedule]);
 
@@ -628,6 +638,10 @@ export function StoreProvider({children}) {
     // сколько прочитано у всех. Хранилось оно всегда — наружу не отдавалось.
     positions: meta.at,
     setOffset,
+    // Место до последнего перехода из оглавления или поиска — только для
+    // открытой книги: у другой книги своё место, и «вернуться» туда значило бы
+    // перенести курсор этой книги на чужую страницу.
+    jumpedFrom: jumped && jumped.id === meta.cur ? jumped.at : null,
     // Сколько прочитано сегодня и дней подряд — сырая запись; считать
     // «сегодня» по ней должен тот, кто знает, который сейчас час.
     pace: meta.pace || null,
@@ -649,8 +663,8 @@ export function StoreProvider({children}) {
     // Ключ словаря, а не текст: см. `report`.
     error,
     dismissError
-  }), [ready, meta, text, chapters, pics, getPic, error, dismissError, setOffset, setLastApp, setPlace,
-       setSeen, flush, setUi, endIntro, addBook, openBook, deleteBook]);
+  }), [ready, meta, text, chapters, pics, getPic, error, dismissError, jumped, setOffset, setLastApp,
+       setPlace, setSeen, flush, setUi, endIntro, addBook, openBook, deleteBook]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

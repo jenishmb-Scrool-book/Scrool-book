@@ -186,7 +186,7 @@ const TABS = [
 ];
 
 export default function Chapters({go, back, arg}) {
-  const {chapters, text, offset, setOffset, lastApp} = useStore();
+  const {chapters, text, offset, setOffset, lastApp, jumpedFrom} = useStore();
   const t = useT();
   const len = text.length;
   const backTo = lastApp || 'reels';
@@ -231,6 +231,21 @@ export default function Chapters({go, back, arg}) {
           </span>
         ))}
       </div>
+      {/* Страховка на «нажал не туда». Переход из оглавления или поиска
+          переносит место чтения, и без этой строки вернуться можно было
+          только по памяти — помня номер страницы, на которой был. Строка
+          видна, пока место до перехода отличается от нынешнего хотя бы на
+          полстраницы: иначе возвращаться некуда. Над полосой чтения, а не
+          под ней: плашка «страница / осталось» висит поверх того, что ниже. */}
+      {jumpedFrom != null && Math.abs(jumpedFrom - offset) >= PAGE / 2 ? (
+        <div className="ch undo" role="button" onClick={() => jump(jumpedFrom)}>
+          <div className="ct">
+            <b>{t('toc.undo', {n: pageAt(jumpedFrom, len)})}</b>
+            <span>{t('toc.undo_hint')}</span>
+          </div>
+          <i><Glyph name="back" /></i>
+        </div>
+      ) : null}
       {tab === 'find' ? (
         <Search text={text} onJump={jump} bar={<Progress offset={offset} len={len} />} />
       ) : <Progress offset={offset} len={len} />}

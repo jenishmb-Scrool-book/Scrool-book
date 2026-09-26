@@ -136,3 +136,33 @@ describe('поиск по книге', () => {
     expect(document.querySelectorAll('.snip')).toHaveLength(120);
   });
 });
+
+describe('дорога назад после перехода', () => {
+  // Переход из оглавления переносит место чтения. Нажал не ту строку — и без
+  // этой страховки вернуться можно было только по памяти.
+  it('после перехода оглавление предлагает вернуться, и возврат её снимает', async () => {
+    await boot({id: 'toc', arg: 'pages'});
+    const pages = () => [...document.querySelectorAll('#toc .body .ch')];
+    await act(async () => {pages()[3].click();});          // страница 4
+    expect(here()).toBe('feed');
+    await waitFor(() => expect(rawMeta().at.b1).toBe(3 * 1800));
+
+    // С плашки «страница / осталось» — обратно в оглавление.
+    await act(async () => {document.querySelector('.prog .counter.tap').click();});
+    expect(here()).toBe('toc');
+    const undo = document.querySelector('.ch.undo');
+    expect(undo.querySelector('b').textContent).toBe('Вернуться на страницу 1');
+
+    await act(async () => {undo.click();});
+    expect(here()).toBe('feed');
+    await waitFor(() => expect(rawMeta().at.b1).toBe(0));
+    await act(async () => {document.querySelector('.prog .counter.tap').click();});
+    // Вернулись — и возвращаться больше некуда.
+    expect(document.querySelector('.ch.undo')).toBeNull();
+  });
+
+  it('до первого перехода строки нет', async () => {
+    await boot({id: 'toc', arg: 'pages'});
+    expect(document.querySelector('.ch.undo')).toBeNull();
+  });
+});

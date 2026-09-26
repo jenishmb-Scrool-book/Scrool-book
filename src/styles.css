@@ -1025,6 +1025,11 @@ button,textarea,input{font:inherit;color:inherit}
 .ch i{flex:none;font-style:normal;opacity:.35;font-size:1.25rem}
 .ch i .gl{width:17px;height:17px;vertical-align:0}
 #toc .hint{padding:24px 18px;line-height:1.5}
+/* «Вернуться на страницу N» — над списком, отдельной строкой с акцентом:
+   это не очередная страница, а дорога назад после промаха. */
+.ch.undo{flex:none;background:var(--card-sel);border-bottom:1px solid var(--line)}
+.ch.undo .ct b{color:var(--accent)}
+.ch.undo i{opacity:.6;color:var(--accent)}
 
 /* Поиск по книге. Поле — как строка поиска в любом приложении: значок слева,
    крестик справа, пока есть что стирать. */
