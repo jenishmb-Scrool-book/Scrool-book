@@ -27,7 +27,7 @@ export const TABS = {
   // чем, а сообщения есть — и это ровно тот значок, что стоит в шапке оригинала.
   feed: [
     ['home', null, 'top'],
-    ['search', null, 'toc'],
+    ['search', null, 'find'],
     ['plus', null, 'library'],
     ['mail', null, 'chats'],
     ['person', null, 'settings']
@@ -45,7 +45,7 @@ export const TABS = {
   // Короткие посты.
   tweets: [
     ['home', null, 'top'],
-    ['search', null, 'toc'],
+    ['search', null, 'find'],
     ['plus', null, 'library'],
     ['mail', null, 'chats'],
     ['person', null, 'settings']

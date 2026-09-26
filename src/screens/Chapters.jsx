@@ -1,4 +1,4 @@
-import {useLayoutEffect, useMemo, useRef, useState} from 'react';
+import {useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {useStore} from '../store.jsx';
 import {useT} from '../i18n.js';
 import Screen from '../ui/Screen.jsx';
@@ -6,18 +6,20 @@ import StatusBar from '../ui/StatusBar.jsx';
 import Header from '../ui/Header.jsx';
 import Progress, {percent} from '../ui/Progress.jsx';
 import {PAGE, pageAt, pageCount} from '../lib/pages.js';
+import {CAP, around, find, pattern} from '../lib/find.js';
 import Glyph from '../ui/Glyph.jsx';
 
 // Оглавление — единственный экран, который не притворяется чужим приложением.
 // И правильно: перепрыгнуть на сорок страниц вперёд в мессенджере нечем, а
 // нужно это ровно тогда, когда книгу читают не подряд.
 //
-// Вкладок две, и вторая появилась не для симметрии. Главы есть не у всякого
-// текста: вставленный из буфера кусок их обычно не размечает, и до этого
-// экран для такого текста был мёртвым — одна подсказка «глав не нашлось» и
-// ничего больше. Страницы есть ВСЕГДА: они считаются по знакам, а знаки есть у
-// любого текста. Поэтому список страниц — не запасной вариант, а основной, и
-// когда глав нет, вкладок просто не рисуется: одна вкладка это не выбор.
+// Вкладок три, и ни одна не для симметрии. Главы есть не у всякого текста:
+// вставленный из буфера кусок их обычно не размечает, и до этого экран для
+// такого текста был мёртвым — одна подсказка «глав не нашлось» и ничего
+// больше. Страницы есть ВСЕГДА: они считаются по знакам, а знаки есть у любого
+// текста. Поэтому список страниц — не запасной вариант, а основной. Поиск
+// отвечает на третий вопрос — «где там было это слово» — и тоже есть у любого
+// текста. Когда глав нет, пропадает только их вкладка.
 //
 // Переход ставит курсор, и дальше он общий, как везде: прыгнул отсюда — и
 // продолжаешь в клипах ровно оттуда.
@@ -72,6 +74,117 @@ function Pages({text, offset, onJump, foot}) {
   return <div className="body" ref={boxRef}>{rows}{foot}</div>;
 }
 
+/**
+ * Поиск по тексту книги.
+ *
+ * Третий способ найти место, и единственный, которому не нужно помнить ни
+ * номер страницы, ни название главы: «где там впервые появилась Анна» — это
+ * вопрос про слово, а не про страницу. Строка «Поиск» на домашнем экране ведёт
+ * сюда же, и с этого экрана она перестала быть надписью.
+ *
+ * Находка ведёт туда же, куда глава или страница: ставит место чтения и
+ * возвращает в «приложение», из которого пришли. Правило одно на весь экран —
+ * иначе две строки, стоящие рядом, по нажатию делали бы разное.
+ *
+ * Считается на `useDeferredValue`, а не по таймеру: буква в поле появляется
+ * сразу, а проход по книге догоняет её, когда у телефона есть на это время.
+ */
+function Search({text, onJump, bar}) {
+  const t = useT();
+  const [q, setQ] = useState('');
+  const asked = useDeferredValue(q);
+  const res = useMemo(() => find(text, asked), [text, asked]);
+  const inRef = useRef(null);
+  const len = text.length;
+
+  // Клавиатура поднимается сама: на эту вкладку приходят ровно затем, чтобы
+  // набрать слово, — со строки поиска на домашнем экране или нажатием по самой
+  // вкладке. Лишнее нажатие в поле было бы тем же самым вопросом второй раз.
+  useEffect(() => {
+    if (inRef.current) inRef.current.focus();
+  }, []);
+
+  const clear = () => {
+    setQ('');
+    if (inRef.current) inRef.current.focus();
+  };
+
+  let body;
+  if (!pattern(asked)) body = <div className="hint">{t('toc.search_hint')}</div>;
+  else if (!res.total) body = <div className="hint">{t('toc.search_none')}</div>;
+  else {
+    body = (
+      <>
+        <div className="scount">
+          {res.more ? t('toc.search_more', {n: CAP}) : t('toc.search_count', {n: res.total})}
+        </div>
+        {res.hits.map(h => {
+          const s = around(text, h.at, h.len);
+          const n = pageAt(h.at, len);
+          // Текущую страницу здесь не закрашиваем, как в списке страниц: на
+          // частом слове находок на ней десяток, и закрашенным оказывается
+          // полсписка. Процент рядом с номером и так говорит, где это.
+          return (
+            <div className="ch" key={h.at} onClick={() => onJump(h.at)}>
+              <div className="ct">
+                <b>{t('toc.page_n', {n})}<i>{Math.round(percent(h.at, len))}%</i></b>
+                <span className="snip">{s.head}<mark>{s.hit}</mark>{s.tail}</span>
+              </div>
+              <i><Glyph name="next" /></i>
+            </div>
+          );
+        })}
+        {res.hits.length < res.total
+          ? <div className="hint">{t('toc.search_shown', {n: res.hits.length})}</div>
+          : null}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div className="qbox">
+        <Glyph name="search" />
+        <input
+          ref={inRef}
+          value={q}
+          onChange={e => setQ(e.target.value)}
+          // «Найти» на клавиатуре прячет её: список уже собран, а клавиатура
+          // закрывает его нижнюю половину.
+          onKeyDown={e => {if (e.key === 'Enter') e.currentTarget.blur();}}
+          placeholder={t('toc.search_ph')}
+          aria-label={t('toc.tab_search')}
+          inputMode="search"
+          enterKeyHint="search"
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+        />
+        {q ? (
+          <span className="qx" role="button" aria-label={t('toc.search_clear')} onClick={clear}>
+            <Glyph name="close" />
+          </span>
+        ) : null}
+      </div>
+      {/* Полоса чтения — под полем, а не над ним: её плашка «страница /
+          осталось» висит поверх того, что ниже, и над полем закрыла бы крестик. */}
+      {bar}
+      {/* Прокрутка списка прячет клавиатуру: читать находки под ней нельзя. */}
+      <div className="body" onTouchStart={() => inRef.current && inRef.current.blur()}>
+        {body}
+      </div>
+    </>
+  );
+}
+
+// Вкладки экрана. Поиск есть всегда: искать можно в любом тексте, и потому
+// вкладки теперь видны всегда — «Страницы» больше не остаются одни.
+const TABS = [
+  ['ch', 'toc.tab_chapters'],
+  ['pages', 'toc.tab_pages'],
+  ['find', 'toc.tab_search']
+];
+
 export default function Chapters({go, back, arg}) {
   const {chapters, text, offset, setOffset, lastApp} = useStore();
   const t = useT();
@@ -79,8 +192,10 @@ export default function Chapters({go, back, arg}) {
   const backTo = lastApp || 'reels';
 
   // Плашка «страница / осталось» приводит сразу на страницы: с неё нажимают
-  // именно потому, что хотят сменить страницу, а не найти главу.
-  const [tab, setTab] = useState(() => (arg === 'pages' || !chapters.length ? 'pages' : 'ch'));
+  // именно потому, что хотят сменить страницу, а не найти главу. Строка поиска
+  // с домашнего экрана — сразу на поиск.
+  const [tab, setTab] = useState(() =>
+    arg === 'search' ? 'find' : arg === 'pages' || !chapters.length ? 'pages' : 'ch');
 
   // Текущая глава — последняя, чьё начало не позже курсора.
   const here = useMemo(() => {
@@ -105,20 +220,19 @@ export default function Chapters({go, back, arg}) {
         title={t('toc.title')}
         right={chapters.length ? <span className="ic">{t('toc.count', {n: chapters.length})}</span> : null}
       />
-      {/* Вкладки только когда есть из чего выбирать. Одинокая вкладка «Страницы»
-          над списком страниц — это подпись, притворяющаяся кнопкой. */}
-      {chapters.length ? (
-        <div className="tabs">
-          <span className={tab === 'ch' ? 'on' : ''} role="button" onClick={() => setTab('ch')}>
-            {t('toc.tab_chapters')}
+      {/* Вкладка «Главы» — только когда главы есть: вкладка, ведущая к
+          пустому списку, — это подпись, притворяющаяся кнопкой. */}
+      <div className="tabs">
+        {TABS.filter(([id]) => id !== 'ch' || chapters.length).map(([id, key]) => (
+          <span key={id} className={tab === id ? 'on' : ''} role="button" onClick={() => setTab(id)}>
+            {t(key)}
           </span>
-          <span className={tab === 'pages' ? 'on' : ''} role="button" onClick={() => setTab('pages')}>
-            {t('toc.tab_pages')}
-          </span>
-        </div>
-      ) : null}
-      <Progress offset={offset} len={len} />
-      {tab === 'pages' ? (
+        ))}
+      </div>
+      {tab === 'find' ? (
+        <Search text={text} onJump={jump} bar={<Progress offset={offset} len={len} />} />
+      ) : <Progress offset={offset} len={len} />}
+      {tab === 'find' ? null : tab === 'pages' ? (
         // Подсказка про главы стоит в конце списка, а не отдельной полосой
         // внизу экрана: полоса отъедала бы треть экрана всё время, а ответ на
         // «почему нет глав» нужен один раз.

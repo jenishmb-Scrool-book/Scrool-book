@@ -161,9 +161,10 @@ export default function Home({go}) {
           )
         )}
       </div>
-      {/* Строка поиска ведёт в оглавление: искать в этом приложении можно
-          ровно одно — место в книге. */}
-      <div className="qsearch" role="button" onClick={() => go('toc')}>
+      {/* Строка поиска ищет по книге — сразу на вкладке поиска в оглавлении,
+          с поднятой клавиатурой. Раньше она вела просто в оглавление, то есть
+          была надписью «Поиск» над списком глав. */}
+      <div className="qsearch" role="button" onClick={() => go('toc', {arg: 'search'})}>
         <Glyph name="search" />
         <span className="q">{t('home.search')}</span>
         <Glyph name="mic" />

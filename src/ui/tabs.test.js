@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import {SCREENS} from '../App.jsx';
-import {LOCAL, TAB} from './actions.js';
+import {ALIAS, LOCAL, TAB} from './actions.js';
 import {has as hasGlyph} from './Glyph.jsx';
 import {SKINS} from './skins.js';
 import {TABS} from './tabs.js';
@@ -16,7 +16,8 @@ import {DICT} from '../i18n.js';
 
 /** Куда кнопке позволено вести: экран приложения, местное действие или вкладка. */
 const known = action =>
-  LOCAL.includes(action) || action.startsWith(TAB) || Object.hasOwn(SCREENS, action);
+  LOCAL.includes(action) || action.startsWith(TAB) || Object.hasOwn(SCREENS, action) ||
+  (Object.hasOwn(ALIAS, action) && Object.hasOwn(SCREENS, ALIAS[action][0]));
 
 /** Все наборы кнопок приложения: нижние панели плюс шапки мессенджеров. */
 function everyButton() {

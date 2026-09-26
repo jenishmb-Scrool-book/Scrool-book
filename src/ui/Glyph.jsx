@@ -122,6 +122,9 @@ const GLYPHS = {
               strokeLinecap="round" strokeLinejoin="round" />,
   next: <path d="M9 4.4 16.6 12 9 19.6" fill="none" stroke="currentColor" strokeWidth="2.1"
               strokeLinecap="round" strokeLinejoin="round" />,
+  // Крестик: закрыть историю, убрать книгу, стереть запрос. Был символом «✕»,
+  // и в одной шапке с нарисованным «☰» он приходил другой толщины и высоты.
+  close: <path d="M6.2 6.2 17.8 17.8M17.8 6.2 6.2 17.8" {...L} />,
   info: (
     <>
       <circle cx="12" cy="12" r="8.6" {...L} />

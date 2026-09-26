@@ -247,7 +247,7 @@ export default function Chats({go, back, arg}) {
         ))}
       </div>
       {S.search ? (
-        <div className="msearch" onClick={() => go('toc')} role="button"><Glyph name="search" /> {t('chats.search')}</div>
+        <div className="msearch" onClick={() => run('find', {go})} role="button"><Glyph name="search" /> {t('chats.search')}</div>
       ) : null}
       {/* Полоса чтения — только там, где читают. На вкладке звонков она
           показывала бы прогресс по книге над списком, в котором книги нет. */}

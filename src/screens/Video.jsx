@@ -112,7 +112,7 @@ export default function Video({go, back}) {
       <div className="yhdr">
         <span className="back" onClick={back} role="button" aria-label={t('back')}><Glyph name="back" /></span>
         <b className="ylogo"><i><Glyph name="play" /></i>{APP_NAMES.video}</b>
-        <span className="ic" onClick={() => go('toc')} role="button"
+        <span className="ic" onClick={() => act('find')} role="button"
               aria-label={t('video.search')}><Glyph name="search" /></span>
         <span className="ic" onClick={() => go('toc')} role="button"
               aria-label={t('toc.title')}><Glyph name="menu" /></span>

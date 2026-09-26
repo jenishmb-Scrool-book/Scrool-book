@@ -30,6 +30,14 @@ describe('run()', () => {
     expect(go.mock.calls).toEqual([['toc'], ['library']]);
   });
 
+  it('«найти» — это оглавление, открытое сразу на поиске', () => {
+    // Лупа, которая открывает список глав, — это надпись «поиск» над чем-то
+    // другим. Параметр достраивается здесь, таблица кнопок хранит строку.
+    const go = vi.fn();
+    run('find', {go});
+    expect(go.mock.calls).toEqual([['toc', {arg: 'search'}]]);
+  });
+
   it('«top» и «here» никуда не уводят', () => {
     const go = vi.fn();
     const box = body({cards: [0, 400, 800]});

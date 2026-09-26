@@ -43,6 +43,7 @@
   --pill-fg:    #ffffff;
   --err-bg:     #5a1730;
   --err-line:   #ff2d5559;
+  --mark:       #7c5cff66;  /* подсветка найденного слова */
   --shadow:     #000000;
   --shadow-ic:  #00000088;  /* тень под иконками */
 
@@ -82,6 +83,7 @@
     --pill-fg:    #ffffff;
     --err-bg:     #ffe0e8;
     --err-line:   #ff2d5559;
+    --mark:       #6544e838;
     --shadow:     #6b6b7a;
     --shadow-ic:  #0000002e;
   }
@@ -117,6 +119,7 @@
   --pill-fg:    #ffffff;
   --err-bg:     #ffe0e8;
   --err-line:   #ff2d5559;
+  --mark:       #6544e838;
   --shadow:     #6b6b7a;
   --shadow-ic:  #0000002e;
 }
@@ -992,6 +995,23 @@ button,textarea,input{font:inherit;color:inherit}
 .ch i{flex:none;font-style:normal;opacity:.35;font-size:1.25rem}
 .ch i .gl{width:17px;height:17px;vertical-align:0}
 #toc .hint{padding:24px 18px;line-height:1.5}
+
+/* Поиск по книге. Поле — как строка поиска в любом приложении: значок слева,
+   крестик справа, пока есть что стирать. */
+.qbox{flex:none;display:flex;align-items:center;gap:8px;margin:10px 12px;padding:0 6px 0 12px;
+  border-radius:12px;background:var(--field);border:1px solid var(--field-line)}
+.qbox:focus-within{border-color:var(--accent)}
+.qbox > .gl{opacity:.5}
+.qbox input{flex:1;min-width:0;border:0;outline:0;background:none;padding:11px 0;font-size:.94rem}
+.qbox input::placeholder{color:inherit;opacity:.45}
+.qx{display:grid;place-items:center;width:34px;height:34px;cursor:pointer;opacity:.55}
+.qx:active{opacity:.9}
+.scount{padding:0 16px 6px;font-size:.75rem;font-weight:600;opacity:.55}
+/* Превью находки — в три строки, а не в одну: слово стоит посреди фразы, и
+   одна строка с многоточием обрезала бы как раз то, ради чего его искали. */
+.ch .ct span.snip{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;
+  -webkit-line-clamp:3;line-height:1.45;opacity:.72}
+.snip mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
 /* Правая вставка шапки: счётчик глав и кнопка «☰» на экранах-читалках. */
 .hdr .ic{font-size:.81rem;opacity:.6;white-space:nowrap;padding:2px 4px;cursor:pointer}
 

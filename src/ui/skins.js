@@ -35,7 +35,7 @@ export const SKINS = {
   tg: {
     name: APP_NAMES.tg,
     fab: 'pencil',                                    // кнопка «новое сообщение»
-    head: [['search', null, 'toc'], ['more', null, 'settings']],      // значки в шапке списка
+    head: [['search', null, 'find'], ['more', null, 'settings']],      // значки в шапке списка
     chat: [['phone', null, 'tab:calls'], ['more', null, 'toc']],     // значки в шапке переписки
     search: true,                                // строка поиска под шапкой
     tabs: null                                   // нижней панели нет — этим и отличается
@@ -43,7 +43,7 @@ export const SKINS = {
   wa: {
     name: APP_NAMES.wa,
     fab: 'mail',
-    head: [['status', null, 'stories'], ['search', null, 'toc'], ['more', null, 'settings']],
+    head: [['status', null, 'stories'], ['search', null, 'find'], ['more', null, 'settings']],
     chat: [['videocam', null, 'video'], ['phone', null, 'tab:calls'], ['more', null, 'toc']],
     search: true,
     tabs: [
@@ -56,7 +56,7 @@ export const SKINS = {
   ms: {
     name: APP_NAMES.ms,
     fab: 'pencil',
-    head: [['search', null, 'toc']],
+    head: [['search', null, 'find']],
     chat: [['phone', null, 'tab:calls'], ['videocam', null, 'video'], ['info', null, 'toc']],
     search: true,
     tabs: [
