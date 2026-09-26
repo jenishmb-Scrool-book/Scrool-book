@@ -958,6 +958,9 @@ button,textarea,input{font:inherit;color:inherit}
 .zone{position:absolute;top:0;bottom:0;width:50%;z-index:4;cursor:pointer}
 .zone.left{left:0}
 .zone.right{right:0}
+/* «Вернуться к месту» в историях — над зонами тапа (у них z-index 4), иначе
+   нажатие по кнопке уходило бы в «листать». */
+#stories .resume{z-index:6;bottom:auto;top:64px}
 #stories .prog.float{bottom:0;left:0;right:0;background:var(--track-3)}
 /* Полоса внизу экрана — значит, плашка счётчика должна лежать НАД ней:
    штатное top:7px увело бы её за нижнюю кромку телефона. */
