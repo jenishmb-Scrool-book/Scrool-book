@@ -381,7 +381,8 @@ export default function App() {
         {/* Ключ — экран: любой переход, включая аппаратную «назад», снимает
             упавшее состояние. См. ui/Crash.jsx — без предохранителя ошибка
             одного экрана оставляла белый лист при каждом запуске. */}
-        <Crash key={screen + ':' + fell} onHome={() => {setFell(n => n + 1); go('home');}}>
+        <Crash key={screen + ':' + fell} onHome={() => {setFell(n => n + 1); go('home');}}
+               onGo={id => {setFell(n => n + 1); go(id);}}>
           <HitProvider value={lit}>
             <Current go={go} back={goBack} arg={arg} />
           </HitProvider>

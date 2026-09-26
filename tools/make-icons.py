@@ -265,14 +265,22 @@ written.append((p, save(ban.convert('RGB'), p)))
 # иконка, скруглённым квадратом, как её рисует лаунчер: так заставка читается
 # продолжением нажатия. Размер — треть короткой стороны: крупнее на планшете
 # в альбомной ориентации знак упирается в край, мельче теряется.
+#
+# Пропорции — сегодняшнего телефона, 9:19,5 (360×780 dp), а не 3:5 из шаблона
+# Capacitor. Тема ставит заставку фоном окна (`android:background`), и Android
+# растягивает её на весь экран без сохранения пропорций. Кадр 3:5 на экране
+# 9:20 тянулся по высоте в полтора раза, и квадратный значок выходил на треть
+# выше, чем шире. Кадр в пропорции экрана тянется почти никак. Честное лечение
+# — layer-list с картинкой по центру, но это нативный ресурс, и проверить его
+# можно только сборкой в Android Studio.
 APP_BG = (11, 11, 18)
-SPLASH = [('drawable', 480, 320),
-          ('drawable-port-mdpi', 320, 480), ('drawable-port-hdpi', 480, 800),
-          ('drawable-port-xhdpi', 720, 1280), ('drawable-port-xxhdpi', 960, 1600),
-          ('drawable-port-xxxhdpi', 1280, 1920),
-          ('drawable-land-mdpi', 480, 320), ('drawable-land-hdpi', 800, 480),
-          ('drawable-land-xhdpi', 1280, 720), ('drawable-land-xxhdpi', 1600, 960),
-          ('drawable-land-xxxhdpi', 1920, 1280)]
+SPLASH = [('drawable', 360, 780),
+          ('drawable-port-mdpi', 360, 780), ('drawable-port-hdpi', 540, 1170),
+          ('drawable-port-xhdpi', 720, 1560), ('drawable-port-xxhdpi', 1080, 2340),
+          ('drawable-port-xxxhdpi', 1440, 3120),
+          ('drawable-land-mdpi', 780, 360), ('drawable-land-hdpi', 1170, 540),
+          ('drawable-land-xhdpi', 1560, 720), ('drawable-land-xxhdpi', 2340, 1080),
+          ('drawable-land-xxxhdpi', 3120, 1440)]
 for folder, w, h in SPLASH:
     sp = Image.new('RGBA', (w, h), APP_BG + (255,))
     side = int(round(min(w, h) * 0.33))

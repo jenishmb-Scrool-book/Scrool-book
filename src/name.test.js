@@ -59,3 +59,22 @@ describe('id пакета', () => {
     expect(read(path)).toContain('package ' + cfg.appId + ';');
   });
 });
+
+// Версия. Живёт в трёх местах, и связаны они только этим тестом (см. README,
+// раздел «Версия»). Экран «О приложении» и описание ошибки показывают версию
+// из package.json, а Play и настройки Android — versionName из Gradle. Разойдись
+// они — тестировщик назовёт одну версию, а в консоли будет другая, и по
+// отзыву не понять, о какой сборке речь.
+describe('версия', () => {
+  const pkg = JSON.parse(read('package.json'));
+
+  it('versionName в Gradle совпадает с version в package.json', () => {
+    const name = (gradle.match(/versionName\s+"([^"]+)"/) || [])[1];
+    expect(name).toBe(pkg.version);
+  });
+
+  it('versionCode — целое положительное число', () => {
+    const code = Number((gradle.match(/versionCode\s+(\d+)/) || [])[1]);
+    expect(Number.isInteger(code) && code > 0).toBe(true);
+  });
+});

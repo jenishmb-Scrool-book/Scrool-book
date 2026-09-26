@@ -265,7 +265,9 @@ const GLYPHS = {
 export const NAMES = Object.keys(GLYPHS);
 
 /** Есть ли такой значок. Нужен тестам: имя с опечаткой иначе рисует пустоту. */
-export const has = name => Object.hasOwn(GLYPHS, name);
+// hasOwnProperty, а не Object.hasOwn: тот появился в WebView только с 93-й
+// версии, а панель зовёт эту проверку на каждой отрисовке.
+export const has = name => Object.prototype.hasOwnProperty.call(GLYPHS, name);
 
 /**
  * @param {string} name имя из GLYPHS

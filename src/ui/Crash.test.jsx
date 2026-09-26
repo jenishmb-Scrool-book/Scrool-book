@@ -92,6 +92,24 @@ describe('упавший экран', () => {
   });
 });
 
+describe('выходы с упавшего экрана', () => {
+  // Если падает сам дом — например, из-за книги, — «на главный» ведёт туда
+  // же. Библиотека даёт удалить книгу, настройки — сменить остальное.
+  it('в библиотеку и в настройки', async () => {
+    await boot({id: 'tweets', arg: null});
+    const [lib, set] = [...document.querySelectorAll('.crash-row button')];
+    expect(lib.textContent).toBe(DICT.ru['lib.title']);
+    await act(async () => {lib.click();});
+    expect(here()).toBe('library');
+    BOOM.on = true;
+    await act(async () => {document.querySelector('.hdr .back').click();});
+    expect(here()).toBe('crash');
+    await act(async () => {[...document.querySelectorAll('.crash-row button')][1].click();});
+    expect(here()).toBe('settings');
+    expect(set.textContent).toBe(DICT.ru['set.title']);
+  });
+});
+
 describe('describe()', () => {
   it('версия, текст ошибки и верх стека — без текста книги', () => {
     const e = new Error('сломалось');
@@ -99,6 +117,19 @@ describe('describe()', () => {
     expect(s.split('\n')[0]).toMatch(/^Scroll Book /);
     expect(s).toContain('сломалось');
     expect(s.split('\n').length).toBeLessThanOrEqual(10);
+  });
+
+  it('версии Android и WebView — из строки браузера', () => {
+    const ua = navigator.userAgent;
+    Object.defineProperty(navigator, 'userAgent', {
+      configurable: true,
+      value: 'Mozilla/5.0 (Linux; Android 13; Pixel 6) AppleWebKit/537.36 Chrome/128.0.6613.88 Mobile Safari/537.36'
+    });
+    try {
+      expect(details(new Error('x')).split('\n')[0]).toMatch(/Android 13, Chrome\/128\.0\.6613\.88$/);
+    } finally {
+      Object.defineProperty(navigator, 'userAgent', {configurable: true, value: ua});
+    }
   });
 
   it('не ошибка — тоже строка, без падения', () => {

@@ -99,7 +99,8 @@ export function run(action, {go, boxRef, pos}) {
     if (box && el) box.scrollTo({top: Math.max(0, el.offsetTop - 8), behavior: 'smooth'});
     return;
   }
-  if (Object.hasOwn(ALIAS, action)) {
+  // hasOwnProperty, а не Object.hasOwn: тот есть только с 93-й версии WebView.
+  if (Object.prototype.hasOwnProperty.call(ALIAS, action)) {
     const [id, arg] = ALIAS[action];
     go(id, {arg});
     return;

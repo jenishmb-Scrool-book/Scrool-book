@@ -27,10 +27,16 @@ export function describe(err) {
   const stack = String((err && err.stack) || '').split('\n').slice(0, 8).join('\n');
   // Первая строка стека в V8 — это «Error: сообщение»; второй раз его не пишем.
   const head = stack.includes(msg) ? '' : msg;
-  return [APP_NAME + ' ' + VERSION, head, stack].filter(Boolean).join('\n');
+  // Версии Android и WebView — из строки браузера: половина поломок WebView
+  // зависит от его версии, а спросить её у тестировщика потом не у кого.
+  const ua = typeof navigator !== 'undefined' ? String(navigator.userAgent || '') : '';
+  const android = (ua.match(/Android [\d.]+/) || [''])[0];
+  const chrome = (ua.match(/Chrome\/[\d.]+/) || [''])[0];
+  const env = [android, chrome].filter(Boolean).join(', ');
+  return [APP_NAME + ' ' + VERSION + (env ? ' · ' + env : ''), head, stack].filter(Boolean).join('\n');
 }
 
-function Fallen({err, onHome, homeLabel}) {
+function Fallen({err, onHome, homeLabel, onGo}) {
   const t = useT();
   const [note, setNote] = useState('');
   const info = describe(err);
@@ -50,6 +56,15 @@ function Fallen({err, onHome, homeLabel}) {
         <h1>{t('crash.title')}</h1>
         <p>{t('crash.body')}</p>
         <button className="igo" onClick={onHome}>{t(homeLabel || 'crash.home')}</button>
+        {/* Если упал сам дом — например, из-за книги, — одного «на главный»
+            мало: он приведёт туда же. Из библиотеки такую книгу можно
+            удалить, из настроек — сменить то, что могло всё сломать. */}
+        {onGo ? (
+          <div className="crash-row">
+            <button className="crash-copy" onClick={() => onGo('library')}>{t('lib.title')}</button>
+            <button className="crash-copy" onClick={() => onGo('settings')}>{t('set.title')}</button>
+          </div>
+        ) : null}
         <button className="crash-copy" onClick={copy}>{t('crash.copy')}</button>
         {note ? <p className="hint">{note}</p> : null}
         <div className="diag">{info}</div>
@@ -61,6 +76,8 @@ function Fallen({err, onHome, homeLabel}) {
 /**
  * @param {() => void} onHome   куда уводит кнопка: на домашний экран или дальше
  * @param {string} [homeLabel] ключ подписи кнопки, если «на главный» не подходит
+ * @param {(id: string) => void} [onGo] переход на экран — для выходов в
+ *   библиотеку и настройки; без него этих кнопок нет
  *
  * Сбрасывается сменой `key` у родителя: App ставит ключом экран, и переход на
  * другой экран (в том числе аппаратной «назад») снимает упавшее состояние.
@@ -83,6 +100,9 @@ export default class Crash extends Component {
 
   render() {
     if (!this.state.err) return this.props.children;
-    return <Fallen err={this.state.err} onHome={this.props.onHome} homeLabel={this.props.homeLabel} />;
+    return (
+      <Fallen err={this.state.err} onHome={this.props.onHome} homeLabel={this.props.homeLabel}
+              onGo={this.props.onGo} />
+    );
   }
 }
