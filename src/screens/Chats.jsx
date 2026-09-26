@@ -12,7 +12,7 @@ import {labelOf, run} from '../ui/actions.js';
 import {grad, reaction, reactionCount, sticker} from '../ui/visual.js';
 import {shot} from '../ui/pics.js';
 import {skinOf, tabIndex} from '../ui/skins.js';
-import {NAMES, callAt, contactAt, groupAt, msgTime} from '../lib/fake.js';
+import {PEOPLE_COUNT, callAt, contactAt, groupAt, msgTime, personAt} from '../lib/fake.js';
 import Glyph from '../ui/Glyph.jsx';
 import BookPics from '../ui/BookPic.jsx';
 import Resume from '../ui/Resume.jsx';
@@ -116,6 +116,7 @@ function Row({i, name, seed, text, time, state, pics, onClick}) {
  */
 function Roster({mode, chunks, pos, setPos, eye, picsOf, onOpen}) {
   const t = useT();
+  const lang = useStore().ui.lang;
   const count = chunks.length;
   // gap: под плашкой «страница / осталось» нужен запас, иначе она накрывает
   // время у самой верхней строки.
@@ -126,7 +127,7 @@ function Roster({mode, chunks, pos, setPos, eye, picsOf, onOpen}) {
       <div className="body" ref={boxRef}>
         {items.map(i => {
           const g = mode === 'groups';
-          const c = g ? groupAt(i) : contactAt(i);
+          const c = g ? groupAt(i, lang) : contactAt(i, lang);
           return (
             <Row
               key={i}
@@ -161,14 +162,15 @@ function Roster({mode, chunks, pos, setPos, eye, picsOf, onOpen}) {
 /** Журнал вызовов. Текста книги здесь нет — см. заголовок файла. */
 function CallList({onOpen}) {
   const t = useT();
-  const rows = NAMES.length * 3;   // хватает на экран с запасом, без бесконечности
+  const {ui} = useStore();
+  const rows = PEOPLE_COUNT * 4;   // хватает на экран с запасом, без бесконечности
   const ARROW = {in: 'callIn', out: 'callOut', missed: 'callIn'};
   return (
     <div className="body">
       {Array.from({length: rows}, (unused, i) => {
-        const c = callAt(i);
+        const c = callAt(i, ui.lang);
         return (
-          <div className="crow call" key={i} onClick={() => onOpen(i)}>
+          <div className="crow call" key={i} onClick={() => onOpen(Number(c.id.slice(1)))}>
             <Avatar seed={c.seed} />
             <div className="ci">
               <b>{c.name}</b>
@@ -187,12 +189,13 @@ function CallList({onOpen}) {
 /** Список контактов. Тоже без текста книги и по той же причине. */
 function PeopleList({onOpen}) {
   const t = useT();
+  const {ui} = useStore();
   return (
     <div className="body">
-      {NAMES.map((unused, i) => {
-        const c = contactAt(i);
+      {Array.from({length: PEOPLE_COUNT}, (unused, i) => {
+        const c = personAt(i, ui.lang);
         return (
-          <div className="crow call" key={i} onClick={() => onOpen(i)}>
+          <div className="crow call" key={i} onClick={() => onOpen(Number(c.id.slice(1)))}>
             <Avatar seed={c.seed} />
             <div className="ci">
               <b>{c.name}</b>
@@ -329,7 +332,7 @@ export function Chat({go, back, arg}) {
   // Меняться посреди переписки оно не должно: человек, превращающийся в
   // другого человека на середине разговора, это не мессенджер.
   const person = useRef(arg == null ? pos : Math.max(0, Math.trunc(Number(arg)) || 0));
-  const c = contactAt(person.current);
+  const c = contactAt(person.current, ui.lang);
 
   // Черта «непрочитанные» ставится там, где человек вошёл на экран, и дальше
   // не двигается — как в настоящем мессенджере. Если бы она ехала за курсором,
@@ -384,7 +387,7 @@ export function Chat({go, back, arg}) {
         onBack={back}
         seed={c.seed}
         title={c.name}
-        sub={typing ? t('chats.typing') : t('chats.online')}
+        sub={typing ? t('chats.typing') : c.group ? t('chats.members', {n: 3 + (c.seed % 9)}) : t('chats.online')}
         onAct={act}
       />
       <Progress offset={offset} len={text.length} go={go} />

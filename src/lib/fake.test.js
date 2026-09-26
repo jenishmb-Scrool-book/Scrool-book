@@ -1,5 +1,5 @@
 import {describe, it, expect} from 'vitest';
-import {GROUPS, NAMES, callAt, contactAt, groupAt, msgTime} from './fake.js';
+import {GROUPS, NAMES, PEOPLE_COUNT, callAt, contactAt, groupAt, msgTime, namesOf, personAt} from './fake.js';
 
 describe('contactAt()', () => {
   // Это главное свойство всей бутафории: имя, меняющееся при перерендере,
@@ -64,7 +64,8 @@ describe('groupAt()', () => {
     const g = groupAt(3);
     expect(GROUPS).toContain(g.name);
     expect(NAMES).toContain(g.from);
-    expect(g.from).toBe(contactAt(3).name);
+    // Пишет в группу человек, а не другой групповой чат.
+    expect(g.from).toBe(personAt(3).name);
     expect(typeof g.seed).toBe('number');
   });
 
@@ -114,3 +115,52 @@ describe('callAt()', () => {
     }
   });
 });
+
+describe('люди и группы', () => {
+  // Среди контактов есть групповые чаты — в списке переписок им и место. Но
+  // звонят, бывают «в сети» и пишут в группы только люди: раньше «Рабочий
+  // чат» пропускал звонки.
+  it('журнал звонков и подписи в группах — только люди', () => {
+    for (let i = 0; i < 40; i++) {
+      expect(callAt(i).group, 'звонок ' + i).toBe(false);
+      expect(personAt(i).group, 'человек ' + i).toBe(false);
+      expect(NAMES).toContain(groupAt(i).from);
+      expect(contactAt(Number(personAt(i).id.slice(1))).group).toBe(false);
+    }
+  });
+
+  it('людей столько, сколько контактов без групп, и все разные', () => {
+    const names = Array.from({length: PEOPLE_COUNT}, (unused, i) => personAt(i).name);
+    expect(new Set(names).size).toBe(PEOPLE_COUNT);
+    expect(PEOPLE_COUNT).toBe(NAMES.filter((unused, k) => !contactAt(k).group).length);
+  });
+
+  it('звонок открывает переписку с тем же человеком — id совпадает', () => {
+    for (let i = 0; i < 12; i++) {
+      const c = callAt(i);
+      expect(contactAt(Number(c.id.slice(1))).name).toBe(c.name);
+    }
+  });
+});
+
+describe('язык имён', () => {
+  // Англоязычный человек видел переписку от людей, чьих имён не прочитать.
+  it('в английском интерфейсе имена и группы — латиницей', () => {
+    for (let i = 0; i < 16; i++) {
+      expect(contactAt(i, 'en').name).toMatch(/^[A-Za-z ]+$/);
+      expect(groupAt(i, 'en').name).toMatch(/^[A-Za-z ]+$/);
+      expect(groupAt(i, 'en').from).toMatch(/^[A-Za-z ]+$/);
+      expect(callAt(i, 'en').name).toMatch(/^[A-Za-z ]+$/);
+    }
+  });
+
+  it('тот же контакт на обоих языках: аватарка, id и «группа ли» совпадают', () => {
+    for (let i = 0; i < NAMES.length; i++) {
+      const [ru, en] = [contactAt(i, 'ru'), contactAt(i, 'en')];
+      expect([en.id, en.seed, en.group]).toEqual([ru.id, ru.seed, ru.group]);
+    }
+    expect(namesOf('en')).toHaveLength(NAMES.length);
+    expect(namesOf('xx')).toBe(NAMES);
+  });
+});
+

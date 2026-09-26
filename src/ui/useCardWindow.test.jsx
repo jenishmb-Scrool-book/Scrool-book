@@ -70,6 +70,8 @@ async function boot(place, cur = 10) {
     </StoreProvider>
   );
   await waitFor(() => expect(document.querySelector('.post')).not.toBeNull());
+  // Обработчик прокрутки вешается эффектом — ждём его, прежде чем листать.
+  await act(async () => {});
   return document.querySelector('.body');
 }
 
@@ -167,6 +169,8 @@ describe('конец книги', () => {
     });
     render(<StoreProvider><Gate><Feed go={() => {}} back={() => {}} /></Gate></StoreProvider>);
     await waitFor(() => expect(document.querySelector('.post')).not.toBeNull());
+    // Обработчик прокрутки вешается эффектом — ждём его, прежде чем листать.
+    await act(async () => {});
     return document.querySelector('.body');
   }
 

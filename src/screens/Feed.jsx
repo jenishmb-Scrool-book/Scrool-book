@@ -12,7 +12,7 @@ import {TABS} from '../ui/tabs.js';
 import {grad, marks} from '../ui/visual.js';
 import {FACE, shot} from '../ui/pics.js';
 import {APP_NAMES} from '../ui/skins.js';
-import {NAMES} from '../lib/fake.js';
+import {namesOf} from '../lib/fake.js';
 import Glyph from '../ui/Glyph.jsx';
 import BookPics from '../ui/BookPic.jsx';
 import Hit from '../ui/Hit.jsx';
@@ -40,7 +40,7 @@ function Acts({i, go}) {
 // «Лента»: те же куски постами. Текст лежит ровно на месте картинки —
 // в этом весь фокус, картинки тут нет вообще.
 export default function Feed({go, back}) {
-  const {text, offset} = useStore();
+  const {text, offset, ui} = useStore();
   const t = useT();
   const {chunks, pos, setPos, eye, picsOf} = useChunks(SIZE.feed);
   const count = chunks.length;
@@ -64,7 +64,7 @@ export default function Feed({go, back}) {
             который в оригинале за ней и стоит. Курсор общий, поэтому история
             начнётся с того же места книги. */}
         <div className="srow">
-          {NAMES.slice(0, 6).map((name, k) => (
+          {namesOf(ui.lang).slice(0, 6).map((name, k) => (
             <div className="sitem" key={k} role="button" onClick={() => go('stories')}>
               <div className="ring" style={{background: grad(k * 7 + 2)}}>
                 <i style={{background: shot('face', k * 11 + 3, grad(k))}} />

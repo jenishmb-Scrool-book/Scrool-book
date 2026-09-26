@@ -28,6 +28,15 @@ const TEXT = Array.from({length: 80}, (_, i) =>
 const rawMeta = () => JSON.parse(localStorage.getItem('scroll.meta') || 'null');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+// Место чтения прямо из стора, а не из хранилища: запись в хранилище идёт с
+// дебаунсом 400 мс, и под параллельным прогоном тест ждал бы таймеры, а не
+// проверял плеер.
+let now = 0;
+function Probe() {
+  now = useStore().offset;
+  return null;
+}
+
 function Gate({children}) {
   const {ready} = useStore();
   return ready ? children : null;
@@ -39,8 +48,11 @@ async function boot() {
     books: [{id: 'b1', title: 'Книга', len: TEXT.length, toc: 1}],
     cur: 'b1', at: {b1: 0}, last: 'video', intro: 1, place: {id: 'player', arg: null}
   });
-  render(<StoreProvider><Gate><Player go={() => {}} back={() => {}} /></Gate></StoreProvider>);
+  render(<StoreProvider><Gate><Player go={() => {}} back={() => {}} /><Probe /></Gate></StoreProvider>);
   await waitFor(() => expect(document.querySelectorAll('.cmt').length).toBeGreaterThan(4));
+  // Комментарии нарисованы — но обработчик прокрутки плеер вешает эффектом,
+  // после отрисовки, и под нагрузкой тест успевал прокрутить раньше него.
+  await act(async () => {});
   return document.querySelector('#player .body');
 }
 
@@ -58,10 +70,10 @@ describe('плеер', () => {
     const at = [...document.querySelectorAll('.cmt')].map(el => Number(el.dataset.at));
     await scroll(box, 1000 + 4 * 200);                   // пятый комментарий у кромки
     // Запас по времени: под параллельным прогоном таймеры дебаунсов опаздывают.
-    await waitFor(() => expect(rawMeta().at.b1).toBe(at[4]), {timeout: 10000});
+    await waitFor(() => expect(now).toBe(at[4]), {timeout: 10000});
     await scroll(box, 1000 + 1 * 200);                   // вернулись ко второму
     await sleep(600);
-    expect(rawMeta().at.b1).toBe(at[4]);                 // место осталось на пятом
+    expect(now).toBe(at[4]);                             // место осталось на пятом
   });
 });
 
@@ -89,7 +101,7 @@ describe('ролик', () => {
     await act(async () => {document.querySelector('#player .pl').click();});
     expect(asked).toHaveLength(1);
     expect(document.querySelector('.dtxt').textContent).toBe(desc);   // страница та же
-    expect(rawMeta().at.b1).toBe(0);                                   // курсор на месте
+    expect(now).toBe(0);                                               // курсор на месте
   });
 
   it('▶, когда все комментарии прочитаны, — следующая страница', {timeout: 20000}, async () => {
@@ -97,7 +109,7 @@ describe('ролик', () => {
     box.scrollTo = () => {};
     const at = [...document.querySelectorAll('.cmt')].map(el => Number(el.dataset.at));
     await scroll(box, 1000 + (at.length - 1) * 200);
-    await waitFor(() => expect(rawMeta().at.b1).toBe(at[at.length - 1]), {timeout: 10000});
+    await waitFor(() => expect(now).toBe(at[at.length - 1]), {timeout: 10000});
     const desc = document.querySelector('.dtxt').textContent;
     await act(async () => {document.querySelector('#player .pl').click();});
     expect(document.querySelector('.dtxt').textContent).not.toBe(desc);

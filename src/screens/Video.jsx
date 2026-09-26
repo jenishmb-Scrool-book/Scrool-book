@@ -161,7 +161,8 @@ export default function Video({go, back}) {
  */
 function Comment({i, at, text, pics, onReply}) {
   const t = useT();
-  const c = contactAt(i);
+  const {ui} = useStore();
+  const c = contactAt(i, ui.lang);
   const emo = commentEmo(i);
   const [liked, setLiked] = useState(false);
   return (

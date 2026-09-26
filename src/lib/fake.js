@@ -5,11 +5,25 @@
 // как живая переписка, а как баг. Так же сделаны лайки и просмотры и реакции
 // в `ui/visual.js`.
 //
-// Имена намеренно НЕ переведены и не лежат в словаре. На настоящем телефоне
-// контакты записаны на языке владельца, а не на языке интерфейса; «Мама» в
-// английской локали выглядит достовернее, чем «Mom» у русскоязычного человека.
+// Имена — на языке, выбранном при первом запуске (он же язык интерфейса).
+// Раньше они не переводились вовсе: «Мама в английской локали достовернее
+// Mom у русскоязычного». Довод верен для русского, переключившего язык, но
+// англоязычный человек — а карточка в Play есть и на английском — видел
+// переписку от людей, чьих имён не может прочитать.
+//
+// Среди «контактов» есть и групповые чаты — в списке переписок они и должны
+// стоять вперемешку с людьми. Но звонят, бывают «в сети» и пишут в группы
+// только люди: отсюда `people` — те же имена без групп. Раньше «Рабочий чат»
+// пропускал звонки и был «в сети».
 
 export const NAMES = ['Мама', 'Костя', 'Рабочий чат', 'Лена', 'Артём', 'Соседи', 'Даша', 'Паша'];
+const NAMES_EN = ['Mom', 'Jake', 'Work chat', 'Emma', 'Liam', 'Neighbours', 'Sophie', 'Ben'];
+/** Какие из контактов — групповые чаты, а не люди. */
+const IS_GROUP = [false, false, true, false, false, true, false, false];
+const PEOPLE = NAMES.map((unused, k) => k).filter(k => !IS_GROUP[k]);
+
+/** Имена контактов на языке: всё, что не английский, — по-русски. */
+export const namesOf = lang => (lang === 'en' ? NAMES_EN : NAMES);
 
 const DAY_START = 9 * 60;   // первое сообщение в 09:00
 const SPAN = 13 * 60;       // и дальше в пределах дня, до 22:00
@@ -39,25 +53,40 @@ export function msgTime(i) {
  * `seed` — число для градиента аватарки: `lib/` не должен тянуть `ui/visual.js`,
  * иначе разбор файлов начнёт зависеть от оформления.
  */
-export function contactAt(i) {
+export function contactAt(i, lang) {
   const n = Math.max(0, Math.trunc(Number(i)) || 0);
   const k = n % NAMES.length;
-  return {id: 'c' + k, name: NAMES[k], seed: k * 13 + 5};
+  return {id: 'c' + k, name: namesOf(lang)[k], seed: k * 13 + 5, group: IS_GROUP[k]};
 }
+
+/**
+ * Человек, а не группа: для журнала звонков, списка людей и подписи
+ * отправителя в группе. Тот же id и та же аватарка, что у него в списке
+ * переписок, — чтобы звонок от Лены открывал переписку с той же Леной.
+ */
+export function personAt(i, lang) {
+  const n = Math.max(0, Math.trunc(Number(i)) || 0);
+  return contactAt(PEOPLE[n % PEOPLE.length], lang);
+}
+
+/** Сколько людей среди контактов — длина списка «Люди». */
+export const PEOPLE_COUNT = PEOPLE.length;
 
 // Группы для вкладки «Группы». Имён меньше, чем контактов, и это правильно:
 // групп у человека всегда меньше, чем собеседников.
 export const GROUPS = ['Работа', 'Семья', 'Курс по вёрстке', 'Дом', 'Однокурсники'];
+const GROUPS_EN = ['Work', 'Family', 'Web design course', 'Home', 'Classmates'];
 
 /**
  * Группа для строки списка. Кто именно написал — берётся из `contactAt`:
  * в групповой переписке превью всегда подписано отправителем, и без этой
  * подписи вкладка «Группы» ничем не отличается от вкладки «Чаты».
  */
-export function groupAt(i) {
+export function groupAt(i, lang) {
   const n = Math.max(0, Math.trunc(Number(i)) || 0);
   const k = n % GROUPS.length;
-  return {id: 'g' + k, name: GROUPS[k], seed: k * 29 + 11, from: contactAt(i).name};
+  const names = lang === 'en' ? GROUPS_EN : GROUPS;
+  return {id: 'g' + k, name: names[k], seed: k * 29 + 11, from: personAt(n, lang).name};
 }
 
 // Вид вызова в журнале. Пропущенные — каждый третий: журнал, где пропущено
@@ -72,8 +101,8 @@ const KINDS = ['in', 'out', 'missed'];
  * «Исходящий, 12:30» читался бы как поломка. Экран при этом рабочий: каждая
  * строка открывает переписку с этим человеком.
  */
-export function callAt(i) {
+export function callAt(i, lang) {
   const n = Math.max(0, Math.trunc(Number(i)) || 0);
-  const c = contactAt(n);
+  const c = personAt(n, lang);
   return {...c, kind: KINDS[n % 3], video: n % 4 === 1, time: msgTime(n * 7)};
 }

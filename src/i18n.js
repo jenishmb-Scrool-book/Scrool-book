@@ -88,6 +88,11 @@ const ru = {
   // ===== мессенджеры =====
   'chats.search': 'Поиск',
   'chats.online': 'в сети',
+  'chats.members': '{n} участников',
+  'chats.members.one': '{n} участник',
+  'chats.members.few': '{n} участника',
+  'chats.members.many': '{n} участников',
+  'chats.members.other': '{n} участника',
   'chats.call_in': 'Входящий',
   'chats.call_out': 'Исходящий',
   'chats.call_missed': 'Пропущенный',
@@ -320,6 +325,11 @@ const en = {
 
   'chats.search': 'Search',
   'chats.online': 'online',
+  'chats.members': '{n} members',
+  'chats.members.one': '{n} member',
+  'chats.members.few': '{n} members',
+  'chats.members.many': '{n} members',
+  'chats.members.other': '{n} members',
   'chats.call_in': 'Incoming',
   'chats.call_out': 'Outgoing',
   'chats.call_missed': 'Missed',
