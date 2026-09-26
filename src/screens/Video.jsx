@@ -188,6 +188,7 @@ function Comment({i, at, text, pics, onReply}) {
 export function Player({go, back}) {
   const {text, offset, setOffset} = useStore();
   const t = useT();
+  const {chunks: ts} = useChunks(SIZE.vlist);                     // название — как в списке
   const {chunks: ds, picsOf: dpics} = useChunks(SIZE.video);      // описание — длинный кусок
   const {chunks: cs, picsOf: cpics} = useChunks(SIZE.comment);    // комментарии — короткие
   const boxRef = useRef(null);
@@ -202,8 +203,24 @@ export function Player({go, back}) {
   const [mark, setMark] = useState(0);        // 0 — нет, 1 — палец вверх, -1 — вниз
   const [subbed, setSubbed] = useState(false);
 
-  const at = indexAt(ds, head);
-  const desc = ds[at];
+  // Название ролика — тот же кусок, что стоял названием в списке, по которому
+  // нажали. Описание начинается СРАЗУ ПОСЛЕ него. Раньше заголовком было
+  // первое предложение описания, а описание — кусок, в котором стоит курсор,
+  // то есть начатый раньше него: одна фраза читалась трижды подряд — в
+  // списке, в заголовке и в начале описания.
+  const title = ts[indexAt(ts, head)] || null;
+  const from = title ? title.end : head;
+  let at = indexAt(ds, from);
+  if (ds[at] && ds[at].end <= from) at += 1;
+  // Описание — от конца названия до конца куска описания. Куски не
+  // переходят через абзац, и у книги с короткими абзацами описание вышло бы в
+  // пару строк: добираем следующие, пока не наберётся хотя бы 400 знаков.
+  let till = ds[at] ? ds[at].end : from;
+  for (let k = at + 1; ds[k] && till - from < 400; k++) till = ds[k].end;
+  const desc = ds.length && till > from
+    ? {at: from, end: till, text: text.slice(from, till).replace(/\s+/g, ' ').trim()}
+    : null;
+  at = Math.min(at, Math.max(0, ds.length - 1));
 
   // Первый комментарий берётся строго ПОСЛЕ описания: `indexAt` отдаёт кусок,
   // которому смещение принадлежит, а он начинается раньше конца описания —
@@ -248,9 +265,24 @@ export function Player({go, back}) {
 
   // Следующий ролик — следующая страница книги. Курсор переносим сами: он мог
   // остаться на середине комментариев, а «дальше» значит именно дальше.
-  const next = () => {
+  const nextPage = () => {
     setHead(endAt);
     setOffset(endAt);
+  };
+
+  // Большая ▶ — первое, что нажимает любой человек. Раньше она сразу листала
+  // страницу и пропускала непрочитанные комментарии (курсор ходит только
+  // вперёд, так что они терялись насовсем). Теперь ▶ сперва ведёт к первому
+  // непрочитанному комментарию, а когда их не осталось — к следующему ролику.
+  const next = () => {
+    const box = boxRef.current;
+    const unread = box && [...box.querySelectorAll('.cmt')]
+      .find(el => Number(el.dataset.at) > offRef.current);
+    if (box && unread) {
+      box.scrollTo({top: Math.max(0, unread.offsetTop - 60), behavior: 'smooth'});
+      return;
+    }
+    nextPage();
   };
 
   useLayoutEffect(() => {
@@ -283,7 +315,7 @@ export function Player({go, back}) {
       <Progress offset={offset} len={text.length} go={go} />
       <div className="body" ref={boxRef}>
         <div className="vinfo">
-          <h3>{desc ? videoTitle(desc.text, 90) : ''}</h3>
+          <h3>{title ? <Hit text={title.text} at={title.at} end={title.end} /> : ''}</h3>
           <div className="m">{t('video.views', {views: views(at)})}</div>
           {/* «Поделиться» и «Сохранить» отсюда убраны. Делиться в приложении
               без сети нечем, а «сохранить» ничего не сохраняло бы — это та же
@@ -342,7 +374,7 @@ export function Player({go, back}) {
                 i={at + 1}
                 title={videoTitle(text.slice(endAt, endAt + 220), 90)}
                 small
-                onPlay={next}
+                onPlay={nextPage}
                 onMenu={() => go('toc')}
               />
             </>

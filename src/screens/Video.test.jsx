@@ -4,6 +4,8 @@ import {render, waitFor, act} from '@testing-library/react';
 import {Player} from './Video.jsx';
 import {StoreProvider, useStore} from '../store.jsx';
 import {saveMeta, saveText} from '../lib/storage.js';
+import {chunk, indexAt} from '../lib/chunk.js';
+import {SIZE} from '../ui/sizes.js';
 
 // Плеер: курсор едет за комментариями — они и есть продолжение книги. Но
 // только вперёд, как везде: вернулся ко второму комментарию перечитать — место
@@ -20,7 +22,9 @@ Object.defineProperty(HTMLElement.prototype, 'offsetTop', {
   }
 });
 
-const TEXT = 'Раз, два, три, четыре, пять. Вышел зайчик погулять.\n\n'.repeat(80);
+// Абзацы разные: на одинаковых «описание не повторяет название» не проверить.
+const TEXT = Array.from({length: 80}, (_, i) =>
+  'Абзац ' + i + '. Вышел зайчик погулять в ' + i + '-й раз, и было это давно.').join('\n\n');
 const rawMeta = () => JSON.parse(localStorage.getItem('scroll.meta') || 'null');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -60,3 +64,43 @@ describe('плеер', () => {
     expect(rawMeta().at.b1).toBe(at[4]);                 // место осталось на пятом
   });
 });
+
+describe('ролик', () => {
+  // Одна фраза читалась трижды: названием в списке, заголовком плеера и
+  // началом описания. Теперь заголовок — то самое название, а описание — с
+  // конца названия.
+  it('заголовок — название из списка, описание его не повторяет', async () => {
+    await boot();
+    const titles = chunk(TEXT, SIZE.vlist);
+    const first = titles[indexAt(titles, 0)];
+    expect(document.querySelector('.vinfo h3').textContent).toBe(first.text);
+    const desc = document.querySelector('.dtxt').textContent;
+    expect(desc.length).toBeGreaterThan(100);
+    expect(desc.startsWith(first.text)).toBe(false);
+    expect(TEXT.replace(/\s+/g, ' ')).toContain(first.text + ' ' + desc.slice(0, 40));
+  });
+
+  // Большая ▶ сперва ведёт к непрочитанным комментариям, а не листает мимо.
+  it('▶ сначала прокручивает к непрочитанному комментарию', async () => {
+    const box = await boot();
+    const asked = [];
+    box.scrollTo = o => asked.push(o);
+    const desc = document.querySelector('.dtxt').textContent;
+    await act(async () => {document.querySelector('#player .pl').click();});
+    expect(asked).toHaveLength(1);
+    expect(document.querySelector('.dtxt').textContent).toBe(desc);   // страница та же
+    expect(rawMeta().at.b1).toBe(0);                                   // курсор на месте
+  });
+
+  it('▶, когда все комментарии прочитаны, — следующая страница', async () => {
+    const box = await boot();
+    box.scrollTo = () => {};
+    const at = [...document.querySelectorAll('.cmt')].map(el => Number(el.dataset.at));
+    await scroll(box, 1000 + (at.length - 1) * 200);
+    await waitFor(() => expect(rawMeta().at.b1).toBe(at[at.length - 1]), {timeout: 4000});
+    const desc = document.querySelector('.dtxt').textContent;
+    await act(async () => {document.querySelector('#player .pl').click();});
+    expect(document.querySelector('.dtxt').textContent).not.toBe(desc);
+  });
+});
+
