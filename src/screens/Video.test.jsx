@@ -155,3 +155,15 @@ describe('▶ внизу страницы', () => {
   });
 });
 
+describe('«Следующее»', () => {
+  // Карточка «Следующее» обещала одно название, а открывался ролик с другим —
+  // с последним, уже прочитанным комментарием в заголовке.
+  it('название карточки — заголовок того ролика, что откроется', async () => {
+    await boot();
+    const promised = document.querySelector('.upnext + .vid .ti').textContent;
+    await act(async () => {document.querySelector('.upnext + .vid').click();});
+    expect(document.querySelector('.vinfo h3').textContent).toBe(promised);
+    expect(promised.length).toBeGreaterThan(0);
+  });
+});
+

@@ -71,6 +71,7 @@ const ru = {
   'home.empty': 'Нет текста — добавь в библиотеке',
   'home.continue': 'Продолжить',
   'home.next_book': 'Выбрать следующую книгу',
+  'home.open_file': 'Открыть файл книги',
   'home.left': 'осталось {left}',
   'home.search': 'Поиск',
   'home.today': 'Сегодня {m} мин',
@@ -216,6 +217,8 @@ const ru = {
   'lib.unsupported': 'Формат не поддерживается: нужен .txt, .fb2, .fb2.zip или .epub',
   'lib.chapters': '{n} глав',
   'lib.no_text': 'В файле не нашлось текста',
+  'lib.binary': 'Это не текст, а картинка или документ. Нужна книга в .txt, .fb2, .fb2.zip или .epub.',
+  'lib.missing': 'текста нет — открой файл заново',
   'lib.pdf': 'PDF не поддерживается: это свёрстанные страницы, а читалке нужен сам текст. Найди эту книгу в .fb2 или .epub — их раздают почти все библиотеки.',
 
   // ===== настройки =====
@@ -312,6 +315,7 @@ const en = {
   'home.empty': 'No text yet — add one in the library',
   'home.continue': 'Continue',
   'home.next_book': 'Pick the next book',
+  'home.open_file': 'Open the book file',
   'home.left': '{left} left',
   'home.search': 'Search',
   'home.today': 'Today {m} min',
@@ -446,6 +450,8 @@ const en = {
   'lib.unsupported': 'Unsupported format: use .txt, .fb2, .fb2.zip or .epub',
   'lib.chapters': '{n} chapters',
   'lib.no_text': 'No text found in the file',
+  'lib.binary': 'This isn’t text — it’s a picture or a document. You need a book in .txt, .fb2, .fb2.zip or .epub.',
+  'lib.missing': 'text missing — open the file again',
   'lib.pdf': 'PDF isn’t supported: it holds laid-out pages, and the reader needs the text itself. Look for the same book as .epub or .fb2 — most libraries offer them.',
 
   'set.title': 'Settings',

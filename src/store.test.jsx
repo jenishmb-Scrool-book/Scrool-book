@@ -880,13 +880,17 @@ describe('восстановление из облачной копии', () => 
     expect(h.result.current.positions.b1).toBe(2500);
   });
 
-  it('книга, у которой текст на месте, повторным добавлением не перезаписывается', async () => {
+  // Та же книга целиком — не вторая копия на 0 %, а она сама, со своим местом.
+  it('книга, у которой текст на месте, повторным добавлением открывается, а не удваивается', async () => {
     const h = await mount();
     const a = await add(h, 'Дождь', TEXT);
     act(() => h.result.current.setOffset(1000));
+    await add(h, 'Другая', 'Совсем другой текст.');
     const b = await add(h, 'Дождь', TEXT);
-    expect(b).not.toBe(a);
-    expect(h.result.current.positions[a]).toBe(1000);
+    expect(b).toBe(a);
+    expect(h.result.current.books).toHaveLength(2);
+    expect(h.result.current.current.id).toBe(a);
+    expect(h.result.current.offset).toBe(1000);
   });
 });
 

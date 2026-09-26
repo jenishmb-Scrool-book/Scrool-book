@@ -8,7 +8,6 @@ import {dataUrl, headOf} from './lib/img.js';
 import {pixels} from './lib/size.js';
 import {detect} from './lib/toc.js';
 import {credit, readPace, tally} from './lib/streak.js';
-import {PAGE} from './lib/pages.js';
 
 // Одно состояние на всё приложение: сырой текст книги и один курсор.
 //
@@ -19,6 +18,10 @@ import {PAGE} from './lib/pages.js';
 // же места, хотя фрагменты там совсем другой длины.
 
 const DEBOUNCE = 400;                                   // мс между последним сдвигом курсора и записью
+// Ушли от места посадки после прыжка меньше этого — значит, не читали, и
+// следующий прыжок «вернуться» не перезаписывает. Короче одного куска ленты:
+// прочитал пару клипов — это уже чтение, и вернуться надо туда.
+const IDLE = 150;
 // Экраны-читалки, куда уводит «Продолжить». Список обязан совпадать с READERS
 // в App.jsx: на Этапе 1 сюда не доехали три новых экрана, и `setLastApp` молча
 // отбрасывал их — «Продолжить» после чтения в чатах открывало клипы.
@@ -447,7 +450,7 @@ export function StoreProvider({children}) {
       setJumped(j => {
         const same = j && j.id === m.cur;
         if (same && j.at === v) return null;
-        const idle = same && Math.abs(was - j.to) < PAGE / 2;
+        const idle = same && Math.abs(was - j.to) < IDLE;
         return {id: m.cur, at: idle ? j.at : was, to: v};
       });
     }
@@ -531,10 +534,26 @@ export function StoreProvider({children}) {
     // Без этого повторное добавление заводило новую книгу с нуля, а старая
     // запись с местом так и висела в библиотеке пустой.
     let back = null;
+    let same = null;
     for (const b of prev.books) {
       if (b.title !== name || b.len !== txt.length) continue;
       const had = String((await loadText(b.id)) ?? '');
       if (!had) {back = b; break;}
+      if (had === txt) {same = b; break;}
+    }
+
+    // Та же книга уже лежит целиком — открываем её, а не заводим вторую
+    // копию на 0 %: две одинаковые строки в библиотеке, и место в одной из
+    // них, — это путаница, а не две книги.
+    if (same) {
+      const toc = await bookToc(same, txt);
+      const pix = await bookPix(same, txt);
+      applyMeta({...metaRef.current, cur: same.id});
+      applyText(txt);
+      applyToc(toc);
+      applyPix(pix);
+      await write();
+      return same.id;
     }
 
     let id = back ? back.id : String(Date.now());
@@ -608,7 +627,7 @@ export function StoreProvider({children}) {
     applyToc(toc);
     applyPix(pix);
     return id;
-  }, [applyText, applyToc, applyPix, report]);
+  }, [applyMeta, applyText, applyToc, applyPix, bookToc, bookPix, report, write]);
 
   const openBook = useCallback(async id => {
     if (mounted.current) setError(null);

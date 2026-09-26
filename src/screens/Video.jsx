@@ -15,6 +15,7 @@ import {commentEmo, dur, grad, likes, videoTitle, views} from '../ui/visual.js';
 import {FACE, shot} from '../ui/pics.js';
 import {contactAt} from '../lib/fake.js';
 import {indexAt} from '../lib/chunk.js';
+import {minutesLeft} from '../lib/pace.js';
 import Glyph from '../ui/Glyph.jsx';
 import BookPics from '../ui/BookPic.jsx';
 import Resume from '../ui/Resume.jsx';
@@ -44,6 +45,26 @@ const COMMENTS = 6;
 // Сколько ролика «просмотрено» — красная полоска на превью. От индекса, не от
 // часов: число, меняющееся при перерисовке, читается как баг, а не как жизнь.
 const seen = i => (i * 17) % 55 + 20;
+
+/**
+ * Название ролика, начинающегося с места `h`: [название, номер куска списка].
+ *
+ * Со списка в ролик приходят на начало куска — тогда название и есть этот
+ * кусок. Но следующий ролик начинается с конца комментариев, то есть обычно
+ * посреди куска списка, — тогда название — остаток этого куска. Раньше брался
+ * весь кусок, и название повторяло последний, уже прочитанный комментарий, а
+ * карточка «Следующее» обещала одно, открывалось другое.
+ */
+function titleFrom(ts, text, h) {
+  let k = indexAt(ts, h);
+  if (ts[k] && ts[k].end <= h) k += 1;
+  const c = ts[k];
+  if (!c) return [null, k];
+  if (c.at >= h) return [c, k];
+  let end = c.end;
+  if (end - h < 40 && ts[k + 1]) end = ts[k + 1].end;
+  return [{at: h, end, text: text.slice(h, end).replace(/\s+/g, ' ').trim()}, k];
+}
 
 // «1:23 / 4:56» — из длительности и доли просмотра. Мелочь, но без неё плеер
 // выглядит нарисованным.
@@ -96,6 +117,8 @@ export default function Video({go, back}) {
   const t = useT();
   const {chunks, pos, setPos, eye, picsOf} = useChunks(SIZE.vlist);
   const count = chunks.length;
+  // Дочитано — «тут остановился» на последнем ролике не нужен.
+  const done = !!text.length && minutesLeft(offset, text.length) === 0;
   // Прокрутка списка двигает курсор: список названий сам стал способом читать.
   // До этого здесь стояло `trackPos: false` с доводом «листать список ≠ читать» —
   // он был верен ровно до того дня, когда в названиях появился текст книги.
@@ -135,7 +158,7 @@ export default function Video({go, back}) {
       <Progress offset={offset} len={text.length} go={go} />
       <div className="body" ref={boxRef}>
         {items.map(i => (
-          <Card key={i} i={i} here={i === pos} pics={picsOf(i)}
+          <Card key={i} i={i} here={i === pos && !done} pics={picsOf(i)}
                 title={<Hit text={chunks[i].text} at={chunks[i].at} end={chunks[i].end} />}
                 onPlay={() => play(i)} onMenu={() => go('toc')} />
         ))}
@@ -215,8 +238,7 @@ export function Player({go, back}) {
   // первое предложение описания, а описание — кусок, в котором стоит курсор,
   // то есть начатый раньше него: одна фраза читалась трижды подряд — в
   // списке, в заголовке и в начале описания.
-  const ti = indexAt(ts, head);
-  const title = ts[ti] || null;
+  const [title, ti] = titleFrom(ts, text, head);
   const from = title ? title.end : head;
   let at = indexAt(ds, from);
   if (ds[at] && ds[at].end <= from) at += 1;
@@ -392,7 +414,7 @@ export function Player({go, back}) {
               <div className="upnext">{t('video.upnext')}</div>
               <Card
                 i={at + 1}
-                title={videoTitle(text.slice(endAt, endAt + 220), 90)}
+                title={(titleFrom(ts, text, endAt)[0] || {text: ''}).text}
                 small
                 onPlay={nextPage}
                 onMenu={() => go('toc')}

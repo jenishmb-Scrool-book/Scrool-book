@@ -149,7 +149,9 @@ export default function Home({go}) {
         {current && !text.length
           ? <div className="ws">{t('home.missing')}</div>
           : stats ? <div className="ws">{stats}</div> : null}
-        <button onClick={cont}>{t(done ? 'home.next_book' : 'home.continue')}</button>
+        <button onClick={cont}>
+          {t(current && !text.length ? 'home.open_file' : done ? 'home.next_book' : 'home.continue')}
+        </button>
       </div>
       <div className="grid">
         {APPS.map(([glyph, label, to, background, skin, round], k) => (

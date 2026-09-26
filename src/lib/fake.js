@@ -46,6 +46,16 @@ export function msgTime(i) {
 }
 
 /**
+ * Время строки СПИСКА — переписок и звонков. В настоящих мессенджерах свежее
+ * сверху, и время идёт вниз на убыль; внутри переписки — наоборот, и там
+ * остаётся `msgTime`. Раньше списки шли 09:00, 09:14… сверху вниз.
+ */
+export function listTime(i) {
+  const n = Math.max(0, Math.trunc(Number(i)) || 0);
+  return msgTime(389 - (n % 390));
+}
+
+/**
  * Собеседник для строки списка. Список чатов теперь и есть читалка: каждая
  * строка — кусок книги, а имя над ним меняется по кругу, поэтому лента
  * выглядит так, будто книгу шлют разные люди.
@@ -104,5 +114,5 @@ const KINDS = ['in', 'out', 'missed'];
 export function callAt(i, lang) {
   const n = Math.max(0, Math.trunc(Number(i)) || 0);
   const c = personAt(n, lang);
-  return {...c, kind: KINDS[n % 3], video: n % 4 === 1, time: msgTime(n * 7)};
+  return {...c, kind: KINDS[n % 3], video: n % 4 === 1, time: listTime(n * 7)};
 }

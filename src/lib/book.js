@@ -122,7 +122,9 @@ export async function parseBook(file) {
   // «книга.txt» — всё равно двоичный.
   if (PLAIN.has(ext)) {
     const utf16 = u8.length >= 2 && ((u8[0] === 0xff && u8[1] === 0xfe) || (u8[0] === 0xfe && u8[1] === 0xff));
-    if (!utf16 && binary(u8)) throw unsupported(ext);
+    // Своё сообщение: «нужен .txt» человеку, выбравшему файл «книга.txt»,
+    // ничего не объясняет.
+    if (!utf16 && binary(u8)) throw failed('Не похоже на текст', 'binary');
     return {title: '', text: plainText(u8)};
   }
   throw unsupported(ext);

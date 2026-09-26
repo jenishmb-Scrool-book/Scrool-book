@@ -12,7 +12,7 @@ import {labelOf, run} from '../ui/actions.js';
 import {grad, reaction, reactionCount, sticker} from '../ui/visual.js';
 import {shot} from '../ui/pics.js';
 import {skinOf, tabIndex} from '../ui/skins.js';
-import {PEOPLE_COUNT, callAt, contactAt, groupAt, msgTime, personAt} from '../lib/fake.js';
+import {PEOPLE_COUNT, callAt, contactAt, groupAt, listTime, msgTime, personAt} from '../lib/fake.js';
 import Glyph from '../ui/Glyph.jsx';
 import BookPics from '../ui/BookPic.jsx';
 import Resume from '../ui/Resume.jsx';
@@ -140,7 +140,7 @@ function Roster({mode, chunks, pos, setPos, eye, picsOf, onOpen}) {
                 {g ? c.from + ': ' : null}
                 <Hit text={chunks[i].text} at={chunks[i].at} end={chunks[i].end} />
               </>}
-              time={msgTime(i)}
+              time={listTime(i)}
               /* Непрочитанное здесь не выдумано: всё, что ниже курсора, ты
                  действительно ещё не читал. Точка справа — ровно это. */
               state={i === pos ? 'on' : (i > pos ? 'new' : 'seen')}

@@ -155,10 +155,10 @@ describe('parseBook() — отказы', () => {
     const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0x0d, 0x49, 0x48, 0x44, 0x52]);
     for (const name of ['kartinka', 'kniga.txt']) {
       const e = await parseBook(file(name, png)).catch(x => x);
-      expect(e.code, name).toBe('unsupported');
+      expect(e.code, name).toBe('binary');
     }
     const noisy = new Uint8Array(400).map((_, i) => (i % 7 === 0 ? 0x01 : 0x41));
-    expect((await parseBook(file('x.txt', noisy)).catch(x => x)).code).toBe('unsupported');
+    expect((await parseBook(file('x.txt', noisy)).catch(x => x)).code).toBe('binary');
   });
 
   it('текст с табуляциями и переводами строк — всё ещё текст', async () => {

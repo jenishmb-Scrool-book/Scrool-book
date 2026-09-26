@@ -1,5 +1,5 @@
 import {describe, it, expect} from 'vitest';
-import {GROUPS, NAMES, PEOPLE_COUNT, callAt, contactAt, groupAt, msgTime, namesOf, personAt} from './fake.js';
+import {GROUPS, NAMES, PEOPLE_COUNT, callAt, contactAt, groupAt, listTime, msgTime, namesOf, personAt} from './fake.js';
 
 describe('contactAt()', () => {
   // Это главное свойство всей бутафории: имя, меняющееся при перерендере,
@@ -161,6 +161,19 @@ describe('язык имён', () => {
     }
     expect(namesOf('en')).toHaveLength(NAMES.length);
     expect(namesOf('xx')).toBe(NAMES);
+  });
+});
+
+describe('listTime()', () => {
+  // В списках переписок и звонков свежее сверху: время вниз убывает.
+  it('убывает сверху вниз', () => {
+    const times = Array.from({length: 30}, (unused, i) => listTime(i));
+    for (let i = 1; i < times.length; i++) expect(times[i] < times[i - 1], times.join(' ')).toBe(true);
+  });
+
+  it('журнал звонков тоже свежий сверху', () => {
+    const times = Array.from({length: 20}, (unused, i) => callAt(i).time);
+    for (let i = 1; i < times.length; i++) expect(times[i] < times[i - 1]).toBe(true);
   });
 });
 

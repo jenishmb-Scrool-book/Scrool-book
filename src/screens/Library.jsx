@@ -15,7 +15,8 @@ const later = v => Promise.resolve(v);
 
 // Коды ошибок парсеров → ключи i18n. Всё, что кодом не помечено, — просто
 // «файл не разобрался»: пользователю незачем знать, XML там сломался или ZIP.
-const ERR = {zip: 'lib.parse_failed_zip', unsupported: 'lib.unsupported', pdf: 'lib.pdf', empty: 'lib.no_text'};
+const ERR = {zip: 'lib.parse_failed_zip', unsupported: 'lib.unsupported', pdf: 'lib.pdf', empty: 'lib.no_text',
+  binary: 'lib.binary'};
 
 // Что показывать в системном выборе файла.
 //
@@ -162,7 +163,10 @@ export default function Library({go, back}) {
             >
               <div className="i">
                 <b>{b.title}</b>
-                <span>{t('lib.pages', {n: pageCount(b.len)})} · {Math.round(shareOf(b))}%</span>
+                <span>
+                  {t('lib.pages', {n: pageCount(b.len)})} · {Math.round(shareOf(b))}%
+                  {current && b.id === current.id && !bookText.length ? ' · ' + t('lib.missing') : ''}
+                </span>
                 <i className="pbar"><em style={{transform: `scaleX(${(shareOf(b) / 100).toFixed(4)})`}} /></i>
               </div>
               <span className="x" onClick={e => rename(e, b)} role="button" aria-label={t('lib.rename')}>

@@ -84,7 +84,9 @@ export default function Reels({go, back}) {
                style={{background: shot('tall', i, grad(i))}}>
             <BookPics list={picsOf(i)} />
             <div className="txt"><Hit text={chunks[i].text} at={chunks[i].at} end={chunks[i].end} /></div>
-            <div className="cnt">{t('reels.handle')} · {t('reels.of', {i: i + 1, n: count})}</div>
+            <div className="cnt">
+              {t('reels.handle')} · {i === count - 1 ? t('reader.end') : t('reels.of', {i: i + 1, n: count})}
+            </div>
             <div className="tag">{t('reels.tag')}</div>
             <Rail i={i} go={go} />
           </div>

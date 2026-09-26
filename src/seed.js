@@ -38,11 +38,11 @@ export const SEED = `Как это работает
 
 Если в книге есть картинки, они показываются там же, где её текст: в ленте — кадром поста, в переписке — присланным фото, в роликах — превью.
 
-Оглавление открывается кнопкой в шапке: «⋮» в переписке, «☰» на остальных экранах. Главы берутся из файла, а в обычном тексте распознаются заголовки вроде «Глава 5».
+Оглавление открывается значком в шапке или нажатием на плашку «страница / осталось». Главы берутся из файла, а в обычном тексте распознаются заголовки вроде «Глава 5».
 
 Лупа в любом «приложении» и строка «Поиск» на домашнем экране ищут по самой книге: набери имя героя или слово — увидишь, на каких страницах оно встречается, и перейдёшь туда одним нажатием.
 
-Внизу видно, сколько осталось: не проценты, а время. Вопрос обычно не «далеко ли я», а «успею ли сейчас».
+На той же плашке видно, сколько осталось: не проценты, а время. Вопрос обычно не «далеко ли я», а «успею ли сейчас».
 
 В настройках есть тема, размер шрифта, обои — двадцать готовых или своя картинка — и напоминание раз в сутки, если сам включишь.
 
@@ -76,11 +76,11 @@ Add your own books in the Library: paste the text into the field or open a file 
 
 If the book has pictures in it, they show up where its text does: in the feed as the body of a post, in chat as a sent photo, in video as the thumbnail.
 
-The contents open with the button in the header: “⋮” in chat, “☰” on every other screen. Chapters come from the file, and in plain text the app recognises headings like “Chapter 5”.
+The contents open with the icon in the header, or with a tap on the “page / left” badge. Chapters come from the file, and in plain text the app recognises headings like “Chapter 5”.
 
 The magnifier in any of the apps and the Search bar on the home screen look through the book itself: type a character’s name or a word to see the pages it appears on, and jump there with one tap.
 
-At the bottom you can see what is left: not per cent, but time. The question is usually not “how far along am I”, it is “can I finish this now”.
+The same badge shows what is left: not per cent, but time. The question is usually not “how far along am I”, it is “can I finish this now”.
 
 Settings hold the theme, the text size, the wallpaper — twenty ready-made ones or a picture of your own — and one reminder a day, if you switch it on yourself.
 
