@@ -15,7 +15,7 @@ const later = v => Promise.resolve(v);
 
 // Коды ошибок парсеров → ключи i18n. Всё, что кодом не помечено, — просто
 // «файл не разобрался»: пользователю незачем знать, XML там сломался или ZIP.
-const ERR = {zip: 'lib.parse_failed_zip', unsupported: 'lib.unsupported'};
+const ERR = {zip: 'lib.parse_failed_zip', unsupported: 'lib.unsupported', pdf: 'lib.pdf', empty: 'lib.no_text'};
 
 // Что показывать в системном выборе файла.
 //
@@ -141,7 +141,8 @@ export default function Library({go, back}) {
           </label>
         </div>
         {busy ? <div className="hint busy">{t(busy)}</div> : null}
-        {msg ? <div className="hint">{msg}</div> : null}
+        {/* Ошибка — не подсказка: серым она терялась среди пояснений под ней. */}
+        {msg ? <div className="hint bad" role="alert">{msg}</div> : null}
         <div className="hint">{t('lib.hint')}</div>
 
         <div>

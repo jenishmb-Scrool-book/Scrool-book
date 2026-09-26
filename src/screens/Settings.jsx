@@ -196,7 +196,8 @@ export default function Settings({go, back}) {
           {own ? <button className="ghost" onClick={dropWall}>{t('set.wall_drop')}</button> : null}
         </div>
         {own ? <div className="wallprev" style={{backgroundImage: `url(${wall})`}} /> : null}
-        {msg ? <div className="hint">{msg}</div> : null}
+        {/* Ошибка — не подсказка: серым она терялась среди пояснений под ней. */}
+        {msg ? <div className="hint bad" role="alert">{msg}</div> : null}
         <div className="hint">{t('set.wall_hint')}</div>
 
         <div className="sect">{t('set.notif')}</div>

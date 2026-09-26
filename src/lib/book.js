@@ -22,6 +22,31 @@ const PLAIN = new Set(['', 'txt', 'md']);
 const unsupported = ext =>
   Object.assign(new Error('неизвестный формат: ' + (ext || 'без расширения')), {code: 'unsupported'});
 
+const failed = (msg, code) => Object.assign(new Error(msg), {code});
+
+/** PDF узнаётся по первым байтам: «%PDF». Отказ у него свой — его пробуют чаще всего. */
+const isPdf = u8 => u8.length >= 4 && u8[0] === 0x25 && u8[1] === 0x50 && u8[2] === 0x44 && u8[3] === 0x46;
+
+/**
+ * Похоже ли начало файла на двоичный, а не на текст.
+ *
+ * Без этой проверки картинка, документ Word или PDF без расширения — а имя
+ * из `content://` бывает любым — ложились книгой из управляющих символов.
+ * Признак простой и надёжный: в тексте нет нулевых байтов и почти нет
+ * управляющих; в двоичном файле их в первых же килобайтах десятки.
+ * UTF-16 с меткой порядка байтов сюда не доходит — он разбирается раньше.
+ */
+function binary(u8) {
+  const head = u8.subarray(0, 4096);
+  let odd = 0;
+  for (let i = 0; i < head.length; i++) {
+    const b = head[i];
+    if (b === 0) return true;
+    if (b < 0x20 && b !== 0x09 && b !== 0x0a && b !== 0x0d && b !== 0x0c) odd++;
+  }
+  return odd > head.length / 50;
+}
+
 /**
  * Похоже ли начало файла на FB2.
  *
@@ -45,6 +70,11 @@ function looksFb2(u8) {
  * а он почти всегда в 1251 — открывается текстом, а не строкой «Ð“Ð»Ð°Ð²Ð°».
  */
 function plainText(u8) {
+  // UTF-16 с меткой порядка байтов — так сохраняет «Блокнот» Windows, если
+  // выбрать «Юникод». Строгий utf-8 на нём падает, а 1251 дала бы кашу из
+  // нулей и латиницы.
+  if (u8.length >= 2 && u8[0] === 0xff && u8[1] === 0xfe) return new TextDecoder('utf-16le').decode(u8.subarray(2));
+  if (u8.length >= 2 && u8[0] === 0xfe && u8[1] === 0xff) return new TextDecoder('utf-16be').decode(u8.subarray(2));
   try {
     return new TextDecoder('utf-8', {fatal: true}).decode(u8);
   } catch {
@@ -76,16 +106,24 @@ async function fromZip(u8, ext) {
  *   chapters?: Array<{title: string, at: number}>,
  *   images?: Array<{at: number, type: string, data: string}>}>}
  * @throws {Error} у нечитаемого формата будет `code === 'unsupported'`,
- *   у неудавшейся распаковки — `code === 'zip'`
+ *   у неудавшейся распаковки — `code === 'zip'`, у PDF — `code === 'pdf'`,
+ *   у пустого файла — `code === 'empty'`
  */
 export async function parseBook(file) {
   const ext = extOf(file && file.name);
   const u8 = toBytes(await file.arrayBuffer());
-  if (!u8.length) throw new Error('Пустой файл');
+  if (!u8.length) throw failed('Пустой файл', 'empty');
 
+  if (isPdf(u8) || ext === 'pdf') throw failed('PDF не поддерживается', 'pdf');
   if (isZip(u8) || ext === 'epub' || ext === 'zip') return fromZip(u8, ext);
   if (looksFb2(u8) || ext === 'fb2') return parseFb2(u8);
   // Файл без расширения считаем текстом: хуже, чем отказ, только отказ по ошибке.
-  if (PLAIN.has(ext)) return {title: '', text: plainText(u8)};
+  // Но только если он и правда похож на текст: двоичный файл с именем
+  // «книга.txt» — всё равно двоичный.
+  if (PLAIN.has(ext)) {
+    const utf16 = u8.length >= 2 && ((u8[0] === 0xff && u8[1] === 0xfe) || (u8[0] === 0xfe && u8[1] === 0xff));
+    if (!utf16 && binary(u8)) throw unsupported(ext);
+    return {title: '', text: plainText(u8)};
+  }
   throw unsupported(ext);
 }

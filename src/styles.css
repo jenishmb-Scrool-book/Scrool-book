@@ -43,6 +43,7 @@
   --pill-fg:    #ffffff;
   --err-bg:     #5a1730;
   --err-line:   #ff2d5559;
+  --bad:        #ff7a8f;  /* текст ошибки на фоне экрана */
   --mark:       #7c5cff66;  /* подсветка найденного слова в списке поиска */
   --hit:        #ffd24a66;  /* маркер на найденном слове в самой книге */
   --shadow:     #000000;
@@ -84,6 +85,7 @@
     --pill-fg:    #ffffff;
     --err-bg:     #ffe0e8;
     --err-line:   #ff2d5559;
+    --bad:        #c21f3a;
     --mark:       #6544e838;
     --hit:        #ffcf338c;
     --shadow:     #6b6b7a;
@@ -121,6 +123,7 @@
   --pill-fg:    #ffffff;
   --err-bg:     #ffe0e8;
   --err-line:   #ff2d5559;
+  --bad:        #c21f3a;
   --mark:       #6544e838;
   --hit:        #ffcf338c;
   --shadow:     #6b6b7a;
@@ -747,6 +750,7 @@ button,textarea,input{font:inherit;color:inherit}
    счётчика глав, с которым она делит правило `.hdr .ic`. */
 #library .hdr .ic{font-size:1.2rem;opacity:.75;line-height:0;padding:4px}
 .hint{opacity:.5;font-size:.81rem;margin:6px 0 16px}
+.hint.bad{opacity:1;color:var(--bad);font-weight:500}
 
 /* Переключатель из нескольких кнопок: тема, кегль, язык. */
 .seg{display:flex;gap:6px;margin:0 0 18px}

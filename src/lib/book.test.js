@@ -109,16 +109,61 @@ describe('parseBook() — простой текст', () => {
   it('файл без расширения и без признаков формата читается текстом', async () => {
     expect((await parseBook(file('zametki', 'строка'))).text).toBe('строка');
   });
+
+  // «Блокнот» Windows сохраняет «Юникод» как UTF-16 с меткой порядка байтов:
+  // в нём нули через байт, и без отдельной ветки он читался бы кашей.
+  it('UTF-16 с меткой порядка байтов читается текстом', async () => {
+    const s = 'Глава первая. Ёжик.';
+    const le = new Uint8Array(2 + s.length * 2);
+    le[0] = 0xff; le[1] = 0xfe;
+    for (let i = 0; i < s.length; i++) {
+      le[2 + i * 2] = s.charCodeAt(i) & 0xff;
+      le[3 + i * 2] = s.charCodeAt(i) >> 8;
+    }
+    expect((await parseBook(file('a.txt', le))).text).toBe(s);
+    const be = new Uint8Array(le.length);
+    be[0] = 0xfe; be[1] = 0xff;
+    for (let i = 2; i < le.length; i += 2) {be[i] = le[i + 1]; be[i + 1] = le[i];}
+    expect((await parseBook(file('b', be))).text).toBe(s);
+  });
 });
 
 describe('parseBook() — отказы', () => {
-  it('пустой файл — внятная ошибка', async () => {
-    await expect(parseBook(file('a.txt', new Uint8Array()))).rejects.toThrow(/пуст/i);
+  it('пустой файл — внятная ошибка и свой код', async () => {
+    const e = await parseBook(file('a.txt', new Uint8Array())).catch(x => x);
+    expect(e.message).toMatch(/пуст/i);
+    expect(e.code).toBe('empty');
+  });
+
+  // PDF — то, что пробуют первым, и у него свой ответ: не «формат не тот», а
+  // «вот почему и что взять вместо».
+  it('PDF узнаётся по содержимому — и с расширением, и без', async () => {
+    for (const name of ['kniga.pdf', 'kniga', 'kniga.txt']) {
+      const e = await parseBook(file(name, '%PDF-1.4 и дальше двоичное')).catch(x => x);
+      expect(e.code, name).toBe('pdf');
+    }
   });
 
   it('чужое расширение — код unsupported', async () => {
-    const e = await parseBook(file('kniga.pdf', '%PDF-1.4 и дальше двоичное')).catch(x => x);
+    const e = await parseBook(file('kniga.docx', 'что-то')).catch(x => x);
     expect(e.code).toBe('unsupported');
+  });
+
+  // Имя из content:// бывает любым: картинка или документ без расширения,
+  // а то и с «.txt», раньше ложились книгой из управляющих символов.
+  it('двоичный файл под именем текста — отказ, а не книга из мусора', async () => {
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0x0d, 0x49, 0x48, 0x44, 0x52]);
+    for (const name of ['kartinka', 'kniga.txt']) {
+      const e = await parseBook(file(name, png)).catch(x => x);
+      expect(e.code, name).toBe('unsupported');
+    }
+    const noisy = new Uint8Array(400).map((_, i) => (i % 7 === 0 ? 0x01 : 0x41));
+    expect((await parseBook(file('x.txt', noisy)).catch(x => x)).code).toBe('unsupported');
+  });
+
+  it('текст с табуляциями и переводами строк — всё ещё текст', async () => {
+    const r = await parseBook(file('a.txt', 'Раз\tдва\r\nтри\fчетыре'));
+    expect(r.text).toBe('Раз\tдва\r\nтри\fчетыре');
   });
 
   it('в сообщении об ошибке нет undefined и null', async () => {

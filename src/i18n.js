@@ -192,7 +192,7 @@ const ru = {
   'lib.placeholder': 'Вставь сюда текст книги…',
   'lib.add': 'Добавить',
   'lib.file': 'Файл',
-  'lib.empty_text': 'Пустой текст',
+  'lib.empty_text': 'Поле пустое — вставь сюда текст книги',
   'lib.save_failed': 'Не удалось сохранить текст',
   'lib.hint': 'Один текст — один прогресс. Читай его в переписке, клипах, историях, ленте, «видео» или коротких постах — позиция общая.',
   'lib.busy': 'Готовлю книгу…',
@@ -205,6 +205,7 @@ const ru = {
   'lib.unsupported': 'Формат не поддерживается: нужен .txt, .fb2, .fb2.zip или .epub',
   'lib.chapters': '{n} глав',
   'lib.no_text': 'В файле не нашлось текста',
+  'lib.pdf': 'PDF не поддерживается: это свёрстанные страницы, а читалке нужен сам текст. Найди эту книгу в .fb2 или .epub — их раздают почти все библиотеки.',
 
   // ===== настройки =====
   'set.title': 'Настройки',
@@ -410,7 +411,7 @@ const en = {
   'lib.placeholder': 'Paste your book text here…',
   'lib.add': 'Add',
   'lib.file': 'File',
-  'lib.empty_text': 'Empty text',
+  'lib.empty_text': 'The field is empty — paste the book text here',
   'lib.save_failed': 'Could not save the text',
   'lib.hint': 'One text, one progress. Read it in chat, clips, stories, feed, “video” or short posts — the position is shared.',
   'lib.busy': 'Preparing the book…',
@@ -423,6 +424,7 @@ const en = {
   'lib.unsupported': 'Unsupported format: use .txt, .fb2, .fb2.zip or .epub',
   'lib.chapters': '{n} chapters',
   'lib.no_text': 'No text found in the file',
+  'lib.pdf': 'PDF isn’t supported: it holds laid-out pages, and the reader needs the text itself. Look for the same book as .epub or .fb2 — most libraries offer them.',
 
   'set.title': 'Settings',
   'set.wallpaper': 'Home screen wallpaper',
