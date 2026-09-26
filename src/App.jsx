@@ -281,7 +281,11 @@ export default function App() {
       // исключение: на него уходят, чтобы выйти, и позади него ничего нет.
       const k = h.findIndex(e => e.screen === id);
       if (k >= 0) h.length = k;
-      if (id !== 'home' && (k < 0 || h.length === 0 || h[h.length - 1].screen !== from)) {
+      // Шаг «вверх», к родителю (`up`), историю не наращивает: иначе «назад»
+      // из родителя возвращало бы в тот экран, из которого поднялись, —
+      // переписка ↔ список чатов по кругу.
+      const up = !!(opt && opt.up);
+      if (!up && id !== 'home' && (k < 0 || h.length === 0 || h[h.length - 1].screen !== from)) {
         h.push({screen: from, arg: argRef.current});
         if (h.length > DEPTH) h.shift();
       }
@@ -335,7 +339,7 @@ export default function App() {
   // То, что экраны вешают на «‹» в шапке. Раньше каждый экран знал, куда
   // возвращаться, своим списком — и врал: настройки всегда уводили в
   // библиотеку, хотя попасть в них можно с нижней панели любого движка.
-  const goBack = () => { if (!backRef.current()) goRef.current(parentOf(screenRef.current)); };
+  const goBack = () => { if (!backRef.current()) goRef.current(parentOf(screenRef.current), {up: true}); };
 
   useEffect(() => {
     let off;
@@ -360,7 +364,7 @@ export default function App() {
       if (backRef.current()) return true;
       // Истории нет (например, экран восстановлен после перезапуска) — к
       // родителю экрана, а у остальных на дом.
-      goRef.current(parentOf(screenRef.current));
+      goRef.current(parentOf(screenRef.current), {up: true});
       return true;
     };
     Promise.resolve(initNative({onBack}))

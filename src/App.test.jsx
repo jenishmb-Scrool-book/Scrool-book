@@ -508,3 +508,19 @@ describe('дочитанная книга', () => {
   });
 });
 
+describe('шаг к родителю', () => {
+  // После перезапуска истории нет, и «назад» ведёт к родителю. Этот шаг не
+  // должен сам становиться историей: иначе «назад» из списка чатов
+  // возвращало в переписку, и так по кругу.
+  it('переписка → список чатов → дом, без круга', async () => {
+    await seed({id: 'chat', arg: 0});
+    await boot();
+    expect(here()).toBe('chat');
+    await act(async () => {expect(await NAT.onBack()).toBe(true);});
+    expect(here()).toBe('chats');
+    await act(async () => {expect(await NAT.onBack()).toBe(true);});
+    expect(here()).toBe('home');
+    await act(async () => {expect(await NAT.onBack()).toBe(false);});
+  });
+});
+
