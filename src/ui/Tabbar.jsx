@@ -1,5 +1,6 @@
 import {useT} from '../i18n.js';
 import Glyph, {has} from './Glyph.jsx';
+import {labelOf} from './actions.js';
 
 // Нижняя панель навигации. Ни одно настоящее приложение без неё не выглядит
 // настоящим — и это самая дешёвая узнаваемость из всех: четыре значка внизу.
@@ -31,7 +32,9 @@ export default function Tabbar({items, active = 0, onPick}) {
             className={k === active ? 'on' : ''}
             onClick={onPick && action ? () => onPick(action) : undefined}
             role={onPick && action ? 'button' : undefined}
-            aria-label={key ? t(key) : undefined}
+            // Подпись под значком есть не везде (в «ленте» её нет и в
+            // оригинале), а для чтения с экрана она нужна всегда.
+            aria-label={key ? t(key) : action ? t(labelOf(action)) : undefined}
           >
             <b><Glyph name={name} /></b>
             {key ? <i>{t(key)}</i> : null}

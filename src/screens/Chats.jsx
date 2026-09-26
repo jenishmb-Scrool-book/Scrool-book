@@ -8,7 +8,7 @@ import Tabbar from '../ui/Tabbar.jsx';
 import useCardWindow from '../ui/useCardWindow.js';
 import useChunks from '../ui/useChunks.js';
 import {SIZE} from '../ui/sizes.js';
-import {run} from '../ui/actions.js';
+import {labelOf, run} from '../ui/actions.js';
 import {grad, reaction, reactionCount, sticker} from '../ui/visual.js';
 import {shot} from '../ui/pics.js';
 import {skinOf, tabIndex} from '../ui/skins.js';
@@ -74,7 +74,7 @@ function ChatHead({skin, onBack, seed, title, sub, onAct}) {
         <span>{sub}</span>
       </div>
       {S.chat.map(([ic, , action], k) => (
-        <span key={k} className="ic" role="button"
+        <span key={k} className="ic" role="button" aria-label={t(labelOf(action))}
               onClick={() => onAct(action)}><Glyph name={ic} /></span>
       ))}
     </div>
@@ -248,7 +248,8 @@ export default function Chats({go, back, arg}) {
             в каком из трёх ты сейчас. */}
         <h2>{S.name}</h2>
         {S.head.map(([ic, , action], k) => (
-          <span key={k} className="ic" role="button" onClick={() => act(action)}><Glyph name={ic} /></span>
+          <span key={k} className="ic" role="button" aria-label={t(labelOf(action))}
+                onClick={() => act(action)}><Glyph name={ic} /></span>
         ))}
       </div>
       {S.search ? (
@@ -268,7 +269,9 @@ export default function Chats({go, back, arg}) {
       {/* «Новое сообщение» открывает переписку на том месте, где читаешь.
           Писать в этом приложении действительно некому, но кнопка в этом углу
           есть у каждого мессенджера, и увести её некуда, кроме как в чат. */}
-      <div className="fab" onClick={() => openAt(pos)} role="button"><Glyph name={S.fab} /></div>
+      <div className="fab" onClick={() => openAt(pos)} role="button" aria-label={t('a11y.compose')}>
+        <Glyph name={S.fab} />
+      </div>
       {S.tabs ? <Tabbar items={S.tabs} active={tabIndex(ui.skin, tab)} onPick={act} /> : null}
     </Screen>
   );

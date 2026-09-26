@@ -28,6 +28,19 @@ const ru = {
   'err.empty': 'Пустой текст — читать нечего.',
 
   // ===== упавший экран =====
+  // ===== подписи значков для чтения с экрана (TalkBack) =====
+  'a11y.top': 'Наверх',
+  'a11y.here': 'К месту чтения',
+  'a11y.add': 'Добавить книгу',
+  'a11y.chats': 'Сообщения',
+  'a11y.stories': 'Истории',
+  'a11y.reels': 'Клипы',
+  'a11y.video': 'Видео',
+  'a11y.compose': 'Новое сообщение',
+  'a11y.full': 'На весь экран',
+  'a11y.like': 'Нравится',
+  'a11y.dislike': 'Не нравится',
+
   'crash.title': 'Экран не открылся',
   'crash.body': 'Внутри что-то сломалось. Книга и место чтения целы: они хранятся отдельно от экранов. Если повторяется — скопируй описание ошибки и пришли разработчику.',
   'crash.home': 'На главный экран',
@@ -247,6 +260,18 @@ const en = {
   'err.full': 'The device storage is full. Free up some space or split the text into parts.',
   'err.save': 'Could not save.',
   'err.empty': 'The text is empty — nothing to read.',
+
+  'a11y.top': 'To the top',
+  'a11y.here': 'To your place',
+  'a11y.add': 'Add a book',
+  'a11y.chats': 'Messages',
+  'a11y.stories': 'Stories',
+  'a11y.reels': 'Clips',
+  'a11y.video': 'Video',
+  'a11y.compose': 'New message',
+  'a11y.full': 'Full screen',
+  'a11y.like': 'Like',
+  'a11y.dislike': 'Dislike',
 
   'crash.title': 'This screen failed to open',
   'crash.body': 'Something broke inside. Your book and reading position are safe: they are stored apart from the screens. If it keeps happening, copy the error details and send them to the developer.',

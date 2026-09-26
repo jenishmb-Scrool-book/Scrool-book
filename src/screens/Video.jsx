@@ -84,7 +84,7 @@ function Card({i, title, here, pics, onPlay, onMenu, small}) {
         </div>
         {/* Меню карточки. Останавливаем всплытие: клик по самой карточке
             открывает ролик, и без этого «⋮» открывал бы его тоже. */}
-        <span className="kebab" role="button"
+        <span className="kebab" role="button" aria-label={t('toc.title')}
               onClick={e => { e.stopPropagation(); if (onMenu) onMenu(); }}><Glyph name="more" /></span>
       </div>
     </div>
@@ -259,11 +259,13 @@ export function Player({go, back}) {
             понятиях: «play» — читать дальше (следующая страница), «на весь
             экран» — та же книга в полноэкранной ленте клипов. Курсор общий,
             поэтому переход продолжает то же самое место. */}
-        <span className="pl" role="button" onClick={next}><Glyph name="play" /></span>
+        <span className="pl" role="button" aria-label={t('video.upnext')} onClick={next}><Glyph name="play" /></span>
         <div className="ctrl">
           <span className="tm">{elapsed(at)} / {dur(at)}</span>
           <i className="bar"><b style={{width: seen(at) + '%'}} /></i>
-          <span className="full" role="button" onClick={() => go('reels')}><Glyph name="full" /></span>
+          <span className="full" role="button" aria-label={t('a11y.full')} onClick={() => go('reels')}>
+            <Glyph name="full" />
+          </span>
         </div>
       </div>
       <Progress offset={offset} len={text.length} go={go} />
@@ -276,11 +278,13 @@ export function Player({go, back}) {
               мёртвая кнопка, только с подписью. Осталось то, у чего есть
               честный ответ. */}
           <div className="vacts">
-            <span className={mark === 1 ? 'on' : ''} role="button"
+            <span className={mark === 1 ? 'on' : ''} role="button" aria-label={t('a11y.like')}
+                  aria-pressed={mark === 1}
                   onClick={() => setMark(v => (v === 1 ? 0 : 1))}>
               <Glyph name="up" /> {likes(at) + (mark === 1 ? 1 : 0)}
             </span>
-            <span className={mark === -1 ? 'on' : ''} role="button"
+            <span className={mark === -1 ? 'on' : ''} role="button" aria-label={t('a11y.dislike')}
+                  aria-pressed={mark === -1}
                   onClick={() => setMark(v => (v === -1 ? 0 : -1))}><Glyph name="down" /></span>
           </div>
           <div className="chan">

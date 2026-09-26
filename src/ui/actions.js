@@ -46,6 +46,32 @@ export const TAB = 'tab:';
 export const ALIAS = {find: ['toc', 'search']};
 
 /**
+ * Подпись кнопки для чтения с экрана — по назначению, а не по значку.
+ *
+ * Значок без подписи TalkBack читает словом «кнопка», и только. Подпись по
+ * назначению, а не по рисунку: «самолётик» или «сетка» не говорят, что будет
+ * по нажатию, а «Оглавление» — говорит. Таблица одна, как и таблица действий, и
+ * `tabs.test.js` требует подпись у каждой кнопки без видимой надписи.
+ */
+export const LABEL = {
+  top: 'a11y.top',
+  here: 'a11y.here',
+  find: 'toc.tab_search',
+  toc: 'toc.title',
+  library: 'a11y.add',
+  settings: 'set.title',
+  chats: 'a11y.chats',
+  chat: 'a11y.chats',
+  stories: 'a11y.stories',
+  reels: 'a11y.reels',
+  video: 'a11y.video'
+};
+
+/** Ключ подписи для действия. Вкладка `tab:x` подписывается словом вкладки. */
+export const labelOf = action =>
+  LABEL[action] || (action && action.startsWith(TAB) ? 'chats.tab_' + action.slice(TAB.length) : '');
+
+/**
  * Выполнить действие кнопки.
  *
  * @param {string} action  из таблицы выше: 'toc', 'library', 'reels', 'top'…

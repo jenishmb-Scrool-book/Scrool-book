@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import {SCREENS} from '../App.jsx';
-import {ALIAS, LOCAL, TAB} from './actions.js';
+import {ALIAS, LOCAL, TAB, labelOf} from './actions.js';
 import {has as hasGlyph} from './Glyph.jsx';
 import {SKINS} from './skins.js';
 import {TABS} from './tabs.js';
@@ -67,6 +67,19 @@ describe('кнопки', () => {
     for (const [where, items] of everyButton()) {
       const actions = items.map(x => x[2]);
       expect(new Set(actions).size, where + ': ' + actions.join(', ')).toBe(actions.length);
+    }
+  });
+
+  it('у каждой кнопки есть подпись для чтения с экрана', () => {
+    // Значок без подписи TalkBack читает словом «кнопка». Видимая подпись
+    // под значком годится; нет её — нужна подпись по назначению.
+    for (const [where, items] of everyButton()) {
+      for (const [glyph, key, action] of items) {
+        const label = key || labelOf(action);
+        expect(label, where + ' → ' + glyph + ' → ' + action).toBeTruthy();
+        expect(DICT.ru[label], where + ' → ' + label).toBeTruthy();
+        expect(DICT.en[label], where + ' → ' + label).toBeTruthy();
+      }
     }
   });
 
