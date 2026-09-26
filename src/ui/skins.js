@@ -73,6 +73,7 @@ export const skinOf = id => SKINS[id] || SKINS.tg;
 export function tabIndex(skin, tab) {
   const tabs = skinOf(skin).tabs;
   if (!tabs) return 0;
-  const k = tabs.findIndex(([, , action]) => action === 'tab:' + tab);
-  return k < 0 ? 0 : k;
+  // Экрана нет среди вкладок (звонки у «фиолетового», открытые трубкой из
+  // переписки) — не горит ни одна: горящие «Чаты» над журналом звонков врут.
+  return tabs.findIndex(([, , action]) => action === 'tab:' + tab);
 }

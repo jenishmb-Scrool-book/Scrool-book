@@ -21,6 +21,20 @@ Object.defineProperty(HTMLElement.prototype, 'offsetTop', {
     return 1000 + all.indexOf(this) * 200;
   }
 });
+// Экран высотой 500, а вся страница — до последнего комментария и ещё 300
+// под ним (карточка «Следующее»): иначе jsdom отдаёт нули, и страница всегда
+// «докручена до низа».
+Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+  configurable: true,
+  get() {return this.classList.contains('body') ? 500 : 0;}
+});
+Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
+  configurable: true,
+  get() {
+    if (!this.classList.contains('body')) return 0;
+    return 1000 + this.querySelectorAll('.cmt').length * 200 + 300;
+  }
+});
 
 // Абзацы разные: на одинаковых «описание не повторяет название» не проверить.
 const TEXT = Array.from({length: 80}, (_, i) =>
@@ -113,6 +127,31 @@ describe('ролик', () => {
     const desc = document.querySelector('.dtxt').textContent;
     await act(async () => {document.querySelector('#player .pl').click();});
     expect(document.querySelector('.dtxt').textContent).not.toBe(desc);
+  });
+});
+
+describe('▶ внизу страницы', () => {
+  // ▶ целилась в комментарий, который до верха экрана не доезжает никогда, и
+  // застревала. Докрученная до низа страница прочитана вся — ▶ ведёт дальше.
+  it('с самого низа ▶ открывает следующий ролик', async () => {
+    const box = await boot();
+    box.scrollTo = () => {};
+    const desc = document.querySelector('.dtxt').textContent;
+    box.scrollTop = box.scrollHeight - box.clientHeight;
+    await act(async () => {document.querySelector('#player .pl').click();});
+    expect(document.querySelector('.dtxt').textContent).not.toBe(desc);
+  });
+
+  it('▶ прокручивает ровно туда, где комментарий уже засчитан', async () => {
+    const box = await boot();
+    const asked = [];
+    box.scrollTo = o => {asked.push(o); box.scrollTop = o.top; box.dispatchEvent(new Event('scroll'));};
+    const at = [...document.querySelectorAll('.cmt')].map(el => Number(el.dataset.at));
+    await act(async () => {document.querySelector('#player .pl').click();});
+    await waitFor(() => expect(now).toBe(at[0]), {timeout: 10000});
+    await act(async () => {document.querySelector('#player .pl').click();});
+    await waitFor(() => expect(now).toBe(at[1]), {timeout: 10000});
+    expect(asked).toHaveLength(2);
   });
 });
 

@@ -524,3 +524,31 @@ describe('шаг к родителю', () => {
   });
 });
 
+describe('вкладка «Группы»', () => {
+  // Строка группы открывала переписку с человеком под тем же номером, а
+  // «назад» возвращал на вкладку «Чаты».
+  it('строка группы открывает переписку группы, «назад» — на «Группы»', async () => {
+    await seed({id: 'chats', arg: 'groups'}, {skin: 'wa'});
+    await boot();
+    const row = document.querySelector('.crow');
+    const group = row.querySelector('.ci b').textContent;
+    await act(async () => {row.click();});
+    expect(here()).toBe('chat');
+    expect(document.querySelector('.chdr .who b').textContent).toBe(group);
+    expect(document.querySelector('.chdr .who span').textContent).toMatch(/участник/);
+    await act(async () => {document.querySelector('.chdr .back').click();});
+    expect(here()).toBe('chats');
+    expect(document.querySelector('.tabbar span.on').getAttribute('aria-label'))
+      .toBe(DICT.ru['chats.tab_groups']);
+  });
+
+  it('переключение вкладки запоминается как место', async () => {
+    await seed({id: 'chats', arg: null}, {skin: 'wa'});
+    await boot();
+    const groups = [...document.querySelectorAll('.tabbar span')]
+      .find(el => el.getAttribute('aria-label') === DICT.ru['chats.tab_groups']);
+    await act(async () => {groups.click();});
+    await waitFor(() => expect(rawMeta().place.arg).toBe('groups'));
+  });
+});
+

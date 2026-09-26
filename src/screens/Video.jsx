@@ -253,10 +253,17 @@ export function Player({go, back}) {
       clearTimeout(timer);
       timer = setTimeout(() => {
         let last = null;
-        for (const el of box.querySelectorAll('.cmt')) {
-          if (el.offsetTop < box.scrollTop + 60) last = el;
+        const all = box.querySelectorAll('.cmt');
+        for (const el of all) {
+          // `<=`, а не `<`: ▶ прокручивает ровно на эту отметку, и строгое
+          // сравнение не засчитывало комментарий, к которому она привела, —
+          // ▶ застревала на месте.
+          if (el.offsetTop <= box.scrollTop + 60) last = el;
           else break;
         }
+        // Докрутили до самого низа — на экране всё, что осталось: последние
+        // комментарии до верха не доезжают никогда, и курсор до них не доходил.
+        if (all.length && box.scrollTop + box.clientHeight >= box.scrollHeight - 2) last = all[all.length - 1];
         // Только вперёд — как везде (см. useCardWindow). Вернулся ко второму
         // комментарию перечитать — место остаётся на шестом: назад его
         // переносит только оглавление, то есть прямая просьба.
@@ -284,7 +291,10 @@ export function Player({go, back}) {
   // непрочитанному комментарию, а когда их не осталось — к следующему ролику.
   const next = () => {
     const box = boxRef.current;
-    const unread = box && [...box.querySelectorAll('.cmt')]
+    // Страница докручена до низа — непрочитанного на ней нет, даже если
+    // курсор ещё не успел доехать: дальше только следующий ролик.
+    const bottom = box && box.scrollTop + box.clientHeight >= box.scrollHeight - 2;
+    const unread = box && !bottom && [...box.querySelectorAll('.cmt')]
       .find(el => Number(el.dataset.at) > offRef.current);
     if (box && unread) {
       box.scrollTo({top: Math.max(0, unread.offsetTop - 60), behavior: 'smooth'});
