@@ -147,7 +147,12 @@ export default function Home({go}) {
           {text.length ? <div className="lf">{left}</div> : null}
         </div>
         <div className="bar"><i style={{transform: `scaleX(${read.toFixed(4)})`}} /></div>
-        {stats ? <div className="ws">{stats}</div> : null}
+        {/* Книга есть, текста нет — телефон восстановлен из облачной копии, а
+            тексты в неё не входят. Без этой строки «Продолжить» молча уводил в
+            библиотеку, и было непонятно, куда делась книга. */}
+        {current && !text.length
+          ? <div className="ws">{t('home.missing')}</div>
+          : stats ? <div className="ws">{stats}</div> : null}
         <button onClick={cont}>{t('home.continue')}</button>
       </div>
       <div className="grid">

@@ -110,3 +110,16 @@ describe('нижние панели', () => {
     }
   });
 });
+
+describe('трубка в шапке переписки', () => {
+  // У всех трёх мессенджеров она ведёт в журнал звонков — в том числе у тех,
+  // где вкладки «Звонки» нет: раньше там трубка молча открывала список чатов.
+  it('у каждой обёртки ведёт в звонки', () => {
+    for (const [id, skin] of Object.entries(SKINS)) {
+      const phone = skin.chat.find(([glyph]) => glyph === 'phone');
+      expect(phone, id).toBeTruthy();
+      expect(phone[2], id).toBe('tab:calls');
+    }
+  });
+});
+

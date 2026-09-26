@@ -360,8 +360,15 @@ export function StoreProvider({children}) {
       let txt = '';
       if (m.cur && m.books.some(b => b.id === m.cur)) {
         txt = String((await loadText(m.cur)) ?? '');
-        m.at[m.cur] = clamp(m.at[m.cur], txt.length);
-        m.books = m.books.map(b => (b.id === m.cur ? {...b, len: txt.length} : b));
+        // Текста нет — это восстановление из облачной копии: тексты книг из
+        // неё исключены, а мета с местом чтения — нет. Место и длину тогда не
+        // трогаем. Раньше здесь курсор обрезался по пустому тексту до нуля и
+        // тут же записывался — и место, ради которого копию и хранили,
+        // пропадало на первом же запуске.
+        if (txt.length) {
+          m.at[m.cur] = clamp(m.at[m.cur], txt.length);
+          m.books = m.books.map(b => (b.id === m.cur ? {...b, len: txt.length} : b));
+        }
       } else {
         m.cur = null;                       // мета ссылается на исчезнувшую книгу
       }
@@ -515,8 +522,23 @@ export function StoreProvider({children}) {
     }
 
     const prev = metaRef.current;
-    let id = String(Date.now());
-    while (prev.books.some(b => b.id === id)) id = String(Number(id) + 1);   // две книги в одну мс
+    const name = (title || txt.slice(0, 40)).trim();
+
+    // Та же книга, чей текст пропал, — после восстановления из облачной копии
+    // тексты возвращает только сам человек, файлом. Узнаём её по названию и
+    // длине текста (длина — до знака, случайно не совпадёт) и кладём текст
+    // под её же id: место чтения, лежавшее в копии, продолжает работать.
+    // Без этого повторное добавление заводило новую книгу с нуля, а старая
+    // запись с местом так и висела в библиотеке пустой.
+    let back = null;
+    for (const b of prev.books) {
+      if (b.title !== name || b.len !== txt.length) continue;
+      const had = String((await loadText(b.id)) ?? '');
+      if (!had) {back = b; break;}
+    }
+
+    let id = back ? back.id : String(Date.now());
+    while (!back && prev.books.some(b => b.id === id)) id = String(Number(id) + 1);   // две книги в одну мс
 
     // Сначала текст: он большой и падает первым. Мету трогаем только когда он лёг.
     try {
@@ -551,14 +573,21 @@ export function StoreProvider({children}) {
       }
     }
 
-    const next = {
-      ...prev,
-      books: [...prev.books, {
-        id, title: (title || txt.slice(0, 40)).trim(), len: txt.length, toc: 1, pics: count
-      }],
-      at: {...prev.at, [id]: 0},
-      cur: id
-    };
+    const base = metaRef.current;                 // за await мета могла уехать
+    const entry = {id, title: name, len: txt.length, toc: 1, pics: count};
+    const next = back
+      ? {
+        ...base,
+        books: base.books.map(b => (b.id === id ? {...b, ...entry} : b)),
+        at: {...base.at, [id]: clamp(base.at[id], txt.length)},
+        cur: id
+      }
+      : {
+        ...base,
+        books: [...base.books, entry],
+        at: {...base.at, [id]: 0},
+        cur: id
+      };
     metaRef.current = next;
     if (timer.current) {clearTimeout(timer.current); timer.current = null;}
     dirty.current = false;
@@ -567,7 +596,7 @@ export function StoreProvider({children}) {
     } catch (e) {
       // Мета не легла — откатываемся и убираем текст, иначе он осиротеет
       // в хранилище: из библиотеки его будет не видно и не удалить.
-      metaRef.current = prev;
+      metaRef.current = base;
       await deleteText(id).catch(() => {});
       await deleteToc(id).catch(() => {});
       await dropPics(id, count);
@@ -594,11 +623,12 @@ export function StoreProvider({children}) {
     const toc = await bookToc(book, txt);
     const pix = await bookPix(book, txt);
     if (seq !== openSeq.current) return;          // и ещё раз: чтение оглавления тоже асинхронно
+    // Пропавший текст место и длину не трогает — см. гидрацию.
     applyMeta({
       ...base,
       cur: id,
-      at: {...base.at, [id]: clamp(base.at[id], txt.length)},
-      books: base.books.map(b => (b.id === id ? {...b, len: txt.length, toc: 1} : b))
+      at: txt.length ? {...base.at, [id]: clamp(base.at[id], txt.length)} : base.at,
+      books: base.books.map(b => (b.id === id && txt.length ? {...b, len: txt.length, toc: 1} : b))
     });
     applyText(txt);
     applyToc(toc);
@@ -628,7 +658,7 @@ export function StoreProvider({children}) {
       txt = first ? String((await loadText(first.id)) ?? '') : '';
       toc = first ? await bookToc(first, txt) : [];
       pix = first ? await bookPix(first, txt) : [];
-      if (first) {
+      if (first && txt.length) {
         next.books = books.map(b => (b.id === first.id ? {...b, len: txt.length, toc: 1} : b));
         next.at = {...next.at, [first.id]: clamp(next.at[first.id], txt.length)};
       }

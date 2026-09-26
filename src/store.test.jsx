@@ -838,3 +838,55 @@ describe('вступление', () => {
     expect(result.current.introDone).toBe(true);
   });
 });
+
+describe('восстановление из облачной копии', () => {
+  // Тексты книг из облачной копии исключены (квота 25 МБ), мета с местом
+  // чтения — нет. После восстановления телефона книга есть в списке, текста у
+  // неё нет, а место — ради него копию и хранили — обязано уцелеть.
+  const TEXT = 'Абзац про дождь. '.repeat(300).trim();
+  const lost = () => saveMeta({
+    books: [{id: 'b1', title: 'Дождь', len: TEXT.length, toc: 1}],
+    cur: 'b1', at: {b1: 2500}, last: 'reels', intro: 1
+  });
+
+  it('место не обнуляется и не перезаписывается, пока текста нет', async () => {
+    await lost();
+    const h = await mount();
+    expect(h.result.current.text).toBe('');
+    expect(h.result.current.positions.b1).toBe(2500);
+    expect(h.result.current.books[0].len).toBe(TEXT.length);
+    act(() => h.result.current.setUi({theme: 'dark'}));       // любая запись меты
+    await waitFor(() => expect(rawMeta().ui.theme).toBe('dark'));
+    expect(rawMeta().at.b1).toBe(2500);
+  });
+
+  it('та же книга, добавленная заново, встаёт на своё место', async () => {
+    await lost();
+    const h = await mount();
+    const id = await add(h, 'Дождь', TEXT);
+    expect(id).toBe('b1');                                     // та же запись, не новая
+    expect(h.result.current.books).toHaveLength(1);
+    expect(h.result.current.offset).toBe(2500);
+    expect(h.result.current.text).toBe(TEXT);
+  });
+
+  it('другая книга с тем же названием, но другой длины — отдельная', async () => {
+    await lost();
+    const h = await mount();
+    const id = await add(h, 'Дождь', TEXT + ' И ещё абзац.');
+    expect(id).not.toBe('b1');
+    expect(h.result.current.books).toHaveLength(2);
+    expect(h.result.current.offset).toBe(0);
+    expect(h.result.current.positions.b1).toBe(2500);
+  });
+
+  it('книга, у которой текст на месте, повторным добавлением не перезаписывается', async () => {
+    const h = await mount();
+    const a = await add(h, 'Дождь', TEXT);
+    act(() => h.result.current.setOffset(1000));
+    const b = await add(h, 'Дождь', TEXT);
+    expect(b).not.toBe(a);
+    expect(h.result.current.positions[a]).toBe(1000);
+  });
+});
+

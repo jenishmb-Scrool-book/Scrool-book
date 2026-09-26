@@ -433,3 +433,32 @@ describe('«назад» без истории', () => {
   }
 });
 
+describe('звонки из переписки', () => {
+  // Трубка в шапке переписки у «синего» мессенджера (вкладок нет вовсе)
+  // открывает журнал звонков отдельным экраном, а не список чатов.
+  it('у обёртки без вкладок открывает журнал звонков', async () => {
+    await seed({id: 'chat', arg: 0}, {skin: 'tg'});
+    await boot();
+    expect(here()).toBe('chat');
+    const phone = [...document.querySelectorAll('.chdr .ic')]
+      .find(el => el.getAttribute('aria-label') === DICT.ru['chats.tab_calls']);
+    await act(async () => {phone.click();});
+    expect(here()).toBe('chats');
+    expect(document.querySelector('.mhdr h2').textContent).toBe(DICT.ru['chats.tab_calls']);
+    expect(document.querySelectorAll('.crow.call').length).toBeGreaterThan(0);
+  });
+});
+
+describe('книга без текста', () => {
+  // После восстановления из облачной копии текста книги нет, а место есть.
+  it('домашний экран говорит, что делать, и место не обнуляется', async () => {
+    await saveMeta({
+      books: [{id: 'b1', title: 'Книга', len: TEXT.length, toc: 1}],
+      cur: 'b1', at: {b1: 900}, last: 'reels', place: {id: 'home', arg: null}
+    });
+    await boot();
+    expect(document.querySelector('.widget .ws').textContent).toBe(DICT.ru['home.missing']);
+    expect(rawMeta() === null || rawMeta().at.b1 === 900).toBe(true);
+  });
+});
+

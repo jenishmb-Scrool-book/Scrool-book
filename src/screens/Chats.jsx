@@ -209,11 +209,18 @@ export default function Chats({go, back, arg}) {
 
   // На какой вкладке открылись. Приходит из шапки переписки: трубка ведёт в
   // журнал вызовов, а не просто «назад в список».
+  //
+  // Журнал открывается у ЛЮБОЙ обёртки, даже без вкладки «Звонки»: трубка в
+  // шапке переписки есть у всех трёх, а у «синего» и «фиолетового» вкладки нет
+  // — и трубка молча открывала список чатов. В настоящих мессенджерах звонки
+  // живут отдельным экраном из меню, им он здесь и становится.
   const [tab, setTab] = useState(() => {
     const want = String(arg == null ? 'chats' : arg);
-    const ok = S.tabs && S.tabs.some(([, , action]) => action === 'tab:' + want);
+    const ok = want === 'calls' || (S.tabs && S.tabs.some(([, , action]) => action === 'tab:' + want));
     return ok ? want : 'chats';
   });
+  // Звонки без своей вкладки — отдельный экран, и шапка говорит, какой.
+  const callsAlone = tab === 'calls' && !(S.tabs && S.tabs.some(([, , a]) => a === 'tab:calls'));
 
   const act = action => {
     if (action.startsWith('tab:')) {
@@ -246,7 +253,7 @@ export default function Chats({go, back, arg}) {
         {/* В шапке списка стоит имя «приложения», а не слово «Чаты»: так это
             устроено во всех настоящих мессенджерах, и с одного взгляда видно,
             в каком из трёх ты сейчас. */}
-        <h2>{S.name}</h2>
+        <h2>{callsAlone ? t('chats.tab_calls') : S.name}</h2>
         {S.head.map(([ic, , action], k) => (
           <span key={k} className="ic" role="button" aria-label={t(labelOf(action))}
                 onClick={() => act(action)}><Glyph name={ic} /></span>
