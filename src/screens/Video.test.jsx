@@ -53,7 +53,8 @@ describe('плеер', () => {
     const box = await boot();
     const at = [...document.querySelectorAll('.cmt')].map(el => Number(el.dataset.at));
     await scroll(box, 1000 + 4 * 200);                   // пятый комментарий у кромки
-    await waitFor(() => expect(rawMeta().at.b1).toBe(at[4]));
+    // Запас по времени: под параллельным прогоном таймеры дебаунсов опаздывают.
+    await waitFor(() => expect(rawMeta().at.b1).toBe(at[4]), {timeout: 4000});
     await scroll(box, 1000 + 1 * 200);                   // вернулись ко второму
     await sleep(600);
     expect(rawMeta().at.b1).toBe(at[4]);                 // место осталось на пятом

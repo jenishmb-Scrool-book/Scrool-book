@@ -24,10 +24,17 @@ export default function useChunks(size = 280) {
   const chunks = useMemo(() => chunked(text, size), [text, size]);
   const pos = useMemo(() => indexAt(chunks, offset), [chunks, offset]);
 
+  // Номер за последней карточкой — «дочитано»: курсор встаёт на конец
+  // последнего куска (стор прижмёт его к последнему знаку). Иначе курсор
+  // стоял бы на НАЧАЛЕ последнего куска, и книга не кончалась никогда.
   const setPos = useCallback(i => {
     if (!chunks.length) return;
-    const k = Math.min(Math.max(Math.trunc(Number(i)) || 0, 0), chunks.length - 1);
-    setOffset(chunks[k].at);
+    const n = Math.trunc(Number(i)) || 0;
+    if (n >= chunks.length) {
+      setOffset(chunks[chunks.length - 1].end);
+      return;
+    }
+    setOffset(chunks[Math.max(n, 0)].at);
   }, [chunks, setOffset]);
 
   // Место взгляда — то же смещение в символах, что и курсор, но ответ на

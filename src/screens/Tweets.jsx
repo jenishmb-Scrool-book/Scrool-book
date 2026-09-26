@@ -66,6 +66,10 @@ export default function Tweets({go, back}) {
             </div>
           </div>
         ))}
+        {/* Конец книги — отметкой, как в переписке: без неё лента просто
+            обрывалась, и было непонятно, дочитано или не догрузилось. */}
+        {items.length && items[items.length - 1] === count - 1
+          ? <div className="done">{t('reader.end')}</div> : null}
       </div>
       <Resume away={away} onClick={toPos} />
       <Tabbar items={TABS.tweets} active={0} onPick={act} />

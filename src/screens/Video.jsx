@@ -133,6 +133,10 @@ export default function Video({go, back}) {
                 title={<Hit text={chunks[i].text} at={chunks[i].at} end={chunks[i].end} />}
                 onPlay={() => play(i)} onMenu={() => go('toc')} />
         ))}
+        {/* Конец книги — отметкой, как в переписке: без неё лента просто
+            обрывалась, и было непонятно, дочитано или не догрузилось. */}
+        {items.length && items[items.length - 1] === count - 1
+          ? <div className="done">{t('reader.end')}</div> : null}
       </div>
       <Resume away={away} onClick={toPos} />
       <Tabbar items={TABS.video} active={0} onPick={act} />

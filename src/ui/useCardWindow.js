@@ -103,7 +103,7 @@ export default function useCardWindow({count, pos, setPos, eye, ahead = 1, cardS
   // монтирование. Если бы он пересоздавался на каждый рендер, чужая перерисовка
   // в середине дебаунса гасила бы ещё не сработавший таймер.
   const live = useRef(null);
-  live.current = {count, setPos, trackPos, cardSelector, pos, anchor, start, eye};
+  live.current = {count, setPos, trackPos, cardSelector, pos, anchor, start, end, eye};
 
   // Стартовая прокрутка: к месту взгляда, если оно записано, иначе к курсору.
   useLayoutEffect(() => {
@@ -173,10 +173,20 @@ export default function useCardWindow({count, pos, setPos, eye, ahead = 1, cardS
         if (el.offsetTop + el.offsetHeight > box.scrollTop + 40) {cur = el; break;}
       }
     }
+    // Долистали до самого низа, и окно рендера дошло до конца книги: на экране
+    // последние карточки, и читать больше нечего. Курсор — за последнюю
+    // карточку, то есть «дочитано». Без этого до конца книги было не дойти:
+    // курсор ставит карточка у ВЕРХНЕГО края, а последние, короче экрана, до
+    // верха не доезжают никогда.
+    const bottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 2;
+    const finished = !!(s.trackPos && s.count && bottom && s.end >= s.count);
+    if (finished) s.setPos(s.count);
     if (cur) {
       const at = Number(cur.dataset.i);
-      // Только вперёд. Назад курсор переносит оглавление, а не палец.
-      if (at > s.pos) s.setPos(at);
+      // Только вперёд. Назад курсор переносит оглавление, а не палец. После
+      // «дочитано» верхняя карточка курсор не трогает: `s.pos` здесь ещё
+      // старый, и она перетёрла бы конец книги своим началом.
+      if (!finished && at > s.pos) s.setPos(at);
       setAway(at < s.pos - 1);
       // А место взгляда — туда, куда смотрели на самом деле, вместе со сдвигом
       // внутри карточки: без него возврат подбрасывал бы к её верхнему краю, а

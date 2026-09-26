@@ -8,7 +8,7 @@ import {DEFAULT_WALL, getWallpaper, setWallpaper, shrink} from '../wallpaper.js'
 import {APP_NAMES} from '../ui/skins.js';
 import {dayLine, hhmm, useNow} from '../ui/clock.js';
 import {streakOf, todayOf} from '../lib/streak.js';
-import {CPM} from '../lib/pace.js';
+import {CPM, minutesLeft} from '../lib/pace.js';
 import AppIcon from '../ui/AppIcon.jsx';
 import Glyph from '../ui/Glyph.jsx';
 
@@ -99,8 +99,11 @@ export default function Home({go}) {
     return () => {live = false;};
   }, []);
 
-  // «Продолжить» уводит туда, где читали в прошлый раз. Нет книги — в библиотеку.
-  const cont = () => go(text.length ? (lastApp || 'reels') : 'library');
+  // «Продолжить» уводит туда, где читали в прошлый раз. Нет книги — в
+  // библиотеку. Дочитана — тоже в библиотеку: продолжать нечего, и кнопка
+  // говорит, что дальше, а не ведёт на последнюю страницу.
+  const done = !!text.length && minutesLeft(offset, text.length) === 0;
+  const cont = () => go(text.length && !done ? (lastApp || 'reels') : 'library');
 
   // Скин запоминается в сторе, а не в состоянии экрана: иначе «Продолжить»
   // после перезапуска открывало бы чтение в чужой обёртке.
@@ -144,7 +147,9 @@ export default function Home({go}) {
           {/* «Осталось» — то же число, что и в плашке над каждым списком.
               На домашнем экране оно отвечает на вопрос, ради которого туда и
               смотрят: успею ли я сейчас. */}
-          {text.length ? <div className="lf">{left}</div> : null}
+          {/* «осталось 5 мин», а не голое «5 мин»: строкой ниже стоит «Сегодня
+              5 мин», и два одинаковых числа без подписи читались как одно. */}
+          {text.length ? <div className="lf">{done ? left : t('home.left', {left})}</div> : null}
         </div>
         <div className="bar"><i style={{transform: `scaleX(${read.toFixed(4)})`}} /></div>
         {/* Книга есть, текста нет — телефон восстановлен из облачной копии, а
@@ -153,7 +158,7 @@ export default function Home({go}) {
         {current && !text.length
           ? <div className="ws">{t('home.missing')}</div>
           : stats ? <div className="ws">{stats}</div> : null}
-        <button onClick={cont}>{t('home.continue')}</button>
+        <button onClick={cont}>{t(done ? 'home.next_book' : 'home.continue')}</button>
       </div>
       <div className="grid">
         {APPS.map(([glyph, label, to, background, skin, round], k) => (

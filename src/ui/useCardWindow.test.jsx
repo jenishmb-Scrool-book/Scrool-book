@@ -152,3 +152,38 @@ describe('место прокрутки', () => {
     expect(document.querySelector('.resume')).not.toBeNull();
   });
 });
+
+describe('конец книги', () => {
+  // Курсор ставит карточка у верхнего края, а последние карточки короче
+  // экрана до верха не доезжают никогда — и книга не кончалась. Теперь:
+  // долистали до самого низа, окно дошло до конца книги — дочитано.
+  const SHORT = 'Раз, два, три, четыре, пять. Вышел зайчик погулять.\n\n'.repeat(8).trim();
+
+  async function short() {
+    await saveText('b1', SHORT);
+    await saveMeta({
+      books: [{id: 'b1', title: 'Книга', len: SHORT.trim().length, toc: 1}],
+      cur: 'b1', at: {b1: 0}, last: 'feed', place: {id: 'feed', arg: null, at: null, y: 0}
+    });
+    render(<StoreProvider><Gate><Feed go={() => {}} back={() => {}} /></Gate></StoreProvider>);
+    await waitFor(() => expect(document.querySelector('.post')).not.toBeNull());
+    return document.querySelector('.body');
+  }
+
+  it('долистали до самого низа — курсор на последнем знаке', async () => {
+    const box = await short();
+    const cards = document.querySelectorAll('.post').length;
+    await scroll(box, cards * CARD - VIEW);                  // ровно низ
+    await waitFor(() => expect(rawMeta().at.b1).toBe(SHORT.trim().length - 1));
+    expect(document.querySelector('.done')).not.toBeNull();  // и отметка конца видна
+  });
+
+  it('не до самого низа — не дочитано', async () => {
+    const box = await short();
+    const cards = document.querySelectorAll('.post').length;
+    await scroll(box, cards * CARD - VIEW - 150);
+    await sleep(300);
+    expect(rawMeta().at.b1).toBeLessThan(SHORT.trim().length - 1);
+  });
+});
+

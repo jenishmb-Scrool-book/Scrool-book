@@ -115,6 +115,7 @@ function Row({i, name, seed, text, time, state, pics, onClick}) {
  * перестала бы двигать курсор — молча.
  */
 function Roster({mode, chunks, pos, setPos, eye, picsOf, onOpen}) {
+  const t = useT();
   const count = chunks.length;
   // gap: под плашкой «страница / осталось» нужен запас, иначе она накрывает
   // время у самой верхней строки.
@@ -147,6 +148,10 @@ function Roster({mode, chunks, pos, setPos, eye, picsOf, onOpen}) {
             />
           );
         })}
+        {/* Конец книги — отметкой, как в переписке: без неё лента просто
+            обрывалась, и было непонятно, дочитано или не догрузилось. */}
+        {items.length && items[items.length - 1] === count - 1
+          ? <div className="done">{t('reader.end')}</div> : null}
       </div>
       <Resume away={away} onClick={toPos} />
     </>

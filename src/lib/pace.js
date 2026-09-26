@@ -22,7 +22,10 @@ export function minutesLeft(offset, len) {
   if (!total) return 0;
   const at = Math.min(Math.max(Math.trunc(Number(offset)) || 0, 0), total);
   const rest = total - at;
-  if (!rest) return 0;
+  // Курсор не уходит дальше последнего знака (стор держит его в [0, len-1]),
+  // поэтому последний знак и есть конец: без этого «дочитано» не наступало
+  // никогда, и дочитанная книга вечно показывала «1 мин».
+  if (rest <= 1) return 0;
   return Math.max(1, Math.round(rest / CPM));
 }
 

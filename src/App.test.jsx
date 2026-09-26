@@ -488,3 +488,23 @@ describe('история после поиска', () => {
   });
 });
 
+describe('дочитанная книга', () => {
+  // Курсор на последнем знаке — книга кончилась: «осталось» говорит
+  // «дочитано», а кнопка ведёт выбрать следующую, а не на последнюю страницу.
+  it('на доме «дочитано» и «Выбрать следующую книгу»', async () => {
+    await Promise.all([
+      saveText('b1', TEXT),
+      saveMeta({
+        books: [{id: 'b1', title: 'Книга', len: TEXT.length, toc: 1}],
+        cur: 'b1', at: {b1: TEXT.length - 1}, last: 'reels', place: {id: 'home', arg: null}
+      })
+    ]);
+    await boot();
+    expect(document.querySelector('.widget .lf').textContent).toBe(DICT.ru['pace.done']);
+    const btn = document.querySelector('.widget button');
+    expect(btn.textContent).toBe(DICT.ru['home.next_book']);
+    await act(async () => {btn.click();});
+    expect(here()).toBe('library');
+  });
+});
+
