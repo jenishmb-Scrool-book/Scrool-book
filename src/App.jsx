@@ -38,6 +38,9 @@ const NO_BOOK_OK = ['home', 'library', 'settings'];       // этим книга
 // никто, а держать список без предела — это утечка, растущая от каждого тапа.
 const DEPTH = 24;
 
+// Сколько висит плашка ошибки, если её не убрали нажатием.
+const ERR_MS = 8000;
+
 // Шапки, с которых снимается цвет для системного статус-бара. Порядок не важен:
 // на экране она всегда одна.
 const BARS = '.screen .mhdr, .screen .chdr, .screen .yhdr, .screen .thdr, .screen .fhdr, .screen .hdr';
@@ -45,7 +48,7 @@ const pick = el => (el ? getComputedStyle(el).backgroundColor : null);
 
 export default function App() {
   const {ready, books, text, ui, current, offset, setUi, addBook, setLastApp,
-         place, setPlace, error, introDone, endIntro} = useStore();
+         place, setPlace, error, dismissError, introDone, endIntro} = useStore();
   const t = useT();
   const [screen, setScreen] = useState('home');
   const [arg, setArg] = useState(null);      // параметр экрана: с какой строки списка вошли
@@ -155,6 +158,15 @@ export default function App() {
     // `screen`: он всё это время и так «home». Без него полоска осталась бы
     // того цвета, который замерили на вступлении.
   }, [screen, ui.skin, ui.theme, introDone, shot]);
+
+  // Плашка ошибки уходит сама. Раньше она висела до следующего импорта —
+  // поверх нижней панели, то есть поверх кнопок, которыми из этой ошибки и
+  // выбираются. Восемь секунд хватает прочитать две строки не торопясь.
+  useEffect(() => {
+    if (!error) return undefined;
+    const id = setTimeout(dismissError, ERR_MS);
+    return () => clearTimeout(id);
+  }, [error, dismissError]);
 
   // Первый запуск: вместо пустого экрана подкладываем текст, объясняющий механику.
   // Живёт здесь, а не в сторе: это онбординг, а не хранилище.
@@ -337,7 +349,9 @@ export default function App() {
         <Current go={go} back={goBack} arg={arg} />
       </PicProvider>
       {shot ? <PicView src={shot} onClose={() => setShot('')} /> : null}
-      {error ? <div className="err">{error}</div> : null}
+      {/* Нажатие убирает плашку сразу: ждать восемь секунд, пока она
+          освободит кнопку под собой, никто не станет. */}
+      {error ? <div className="err" role="alert" onClick={dismissError}>{t(error)}</div> : null}
     </div>
   );
 }

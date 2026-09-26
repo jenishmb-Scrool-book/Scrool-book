@@ -34,11 +34,13 @@ export const SEED = `Как это работает
 
 Главное: позиция общая. Прочитал десять кусков в клипах, зашёл в переписку — продолжаешь с той же строки, хотя куски там короче.
 
-Свои книги добавляй в «Библиотеке»: вставь текст в поле или открой файл — .txt, .fb2 или .epub.
+Свои книги добавляй в «Библиотеке»: вставь текст в поле или открой файл — .txt, .fb2, .fb2.zip или .epub.
 
 Если в книге есть картинки, они показываются там же, где её текст: в ленте — кадром поста, в переписке — присланным фото, в роликах — превью.
 
 Оглавление открывается кнопкой в шапке: «⋮» в переписке, «☰» на остальных экранах. Главы берутся из файла, а в обычном тексте распознаются заголовки вроде «Глава 5».
+
+Лупа в любом «приложении» и строка «Поиск» на домашнем экране ищут по самой книге: набери имя героя или слово — увидишь, на каких страницах оно встречается, и перейдёшь туда одним нажатием.
 
 Внизу видно, сколько осталось: не проценты, а время. Вопрос обычно не «далеко ли я», а «успею ли сейчас».
 
@@ -70,11 +72,13 @@ What differs between them is not the paint, it is the size of the piece: from tw
 
 The main thing: the position is shared. Read ten pieces in clips, open the chat — you carry on from the same line, even though the pieces there are shorter.
 
-Add your own books in the Library: paste the text into the field or open a file — .txt, .fb2 or .epub.
+Add your own books in the Library: paste the text into the field or open a file — .txt, .fb2, .fb2.zip or .epub.
 
 If the book has pictures in it, they show up where its text does: in the feed as the body of a post, in chat as a sent photo, in video as the thumbnail.
 
 The contents open with the button in the header: “⋮” in chat, “☰” on every other screen. Chapters come from the file, and in plain text the app recognises headings like “Chapter 5”.
+
+The magnifier in any of the apps and the Search bar on the home screen look through the book itself: type a character’s name or a word to see the pages it appears on, and jump there with one tap.
 
 At the bottom you can see what is left: not per cent, but time. The question is usually not “how far along am I”, it is “can I finish this now”.
 

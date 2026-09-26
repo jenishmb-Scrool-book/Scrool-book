@@ -23,6 +23,9 @@ const ru = {
   'delete': 'Удалить',
   'dismiss': 'Скрыть',
   'today': 'Сегодня',
+  'err.full': 'Не влезло в хранилище устройства. Освободи место или раздели текст на части.',
+  'err.save': 'Не получилось сохранить.',
+  'err.empty': 'Пустой текст — читать нечего.',
 
   // ===== вступление =====
   // Шага выбора языка здесь нет намеренно: он показывается ДО того, как язык
@@ -179,6 +182,7 @@ const ru = {
   'set.wall_replace': 'Заменить свою',
   'set.wall_drop': 'Убрать свою',
   'set.wall_failed': 'Не удалось поставить обои',
+  'set.wall_not_image': 'Это не картинка — выбери фото или скриншот',
   'set.wall_hint': 'Двадцать готовых уже в приложении, или поставь свою картинку — лучше те же обои, что на твоём телефоне. Взять их автоматически нельзя: с Android 14 система не отдаёт обои приложениям.',
   'wall.n': 'Обои {n}',
   'set.theme': 'Тема',
@@ -222,6 +226,9 @@ const en = {
   'delete': 'Delete',
   'dismiss': 'Dismiss',
   'today': 'Today',
+  'err.full': 'The device storage is full. Free up some space or split the text into parts.',
+  'err.save': 'Could not save.',
+  'err.empty': 'The text is empty — nothing to read.',
 
   'intro.skip': 'Skip',
   'intro.next': 'Next',
@@ -363,6 +370,7 @@ const en = {
   'set.wall_replace': 'Replace',
   'set.wall_drop': 'Remove',
   'set.wall_failed': 'Could not set the wallpaper',
+  'set.wall_not_image': 'That is not a picture — pick a photo or a screenshot',
   'set.wall_hint': 'Twenty are already in the app, or use a picture of your own — ideally the wallpaper your phone has. Taking it automatically is impossible: since Android 14 the system no longer gives apps the wallpaper.',
   'wall.n': 'Wallpaper {n}',
   'set.theme': 'Theme',

@@ -8,6 +8,7 @@ import {percent} from '../ui/Progress.jsx';
 import {pageCount} from '../lib/pages.js';
 import {parseBook} from '../lib/book.js';
 import {isNative} from '../native.js';
+import Glyph from '../ui/Glyph.jsx';
 
 // Стор возвращает Promise; но если реализация вдруг синхронная — не падаем.
 const later = v => Promise.resolve(v);
@@ -28,7 +29,7 @@ const ACCEPT = '.txt,.md,.fb2,.epub,.zip';
 // Библиотека: только книги. Настройки живут отдельным экраном — этот файл
 // иначе становится местом, где сходятся сразу несколько несвязанных задач.
 export default function Library({go, back}) {
-  const {books, current, text: bookText, offset, addBook, openBook, deleteBook} = useStore();
+  const {books, current, text: bookText, offset, positions, addBook, openBook, deleteBook} = useStore();
   const t = useT();
   const [text, setText] = useState('');
   const [msg, setMsg] = useState('');
@@ -94,18 +95,22 @@ export default function Library({go, back}) {
   const open = id => later(openBook(id)).then(() => go('home')).catch(() => {});
 
   const remove = (e, b) => {
-    e.stopPropagation();           // клик по «✕» не должен открывать книгу
+    e.stopPropagation();           // клик по крестику не должен открывать книгу
     if (window.confirm(t('lib.confirm_delete', {title: b.title}))) {
       later(deleteBook(b.id)).catch(() => {});
     }
   };
 
-  // Прогресс стор отдаёт только для текущей книги — у остальных показываем
-  // просто размер. См. контракт useStore(): смещение там одно, не по книгам.
-  const progressOf = b =>
-    current && b.id === current.id && bookText.length
-      ? ' · ' + Math.round(percent(offset, bookText.length)) + '%'
-      : '';
+  // Сколько прочитано — у каждой книги, а не только у открытой. Раньше у
+  // остальных стоял один размер, и выбрать «ту, что почти дочитал» из списка
+  // было нельзя: место в каждой книге стор хранил всегда, но не отдавал.
+  // У открытой книги длина и место — живые, у остальных — из записи книги.
+  const shareOf = b => {
+    const open = current && b.id === current.id && bookText.length;
+    return open
+      ? percent(offset, bookText.length)
+      : percent((positions && positions[b.id]) || 0, b.len);
+  };
 
   return (
     <Screen id="library">
@@ -114,8 +119,9 @@ export default function Library({go, back}) {
         onBack={back}
         title={t('lib.title')}
         right={
-          <span onClick={() => go('settings')} role="button" aria-label={t('set.title')}
-                style={{cursor: 'pointer', opacity: .7}}>⚙</span>
+          <span className="ic" onClick={() => go('settings')} role="button" aria-label={t('set.title')}>
+            <Glyph name="gear" />
+          </span>
         }
       />
       <div className="body">
@@ -144,9 +150,12 @@ export default function Library({go, back}) {
             >
               <div className="i">
                 <b>{b.title}</b>
-                <span>{t('lib.pages', {n: pageCount(b.len)})}{progressOf(b)}</span>
+                <span>{t('lib.pages', {n: pageCount(b.len)})} · {Math.round(shareOf(b))}%</span>
+                <i className="pbar"><em style={{transform: `scaleX(${(shareOf(b) / 100).toFixed(4)})`}} /></i>
               </div>
-              <span className="x" onClick={e => remove(e, b)} role="button" aria-label={t('delete')}>✕</span>
+              <span className="x" onClick={e => remove(e, b)} role="button" aria-label={t('delete')}>
+                <Glyph name="close" />
+              </span>
             </div>
           )) : <div className="hint">{t('lib.nothing')}</div>}
         </div>

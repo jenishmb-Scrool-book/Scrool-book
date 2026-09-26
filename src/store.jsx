@@ -284,11 +284,18 @@ export function StoreProvider({children}) {
     return remember(key, loadPic(id, k).catch(() => ''));
   }, []);
 
+  // Ошибка наружу уходит КЛЮЧОМ словаря, а не текстом. Стор языка не знает,
+  // а текст из него приходил по-русски и тому, кто выбрал английский. И
+  // сообщение исключения показывать нельзя: у отказа записи оно от WebView,
+  // на языке системы и про квоты, а не про книгу.
   const report = useCallback(e => {
-    const msg = e instanceof StorageFullError
-      ? e.message
-      : (e && e.message) || 'Не получилось сохранить.';
-    if (mounted.current) setError(msg);
+    if (mounted.current) setError(e instanceof StorageFullError ? 'err.full' : 'err.save');
+  }, []);
+
+  // Плашку с ошибкой человек может убрать сам, и она уходит сама: раньше она
+  // висела до следующего импорта, прямо поверх нижней панели.
+  const dismissError = useCallback(() => {
+    if (mounted.current) setError(null);
   }, []);
 
   // Единственная точка записи меты. Ошибку показываем пользователю, но не роняем приложение.
@@ -466,7 +473,7 @@ export function StoreProvider({children}) {
     // подрезанный. Ведущие пробелы сдвинули бы всё оглавление на свою длину.
     const lead = raw.length - raw.trimStart().length;
     if (!txt) {
-      if (mounted.current) setError('Пустой текст — читать нечего.');
+      if (mounted.current) setError('err.empty');
       return null;
     }
 
@@ -609,6 +616,9 @@ export function StoreProvider({children}) {
     pics,
     getPic,
     offset: meta.cur ? meta.at[meta.cur] || 0 : 0,
+    // Место в КАЖДОЙ книге, а не только в открытой: библиотеке нужно показать,
+    // сколько прочитано у всех. Хранилось оно всегда — наружу не отдавалось.
+    positions: meta.at,
     setOffset,
     lastApp: meta.last,
     setLastApp,
@@ -625,9 +635,11 @@ export function StoreProvider({children}) {
     addBook,
     openBook,
     deleteBook,
-    error
-  }), [ready, meta, text, chapters, pics, getPic, error, setOffset, setLastApp, setPlace, setSeen,
-       flush, setUi, endIntro, addBook, openBook, deleteBook]);
+    // Ключ словаря, а не текст: см. `report`.
+    error,
+    dismissError
+  }), [ready, meta, text, chapters, pics, getPic, error, dismissError, setOffset, setLastApp, setPlace,
+       setSeen, flush, setUi, endIntro, addBook, openBook, deleteBook]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

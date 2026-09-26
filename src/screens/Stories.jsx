@@ -41,7 +41,7 @@ export default function Stories({go, back}) {
           <b>{current ? current.title : t('stories.title')}</b>
           <i>{msgTime(pos)}</i>
           <span className="ic" onClick={() => go('toc')} role="button" aria-label={t('toc.title')}><Glyph name="menu" /></span>
-          <span className="back" onClick={back} role="button" aria-label={t('back')}>✕</span>
+          <span className="back" onClick={back} role="button" aria-label={t('back')}><Glyph name="close" /></span>
         </div>
         <BookPics list={picsOf(pos)} />
         <div className="stxt">{cur ? cur.text : ''}</div>

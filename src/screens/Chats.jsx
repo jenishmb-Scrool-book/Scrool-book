@@ -63,9 +63,10 @@ function Avatar({seed, cls}) {
  */
 function ChatHead({skin, onBack, seed, title, sub, onAct}) {
   const S = skinOf(skin);
+  const t = useT();
   return (
     <div className="chdr">
-      <span className="back" onClick={onBack} role="button" aria-label="Назад"><Glyph name="back" /></span>
+      <span className="back" onClick={onBack} role="button" aria-label={t('back')}><Glyph name="back" /></span>
       <Avatar seed={seed} cls="av sm" />
       <div className="who">
         <b>{title}</b>

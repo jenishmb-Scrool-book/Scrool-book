@@ -79,7 +79,11 @@ export async function clearWallpaper() {
  */
 export function shrink(file, maxW = 1080, quality = 0.82) {
   return new Promise((resolve, reject) => {
-    if (!file.type.startsWith('image/')) return reject(new Error('Это не картинка'));
+    // Код, а не только текст: текст исключения на экран не идёт — он на одном
+    // языке, а человек мог выбрать другой.
+    if (!file.type.startsWith('image/')) {
+      return reject(Object.assign(new Error('Это не картинка'), {code: 'notimage'}));
+    }
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {

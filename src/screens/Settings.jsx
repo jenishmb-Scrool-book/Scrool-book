@@ -5,6 +5,7 @@ import {APP_NAME} from '../name.js';
 import {WALLS, clearWallpaper, getWallpaper, setWallpaper, shrink} from '../wallpaper.js';
 import {NOTIFY, appInfo, cancelNotifications, ensureNotifications, notifyError, testNotification} from '../native.js';
 import {pageAt} from '../lib/pages.js';
+import {StorageFullError} from '../lib/storage.js';
 import Screen from '../ui/Screen.jsx';
 import StatusBar from '../ui/StatusBar.jsx';
 import Header from '../ui/Header.jsx';
@@ -84,7 +85,11 @@ export default function Settings({go, back}) {
     setMsg('');
     shrink(f)
       .then(uri => setWallpaper(uri).then(() => setWall(uri)))
-      .catch(err => setMsg(err.message || t('set.wall_failed')));
+      // Текст исключения не показываем: он на одном языке и про внутренности.
+      .catch(err => setMsg(t(
+        err && err.code === 'notimage' ? 'set.wall_not_image'
+          : err instanceof StorageFullError ? 'err.full'
+          : 'set.wall_failed')));
   };
 
   const dropWall = () => clearWallpaper().then(() => setWall('')).catch(() => {});

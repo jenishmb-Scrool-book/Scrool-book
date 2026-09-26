@@ -1,6 +1,6 @@
 import React from 'react';
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {render, waitFor, act} from '@testing-library/react';
+import {render, waitFor, act, fireEvent} from '@testing-library/react';
 import App from './App.jsx';
 import {StoreProvider} from './store.jsx';
 import {saveMeta, saveText} from './lib/storage.js';
@@ -258,5 +258,57 @@ describe('напоминание при запуске', () => {
     await boot();
     await waitFor(() => expect(NAT.notify).toHaveLength(1));
     expect(rawMeta().ui.notify).toBe('on');
+  });
+});
+
+describe('плашка ошибки', () => {
+  // Стор отдаёт ключ, а текст выбирает приложение: раньше плашка говорила
+  // по-русски и тому, кто выбрал английский, и висела до следующего импорта
+  // поверх нижней панели.
+  it('говорит на языке человека и убирается нажатием', async () => {
+    await seed({id: 'library', arg: null}, {lang: 'en'});
+    await boot();
+    expect(here()).toBe('library');
+    fireEvent.change(document.querySelector('#library textarea'), {target: {value: 'Some text.'}});
+    const full = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota', 'QuotaExceededError');
+    });
+    try {
+      await act(async () => {document.querySelector('#library .row button').click();});
+      await waitFor(() => expect(document.querySelector('.err')).not.toBeNull());
+      expect(document.querySelector('.err').textContent).toBe(DICT.en['err.full']);
+      await act(async () => {document.querySelector('.err').click();});
+      expect(document.querySelector('.err')).toBeNull();
+    } finally {
+      full.mockRestore();
+    }
+  });
+});
+
+describe('библиотека', () => {
+  // Место в каждой книге стор хранил всегда, а библиотека показывала процент
+  // только у открытой — выбрать «ту, что почти дочитал» было нельзя.
+  it('показывает, сколько прочитано, у каждой книги', async () => {
+    const other = 'Другая книга. '.repeat(100);
+    await Promise.all([
+      saveText('b1', TEXT),
+      saveText('b2', other),
+      saveMeta({
+        books: [
+          {id: 'b1', title: 'Первая', len: TEXT.length, toc: 1},
+          {id: 'b2', title: 'Вторая', len: other.length, toc: 1}
+        ],
+        cur: 'b1',
+        at: {b1: Math.floor(TEXT.length / 4), b2: other.length - 1},
+        last: 'reels',
+        place: {id: 'library', arg: null}
+      })
+    ]);
+    await boot();
+    const rows = [...document.querySelectorAll('#library .book .i span')].map(s => s.textContent);
+    expect(rows[0]).toMatch(/· 25%$/);
+    expect(rows[1]).toMatch(/· 100%$/);
+    const bars = [...document.querySelectorAll('#library .book .pbar em')].map(e => e.style.transform);
+    expect(bars[1]).toBe('scaleX(1.0000)');
   });
 });

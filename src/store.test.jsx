@@ -3,6 +3,7 @@ import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {renderHook, act, waitFor} from '@testing-library/react';
 import {StoreProvider, useStore} from './store.jsx';
 import {saveMeta, saveText} from './lib/storage.js';
+import {DICT} from './i18n.js';
 
 const wrapper = ({children}) => <StoreProvider>{children}</StoreProvider>;
 const rawMeta = () => JSON.parse(localStorage.getItem('scroll.meta') || 'null');
@@ -96,7 +97,15 @@ describe('addBook', () => {
     const id = await add(h, 'Пусто', '   \n  ');
     expect(id).toBeNull();
     expect(h.result.current.books).toEqual([]);
-    expect(h.result.current.error).toBeTruthy();
+    expect(h.result.current.error).toBe('err.empty');
+  });
+
+  it('ошибку можно убрать', async () => {
+    const h = await mount();
+    await add(h, 'Пусто', ' ');
+    expect(h.result.current.error).toBe('err.empty');
+    act(() => h.result.current.dismissError());
+    expect(h.result.current.error).toBeNull();
   });
 
   // Хранилище кончилось — это сообщение пользователю, а не падение приложения.
@@ -108,7 +117,10 @@ describe('addBook', () => {
     const id = await add(h, 'Толстая', 'Очень большой текст.');
 
     expect(id).toBeNull();
-    expect(h.result.current.error).toMatch(/хранилищ/i);
+    // Стор отдаёт ключ словаря: язык знает экран, а не хранилище.
+    expect(h.result.current.error).toBe('err.full');
+    expect(DICT.ru['err.full']).toMatch(/хранилищ/i);
+    expect(DICT.en['err.full']).toMatch(/storage/i);
     expect(h.result.current.books).toEqual([]);
     expect(h.result.current.ready).toBe(true);
     expect(h.result.current.text).toBe('');

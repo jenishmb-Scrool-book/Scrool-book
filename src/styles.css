@@ -728,7 +728,14 @@ button,textarea,input{font:inherit;color:inherit}
 .book .i b{display:block;font-size:.87rem;font-weight:600;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .book .i span{font-size:.75rem;opacity:.55}
-.book .x{opacity:.5;padding:4px 6px;font-size:1.13rem}
+/* Полоса прочитанного у каждой книги: по проценту цифрой «почти дочитал»
+   из списка не выбрать, а по длине полосы — одним взглядом. */
+.book .pbar{display:block;height:3px;margin-top:7px;border-radius:2px;background:var(--track);overflow:hidden}
+.book .pbar em{display:block;height:100%;transform-origin:left;background:var(--accent)}
+.book .x{opacity:.5;padding:6px;font-size:1.05rem;line-height:0}
+/* Шестерня в шапке библиотеки — значок, а не подпись: крупнее и ярче
+   счётчика глав, с которым она делит правило `.hdr .ic`. */
+#library .hdr .ic{font-size:1.2rem;opacity:.75;line-height:0;padding:4px}
 .hint{opacity:.5;font-size:.81rem;margin:6px 0 16px}
 
 /* Переключатель из нескольких кнопок: тема, кегль, язык. */
@@ -770,7 +777,12 @@ button,textarea,input{font:inherit;color:inherit}
    того, как увидят хоть строчку книги.
    Свечение акцентом сверху, а не градиент во весь экран: голый фон на первом
    экране читается как несобранная страница, градиент по всему — как заставка. */
-.intro{background:var(--bg);overflow:hidden}
+/* `clip`, а не только `hidden`: свечение ниже шире экрана на треть с каждой
+   стороны, и `hidden` оставляет экран прокручиваемым программно. Переход
+   фокуса (TalkBack, клавиатура, scrollIntoView) сдвигал всё вступление вбок
+   на те самые 30% — и вернуть его пальцем было нельзя. `hidden` остаётся
+   для WebView старше 90-й версии, где `clip` не знают. */
+.intro{background:var(--bg);overflow:hidden;overflow:clip}
 .intro::before{content:'';position:absolute;left:-30%;right:-30%;top:-34%;height:64%;
   background:radial-gradient(50% 50% at 50% 50%,var(--accent),transparent 70%);
   opacity:.2;pointer-events:none;z-index:0}
@@ -1160,5 +1172,5 @@ button,textarea,input{font:inherit;color:inherit}
    картинке ровно тогда, когда закрыть её и хотят. */
 .sx{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));right:10px;
   width:38px;height:38px;padding:0;border:0;border-radius:50%;
-  background:#000000a6;color:#fff;font-size:.95rem;line-height:1;cursor:pointer;
-  backdrop-filter:blur(6px)}
+  background:#000000a6;color:#fff;font-size:1.05rem;line-height:1;cursor:pointer;
+  backdrop-filter:blur(6px);display:grid;place-items:center}

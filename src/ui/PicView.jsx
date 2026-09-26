@@ -1,5 +1,6 @@
 import {createContext, useContext, useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {useT} from '../i18n.js';
+import Glyph from './Glyph.jsx';
 
 // Картинка из книги во весь экран.
 //
@@ -82,7 +83,7 @@ export default function PicView({src, onClose}) {
         <img src={src} alt={t('pic.alt')} onClick={toggle}
              role="button" aria-label={t(zoom ? 'pic.zoom_out' : 'pic.zoom_in')} />
       </div>
-      <button type="button" className="sx" onClick={onClose} aria-label={t('pic.close')}>✕</button>
+      <button type="button" className="sx" onClick={onClose} aria-label={t('pic.close')}><Glyph name="close" /></button>
     </div>
   );
 }
