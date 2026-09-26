@@ -15,6 +15,27 @@ import Glyph from '../ui/Glyph.jsx';
 import BookPics from '../ui/BookPic.jsx';
 import Hit from '../ui/Hit.jsx';
 import Resume from '../ui/Resume.jsx';
+import Like, {useLike} from '../ui/Like.jsx';
+
+/**
+ * Правая колонка клипа. Сердечко нажимается, «комментарии» ведут в
+ * переписку — туда, где в этом приложении «пишут», как «Написать
+ * комментарий» под роликом. «Поделиться» ждёт решения: без сети честного
+ * ответа у него нет.
+ */
+function Rail({i, go}) {
+  const t = useT();
+  const [on, toggle] = useLike();
+  return (
+    <div className="rail">
+      <Like on={on} onToggle={toggle} empty="heartFill"><small>{likes(i) + (on ? 1 : 0)}</small></Like>
+      <span role="button" aria-label={t('a11y.comment')} onClick={() => go('chat', {arg: i})}>
+        <Glyph name="comment" /><small>{comments(i)}</small>
+      </span>
+      <span><Glyph name="share" /><small>{shares(i)}</small></span>
+    </div>
+  );
+}
 
 // «Клипы»: вертикальная лента на весь экран со snap'ом.
 // Карточка ровно height:100% — иначе snap ловит середину и текст режется.
@@ -65,11 +86,7 @@ export default function Reels({go, back}) {
             <div className="txt"><Hit text={chunks[i].text} at={chunks[i].at} end={chunks[i].end} /></div>
             <div className="cnt">{t('reels.handle')} · {t('reels.of', {i: i + 1, n: count})}</div>
             <div className="tag">{t('reels.tag')}</div>
-            <div className="rail">
-              <span><Glyph name="heartFill" /><small>{likes(i)}</small></span>
-              <span><Glyph name="comment" /><small>{comments(i)}</small></span>
-              <span><Glyph name="share" /><small>{shares(i)}</small></span>
-            </div>
+            <Rail i={i} go={go} />
           </div>
         ))}
       </div>

@@ -17,6 +17,13 @@ import Glyph from '../ui/Glyph.jsx';
 import BookPics from '../ui/BookPic.jsx';
 import Hit from '../ui/Hit.jsx';
 import Resume from '../ui/Resume.jsx';
+import Like, {useLike} from '../ui/Like.jsx';
+
+/** Сердечко короткого поста: нажимается и прибавляет к счётчику. */
+function TwLike({i}) {
+  const [on, toggle] = useLike();
+  return <Like on={on} onToggle={toggle}>{' '}{likes(i) + (on ? 1 : 0)}</Like>;
+}
 
 // «Короткие посты»: самый мелкий фрагмент из всех движков.
 // Здесь книга выглядит как лента реплик — по паре предложений на пост, и
@@ -58,9 +65,11 @@ export default function Tweets({go, back}) {
               <BookPics list={picsOf(i)} />
               <div className="tt"><Hit text={chunks[i].text} at={chunks[i].at} end={chunks[i].end} /></div>
               <div className="ta">
-                <span><Glyph name="comment" /> {comments(i)}</span>
+                <span role="button" aria-label={t('a11y.comment')} onClick={() => go('chat', {arg: i})}>
+                  <Glyph name="comment" /> {comments(i)}
+                </span>
                 <span><Glyph name="repost" /> {shares(i)}</span>
-                <span><Glyph name="heart" /> {likes(i)}</span>
+                <TwLike i={i} />
                 <span><Glyph name="views" /> {t('tw.views', {n: views(i)})}</span>
               </div>
             </div>

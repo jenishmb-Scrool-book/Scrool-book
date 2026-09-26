@@ -17,6 +17,25 @@ import Glyph from '../ui/Glyph.jsx';
 import BookPics from '../ui/BookPic.jsx';
 import Hit from '../ui/Hit.jsx';
 import Resume from '../ui/Resume.jsx';
+import Like, {useLike} from '../ui/Like.jsx';
+
+/** Кнопки под постом и счётчик отметок: сердечко нажимается и прибавляет к счётчику. */
+function Acts({i, go}) {
+  const t = useT();
+  const [on, toggle] = useLike();
+  return (
+    <>
+      <div className="acts">
+        <Like on={on} onToggle={toggle} />
+        <span role="button" aria-label={t('a11y.comment')} onClick={() => go('chat', {arg: i})}>
+          <Glyph name="comment" />
+        </span>
+        <Glyph name="share" />
+      </div>
+      <div className="cap likes">{t('feed.likes', {n: marks(i) + (on ? 1 : 0)})}</div>
+    </>
+  );
+}
 
 // «Лента»: те же куски постами. Текст лежит ровно на месте картинки —
 // в этом весь фокус, картинки тут нет вообще.
@@ -69,8 +88,7 @@ export default function Feed({go, back}) {
             <div className="pic" style={{background: shot('post', i, grad(i + 3))}}>
               <span><Hit text={chunks[i].text} at={chunks[i].at} end={chunks[i].end} /></span>
             </div>
-            <div className="acts"><Glyph name="heart" /><Glyph name="comment" /><Glyph name="share" /></div>
-            <div className="cap likes">{t('feed.likes', {n: marks(i)})}</div>
+            <Acts i={i} go={go} />
             <div className="cap">{t('feed.caption', {marks: marks(i), i: i + 1, n: count})}</div>
           </div>
         ))}

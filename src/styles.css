@@ -1233,3 +1233,10 @@ mark.hit{background:var(--hit);color:inherit;border-radius:3px;padding:0 1px;
 .fhdr .back::after,.fhdr .ic::after,.thdr .back::after,.thdr .ic::after,
 .shead .back::after,.shead .ic::after,.qx::after,.book .x::after,.vid .kebab::after{
   content:'';position:absolute;inset:-10px -6px}
+
+/* Сердечко, которое нажимается (ui/Like.jsx). Красное, когда стоит: так во
+   всех лентах, и по цвету видно, что нажатие сработало. */
+.like,.rail span[role=button],.post .acts span[role=button],.tw .ta span[role=button]{cursor:pointer}
+.like.on{color:#ff3b5c}
+.post .acts .like,.post .acts span{display:inline-flex}
+
