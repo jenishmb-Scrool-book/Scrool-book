@@ -905,3 +905,25 @@ describe('удаление открытой книги', () => {
   });
 });
 
+describe('renameBook', () => {
+  it('меняет название, схлопывает пробелы и пишет в хранилище', async () => {
+    const h = await mount();
+    const id = await add(h, 'Глава 1', 'Текст.');
+    let ok;
+    act(() => {ok = h.result.current.renameBook(id, '  Мёртвые   души ');});
+    expect(ok).toBe(true);
+    expect(h.result.current.books[0].title).toBe('Мёртвые души');
+    await waitFor(() => expect(rawMeta().books[0].title).toBe('Мёртвые души'));
+  });
+
+  it('пустое название и чужой id не принимаются', async () => {
+    const h = await mount();
+    const id = await add(h, 'Книга', 'Текст.');
+    act(() => {
+      expect(h.result.current.renameBook(id, '   ')).toBe(false);
+      expect(h.result.current.renameBook('нет-такой', 'Имя')).toBe(false);
+    });
+    expect(h.result.current.books[0].title).toBe('Книга');
+  });
+});
+

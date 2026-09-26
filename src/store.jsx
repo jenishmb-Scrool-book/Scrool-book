@@ -636,6 +636,19 @@ export function StoreProvider({children}) {
     await write();                                // смена книги важнее дебаунса
   }, [applyMeta, applyText, applyToc, applyPix, bookToc, bookPix, write]);
 
+  // Название книги. Задать его при добавлении нельзя: вставленный текст
+  // получает первую строку («Глава 1»), файл — своё имя («ezhik»). Пустое
+  // название не принимаем — книга без имени в списке неотличима от соседней.
+  const renameBook = useCallback((id, title) => {
+    const name = String(title ?? '').replace(/\s+/g, ' ').trim().slice(0, 80);
+    const m = metaRef.current;
+    const book = m.books.find(b => b.id === id);
+    if (!name || !book || book.title === name) return false;
+    applyMeta({...m, books: m.books.map(b => (b.id === id ? {...b, title: name} : b))});
+    schedule();
+    return true;
+  }, [applyMeta, schedule]);
+
   const deleteBook = useCallback(async id => {
     if (mounted.current) setError(null);
     const gone = metaRef.current.books.find(b => b.id === id) || null;
@@ -716,11 +729,12 @@ export function StoreProvider({children}) {
     addBook,
     openBook,
     deleteBook,
+    renameBook,
     // Ключ словаря, а не текст: см. `report`.
     error,
     dismissError
   }), [ready, meta, text, chapters, pics, getPic, error, dismissError, jumped, query, setOffset, setLastApp,
-       setPlace, setSeen, flush, setUi, endIntro, addBook, openBook, deleteBook]);
+       setPlace, setSeen, flush, setUi, endIntro, addBook, openBook, deleteBook, renameBook]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

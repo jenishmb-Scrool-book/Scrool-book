@@ -29,7 +29,7 @@ const ACCEPT = '.txt,.md,.fb2,.epub,.zip';
 // Библиотека: только книги. Настройки живут отдельным экраном — этот файл
 // иначе становится местом, где сходятся сразу несколько несвязанных задач.
 export default function Library({go, back}) {
-  const {books, current, text: bookText, offset, positions, addBook, openBook, deleteBook} = useStore();
+  const {books, current, text: bookText, offset, positions, addBook, openBook, deleteBook, renameBook} = useStore();
   const t = useT();
   const [text, setText] = useState('');
   const [msg, setMsg] = useState('');
@@ -97,6 +97,14 @@ export default function Library({go, back}) {
 
   const open = id => later(openBook(id)).then(() => go('home')).catch(() => {});
 
+  // Переименовать — системным окном ввода: оно уже есть и привычно, а своё
+  // окно поверх библиотеки было бы ещё одним экраном ради одной строки.
+  const rename = (e, b) => {
+    e.stopPropagation();           // нажатие по карандашу не должно открывать книгу
+    const v = window.prompt(t('lib.rename_ask'), b.title);
+    if (v != null) renameBook(b.id, v);
+  };
+
   const remove = (e, b) => {
     e.stopPropagation();           // клик по крестику не должен открывать книгу
     if (window.confirm(t('lib.confirm_delete', {title: b.title}))) {
@@ -157,6 +165,9 @@ export default function Library({go, back}) {
                 <span>{t('lib.pages', {n: pageCount(b.len)})} · {Math.round(shareOf(b))}%</span>
                 <i className="pbar"><em style={{transform: `scaleX(${(shareOf(b) / 100).toFixed(4)})`}} /></i>
               </div>
+              <span className="x" onClick={e => rename(e, b)} role="button" aria-label={t('lib.rename')}>
+                <Glyph name="pencil" />
+              </span>
               <span className="x" onClick={e => remove(e, b)} role="button" aria-label={t('delete')}>
                 <Glyph name="close" />
               </span>
