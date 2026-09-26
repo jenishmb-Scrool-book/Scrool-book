@@ -124,7 +124,7 @@ describe('место прокрутки', () => {
     // Через waitFor: 600 мс ожидания в `scroll` хватает с запасом, пока машина
     // свободна, а под параллельным прогоном таймеры дебаунсов опаздывают.
     await waitFor(() =>
-      expect(rawMeta().place).toEqual({id: 'feed', arg: null, at: CH[16].at, y: 40}));
+      expect(rawMeta().place).toEqual({id: 'feed', arg: null, at: CH[16].at, y: 40}), {timeout: 4000});
   });
 
   // Ради этого замер и вынесен из обработчика. Дебаунс здесь всегда отложен:
@@ -147,7 +147,7 @@ describe('место прокрутки', () => {
     const box = await boot(null);
     await scroll(box, 740);
     await scroll(box, 540);
-    await waitFor(() => expect(rawMeta().place.at).toBe(CH[14].at));   // взгляд ушёл назад
+    await waitFor(() => expect(rawMeta().place.at).toBe(CH[14].at), {timeout: 4000});   // взгляд ушёл назад
     expect(rawMeta().at.b1).toBe(CH[16].at);        // а курсор остался впереди
     expect(document.querySelector('.resume')).not.toBeNull();
   });
@@ -174,7 +174,7 @@ describe('конец книги', () => {
     const box = await short();
     const cards = document.querySelectorAll('.post').length;
     await scroll(box, cards * CARD - VIEW);                  // ровно низ
-    await waitFor(() => expect(rawMeta().at.b1).toBe(SHORT.trim().length - 1));
+    await waitFor(() => expect(rawMeta().at.b1).toBe(SHORT.trim().length - 1), {timeout: 4000});
     expect(document.querySelector('.done')).not.toBeNull();  // и отметка конца видна
   });
 

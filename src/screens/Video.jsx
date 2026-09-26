@@ -188,7 +188,7 @@ function Comment({i, at, text, pics, onReply}) {
 export function Player({go, back}) {
   const {text, offset, setOffset} = useStore();
   const t = useT();
-  const {chunks: ts} = useChunks(SIZE.vlist);                     // название — как в списке
+  const {chunks: ts, picsOf: tpics} = useChunks(SIZE.vlist);      // название — как в списке
   const {chunks: ds, picsOf: dpics} = useChunks(SIZE.video);      // описание — длинный кусок
   const {chunks: cs, picsOf: cpics} = useChunks(SIZE.comment);    // комментарии — короткие
   const boxRef = useRef(null);
@@ -208,7 +208,8 @@ export function Player({go, back}) {
   // первое предложение описания, а описание — кусок, в котором стоит курсор,
   // то есть начатый раньше него: одна фраза читалась трижды подряд — в
   // списке, в заголовке и в начале описания.
-  const title = ts[indexAt(ts, head)] || null;
+  const ti = indexAt(ts, head);
+  const title = ts[ti] || null;
   const from = title ? title.end : head;
   let at = indexAt(ds, from);
   if (ds[at] && ds[at].end <= from) at += 1;
@@ -296,7 +297,9 @@ export function Player({go, back}) {
       {/* Картинка этой страницы книги лежит там же, где у ролика обложка, —
           в самом плеере. Второй раз в описании её показывать незачем. */}
       <div className="stage" style={{background: shot('wide', at, grad(at))}}>
-        <BookPics list={dpics(at)} cls="fill" one />
+        {/* Картинка названия, а если её нет — описания: название теперь
+            отдельный кусок, и картинка, стоявшая в нём, иначе пропала бы. */}
+        <BookPics list={title && tpics(ti).length ? tpics(ti) : dpics(at)} cls="fill" one />
         <span className="back" onClick={back} role="button" aria-label={t('back')}><Glyph name="back" /></span>
         <span className="ic" onClick={() => go('toc')} role="button" aria-label={t('toc.title')}><Glyph name="menu" /></span>
         {/* Играть здесь нечему, но у обеих кнопок есть точный смысл в наших
