@@ -253,6 +253,44 @@ d.text((474, 300), TAG, font=font(size), fill=(190, 182, 222))
 p = os.path.join(OUT, 'play-feature-1024x500.png')
 written.append((p, save(ban.convert('RGB'), p)))
 
+# ---------- заставка запуска: splash.png во всех плотностях ----------
+# До этого здесь лежала заставка первой версии — три полосы текста, знак той
+# иконки, что была до рисунка владельца. На Android 11 и старше это первое,
+# что видно после нажатия на значок, и значок с заставкой не совпадали: нажал
+# на телефон со стрелкой, а открылись полоски.
+#
+# Фон — цвет приложения (#0b0b12, он же `app_background` и `backgroundColor`
+# в capacitor.config.json), а не фон иконки: заставку сменяет не иконка, а
+# экран приложения, и шов по цвету был бы виден как мигание. Знак — та же
+# иконка, скруглённым квадратом, как её рисует лаунчер: так заставка читается
+# продолжением нажатия. Размер — треть короткой стороны: крупнее на планшете
+# в альбомной ориентации знак упирается в край, мельче теряется.
+APP_BG = (11, 11, 18)
+SPLASH = [('drawable', 480, 320),
+          ('drawable-port-mdpi', 320, 480), ('drawable-port-hdpi', 480, 800),
+          ('drawable-port-xhdpi', 720, 1280), ('drawable-port-xxhdpi', 960, 1600),
+          ('drawable-port-xxxhdpi', 1280, 1920),
+          ('drawable-land-mdpi', 480, 320), ('drawable-land-hdpi', 800, 480),
+          ('drawable-land-xhdpi', 1280, 720), ('drawable-land-xxhdpi', 1600, 960),
+          ('drawable-land-xxxhdpi', 1920, 1280)]
+for folder, w, h in SPLASH:
+    sp = Image.new('RGBA', (w, h), APP_BG + (255,))
+    side = int(round(min(w, h) * 0.33))
+    # Свет за знаком — тот же, что на баннере карточки, только тише: на
+    # ровном почти чёрном поле знак без него выглядит наклейкой.
+    halo = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+    r = side * 0.95
+    ImageDraw.Draw(halo).ellipse([w / 2 - r, h / 2 - r, w / 2 + r, h / 2 + r],
+                                 fill=(124, 92, 255, 38))
+    sp.alpha_composite(halo.filter(ImageFilter.GaussianBlur(side * 0.35)))
+    face = Image.new('RGBA', (side, side), BG + (255,))
+    face.alpha_composite(placed(TILE, side, 0.74))
+    icon = Image.new('RGBA', (side, side), (0, 0, 0, 0))
+    icon.paste(face, (0, 0), squircle_mask(side))
+    sp.alpha_composite(icon, ((w - side) // 2, (h - side) // 2))
+    p = os.path.join(RES, folder, 'splash.png')
+    written.append((p, save(sp.convert('RGB'), p)))
+
 # ---------- лист для просмотра: как иконка выглядит мелко ----------
 # Проверялось на 48 пикселях: на этом размере от рисунка остаётся силуэт,
 # и силуэт обязан читаться. Верхний ряд — маска-квадрат, нижний — круг.
