@@ -556,8 +556,13 @@ describe('журнал звонков из переписки', () => {
   // Список → переписка → трубка → журнал → «назад» → переписка → «назад»:
   // раньше вело на дом мимо списка — журнал разматывал историю до него.
   it('«назад» проходит тот же путь обратно', async () => {
-    await seed({id: 'chats', arg: null}, {skin: 'tg'});
+    // С дома, как у тестировщика: без истории до списка старый код выручал
+    // запасной шаг к родителю, и ошибку было не видно.
+    await seed({id: 'home', arg: null}, {skin: 'tg'});
     await boot();
+    const tg = [...document.querySelectorAll('#home .grid .icon')].find(el => el.textContent.includes('Telegran'));
+    await act(async () => {tg.click();});
+    expect(here()).toBe('chats');
     await act(async () => {document.querySelector('.crow').click();});
     expect(here()).toBe('chat');
     const phone = [...document.querySelectorAll('.chdr .ic')]
