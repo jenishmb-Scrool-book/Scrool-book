@@ -27,6 +27,16 @@ const ru = {
   'err.save': 'Не получилось сохранить.',
   'err.empty': 'Пустой текст — читать нечего.',
 
+  // ===== упавший экран =====
+  'crash.title': 'Экран не открылся',
+  'crash.body': 'Внутри что-то сломалось. Книга и место чтения целы: они хранятся отдельно от экранов. Если повторяется — скопируй описание ошибки и пришли разработчику.',
+  'crash.home': 'На главный экран',
+  'crash.skip': 'Пропустить вступление',
+  'crash.restart': 'Перезапустить',
+  'crash.copy': 'Скопировать описание ошибки',
+  'crash.copied': 'Скопировано — вставь в сообщение разработчику',
+  'crash.copy_failed': 'Скопировать не вышло — сними экран, описание ниже',
+
   // ===== вступление =====
   // Шага выбора языка здесь нет намеренно: он показывается ДО того, как язык
   // выбран, и написан на обоих сразу — прямо в `screens/Intro.jsx`.
@@ -235,6 +245,15 @@ const en = {
   'err.full': 'The device storage is full. Free up some space or split the text into parts.',
   'err.save': 'Could not save.',
   'err.empty': 'The text is empty — nothing to read.',
+
+  'crash.title': 'This screen failed to open',
+  'crash.body': 'Something broke inside. Your book and reading position are safe: they are stored apart from the screens. If it keeps happening, copy the error details and send them to the developer.',
+  'crash.home': 'Go to the home screen',
+  'crash.skip': 'Skip the introduction',
+  'crash.restart': 'Restart',
+  'crash.copy': 'Copy error details',
+  'crash.copied': 'Copied — paste it into your message to the developer',
+  'crash.copy_failed': 'Could not copy — take a screenshot, the details are below',
 
   'intro.skip': 'Skip',
   'intro.next': 'Next',

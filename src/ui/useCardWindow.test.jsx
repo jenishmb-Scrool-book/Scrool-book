@@ -121,7 +121,10 @@ describe('место прокрутки', () => {
     const box = await boot(null);
     await scroll(box, 740);
     // Верхняя видимая — та, чей низ ушёл за кромку: 700..800 при прокрутке 740.
-    expect(rawMeta().place).toEqual({id: 'feed', arg: null, at: CH[16].at, y: 40});
+    // Через waitFor: 600 мс ожидания в `scroll` хватает с запасом, пока машина
+    // свободна, а под параллельным прогоном таймеры дебаунсов опаздывают.
+    await waitFor(() =>
+      expect(rawMeta().place).toEqual({id: 'feed', arg: null, at: CH[16].at, y: 40}));
   });
 
   // Ради этого замер и вынесен из обработчика. Дебаунс здесь всегда отложен:
@@ -144,8 +147,8 @@ describe('место прокрутки', () => {
     const box = await boot(null);
     await scroll(box, 740);
     await scroll(box, 540);
-    expect(rawMeta().at.b1).toBe(CH[16].at);        // курсор остался впереди
-    expect(rawMeta().place.at).toBe(CH[14].at);     // а взгляд ушёл назад
+    await waitFor(() => expect(rawMeta().place.at).toBe(CH[14].at));   // взгляд ушёл назад
+    expect(rawMeta().at.b1).toBe(CH[16].at);        // а курсор остался впереди
     expect(document.querySelector('.resume')).not.toBeNull();
   });
 });

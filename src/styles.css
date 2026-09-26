@@ -753,6 +753,17 @@ button,textarea,input{font:inherit;color:inherit}
 .err{position:absolute;left:12px;right:12px;bottom:14px;z-index:9;
   padding:10px 12px;border-radius:12px;background:var(--err-bg);border:1px solid var(--err-line);
   font-size:.81rem;line-height:1.35;box-shadow:0 8px 24px var(--shadow-ic)}
+/* Упавший экран (ui/Crash.jsx). Та же вёрстка, что у вступления: по центру,
+   крупная кнопка — сообщение не должно выглядеть второй поломкой. */
+.crash{flex:1;overflow-y:auto;display:flex;flex-direction:column;justify-content:center;
+  gap:12px;padding:24px 26px}
+.crash h1{margin:0;font-size:1.4rem;line-height:1.25;font-weight:700}
+.crash p{margin:0;font-size:.94rem;line-height:1.55;opacity:.75}
+.crash .igo{align-self:stretch;margin-top:8px}
+.crash-copy{border:0;border-radius:14px;padding:12px;cursor:pointer;font-weight:600;
+  background:var(--btn-2);color:var(--fg)}
+.crash .hint{margin:0}
+.crash .diag{max-height:30dvh;overflow:auto}
 /* Заглушка на время гидрации хранилища: до ready трогать текст нельзя. */
 .boot{flex:1;display:grid;place-items:center;opacity:.5;font-size:.87rem}
 

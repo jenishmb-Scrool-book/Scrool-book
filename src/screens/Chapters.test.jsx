@@ -44,6 +44,10 @@ async function boot(place) {
   ]);
   render(<App />, {wrapper});
   await waitFor(() => expect(document.querySelector('.boot')).toBeNull());
+  // Экран загрузки ушёл — это коммит гидрации, но не её эффекты: возврат на
+  // прошлый экран делает эффект, и под нагрузкой (файлы тестов идут
+  // параллельно) он успевал не всегда. Тест тогда видел дом вместо места.
+  await act(async () => {});
 }
 
 async function ask(q) {

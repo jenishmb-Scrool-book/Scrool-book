@@ -40,11 +40,12 @@ Scroll Book берёт эту привычку и разворачивает в 
 
 ШЕСТЬ СПОСОБОВ ЧИТАТЬ ОДНУ КНИГУ
 
-• Переписка — текст приходит сообщениями, ответ листает дальше
+• Переписка — книга приходит от разных контактов: читайте прямо в списке
+  чатов или внутри разговора, реплика за репликой
 • Клипы — по абзацу на экран, свайпом вверх
 • Истории — по касанию, с полосками сверху
 • Лента — постами
-• Видео — список «роликов» и плеер
+• Видео — текст в названиях роликов, продолжение в описании и комментариях
 • Короткие посты — самыми мелкими кусками
 
 Разница не в оформлении, а в размере куска: от пары предложений до целой
@@ -60,6 +61,8 @@ Scroll Book берёт эту привычку и разворачивает в 
 
 • Свои книги: вставить текстом или открыть файл .txt, .fb2, .fb2.zip, .epub
 • Оглавление с переходом по главам — даже если в файле разметки не было
+• Поиск по тексту: имя героя или фраза — и сразу на ту страницу
+• «Сегодня 12 мин · 3 дня подряд» на главном экране — без норм и без упрёков
 • «Осталось ≈ 20 мин» вместо процентов: вопрос обычно не «далеко ли я»,
   а «успею ли сейчас»
 • Тёмная и светлая темы, три размера шрифта, русский и английский
@@ -110,11 +113,13 @@ in the exact shape you already scroll through every day.
 
 SIX WAYS TO READ ONE BOOK
 
-• Chat — the text arrives as messages, replying moves you forward
+• Chat — the book arrives from different contacts: read right in the chat
+  list or inside a conversation, one line at a time
 • Clips — a paragraph per screen, swiped up
 • Stories — tap to advance, bars across the top
 • Feed — as posts
-• Video — a list of "clips" and a player
+• Video — the text sits in the clip titles, then carries on in the description
+  and comments
 • Short posts — the smallest pieces of all
 
 The difference isn't decoration, it's chunk size: from two sentences to a full
@@ -130,6 +135,8 @@ ALSO INSIDE
 
 • Your own books: paste text or open a .txt, .fb2, .fb2.zip or .epub file
 • Chapter navigation, even when the file had no markup
+• Search the text: a character's name or a phrase takes you straight there
+• "Today 12 min · 3 days in a row" on the home screen — no quotas, no guilt
 • "≈ 20 min left" instead of a percentage
 • Dark and light themes, three text sizes, Russian and English
 • Home-screen wallpaper: twenty ready-made ones or a picture of your own

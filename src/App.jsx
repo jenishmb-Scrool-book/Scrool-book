@@ -18,6 +18,7 @@ import Chapters from './screens/Chapters.jsx';
 import Library from './screens/Library.jsx';
 import Settings from './screens/Settings.jsx';
 import PicView, {PicProvider} from './ui/PicView.jsx';
+import Crash from './ui/Crash.jsx';
 
 export const SCREENS = {
   home: Home,
@@ -58,6 +59,10 @@ export default function App() {
   // прокручивается вместе с лентой, а открытая картинка уезжать не должна.
   // Отсюда же её видит и аппаратная «назад» — для неё это шаг, а не выход.
   const [shot, setShot] = useState('');
+  // Сколько раз уходили с упавшего экрана на дом. Входит в ключ предохранителя:
+  // если упал сам дом, переход «на дом» экрана не меняет, и без счётчика
+  // предохранитель так и остался бы в упавшем состоянии.
+  const [fell, setFell] = useState(0);
 
   // История переходов. Была таблица «откуда куда» на два экрана, и она врала
   // везде, где переход не один: в настройки приходят и из дома, и с нижней
@@ -337,7 +342,11 @@ export default function App() {
   if (!introDone) {
     return (
       <div id="phone">
-        <Intro step={step} onStep={setStep} onDone={endIntro} />
+        {/* Упало вступление — пропускаем его: объяснение не стоит того,
+            чтобы из-за него нельзя было попасть в приложение. */}
+        <Crash onHome={endIntro} homeLabel="crash.skip">
+          <Intro step={step} onStep={setStep} onDone={endIntro} />
+        </Crash>
       </div>
     );
   }
@@ -346,7 +355,12 @@ export default function App() {
   return (
     <div id="phone">
       <PicProvider value={setShot}>
-        <Current go={go} back={goBack} arg={arg} />
+        {/* Ключ — экран: любой переход, включая аппаратную «назад», снимает
+            упавшее состояние. См. ui/Crash.jsx — без предохранителя ошибка
+            одного экрана оставляла белый лист при каждом запуске. */}
+        <Crash key={screen + ':' + fell} onHome={() => {setFell(n => n + 1); go('home');}}>
+          <Current go={go} back={goBack} arg={arg} />
+        </Crash>
       </PicProvider>
       {shot ? <PicView src={shot} onClose={() => setShot('')} /> : null}
       {/* Нажатие убирает плашку сразу: ждать восемь секунд, пока она
