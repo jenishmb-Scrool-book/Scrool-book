@@ -552,3 +552,23 @@ describe('вкладка «Группы»', () => {
   });
 });
 
+describe('журнал звонков из переписки', () => {
+  // Список → переписка → трубка → журнал → «назад» → переписка → «назад»:
+  // раньше вело на дом мимо списка — журнал разматывал историю до него.
+  it('«назад» проходит тот же путь обратно', async () => {
+    await seed({id: 'chats', arg: null}, {skin: 'tg'});
+    await boot();
+    await act(async () => {document.querySelector('.crow').click();});
+    expect(here()).toBe('chat');
+    const phone = [...document.querySelectorAll('.chdr .ic')]
+      .find(el => el.getAttribute('aria-label') === DICT.ru['chats.tab_calls']);
+    await act(async () => {phone.click();});
+    expect(document.querySelectorAll('.crow.call').length).toBeGreaterThan(0);
+    await act(async () => {expect(await NAT.onBack()).toBe(true);});
+    expect(here()).toBe('chat');
+    await act(async () => {expect(await NAT.onBack()).toBe(true);});
+    expect(here()).toBe('chats');
+    expect(document.querySelectorAll('.crow.call')).toHaveLength(0);   // список, не журнал
+  });
+});
+
