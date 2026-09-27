@@ -124,9 +124,15 @@ export default function Video({go, back}) {
   // он был верен ровно до того дня, когда в названиях появился текст книги.
   const {boxRef, items, away, toPos} = useCardWindow({count, pos, setPos, eye, ahead: 1, cardSelector: '.vid'});
 
+  // Ролик впереди места — это чтение дальше: место едет к нему. Ролик
+  // позади — перечитать: открываем его по параметру, а место не трогаем
+  // (правило «назад место переносит только оглавление»). Раньше нажатие по
+  // последнему ролику дочитанной книги возвращало «осталось 1 мин».
   const play = i => {
-    setPos(i);
-    go('player');
+    if (i >= pos) {
+      setPos(i);
+      go('player');
+    } else go('player', {arg: chunks[i].at});
   };
   const act = action => run(action, {go, boxRef, pos});
   // Какой чипс горит. Раньше «Все» горел всегда, что бы ни нажали.
@@ -215,14 +221,15 @@ function Comment({i, at, text, pics, onReply}) {
  * Описание зафиксировано на входе (`head`) и под прокруткой не меняется:
  * иначе текст менялся бы под пальцем, пока курсор едет по комментариям.
  */
-export function Player({go, back}) {
+export function Player({go, back, arg}) {
   const {text, offset, setOffset} = useStore();
   const t = useT();
   const {chunks: ts, picsOf: tpics} = useChunks(SIZE.vlist);      // название — как в списке
   const {chunks: ds, picsOf: dpics} = useChunks(SIZE.video);      // описание — длинный кусок
   const {chunks: cs, picsOf: cpics} = useChunks(SIZE.comment);    // комментарии — короткие
   const boxRef = useRef(null);
-  const [head, setHead] = useState(offset);
+  // С какого места ролик: из списка позади места — по параметру, иначе — место.
+  const [head, setHead] = useState(() => (Number.isFinite(arg) && arg >= 0 ? arg : offset));
   // Курсор для обработчика прокрутки: он вешается один раз, а сравнивать
   // надо со свежим значением.
   const offRef = useRef(offset);
@@ -247,20 +254,28 @@ export function Player({go, back}) {
   // пару строк: добираем следующие, пока не наберётся хотя бы 400 знаков.
   let till = ds[at] ? ds[at].end : from;
   for (let k = at + 1; ds[k] && till - from < 400; k++) till = ds[k].end;
+  // Конец описания — на границе комментария. Иначе кусок комментариев,
+  // перекрывающий конец описания, пропускался целиком, и его хвост — одно-два
+  // предложения — не показывался нигде: ни в описании, ни в комментариях.
+  const j = indexAt(cs, till);
+  if (cs[j] && cs[j].at < till && cs[j].end > till) till = cs[j].end;
   const desc = ds.length && till > from
     ? {at: from, end: till, text: text.slice(from, till).replace(/\s+/g, ' ').trim()}
     : null;
   at = Math.min(at, Math.max(0, ds.length - 1));
 
-  // Первый комментарий берётся строго ПОСЛЕ описания: `indexAt` отдаёт кусок,
-  // которому смещение принадлежит, а он начинается раньше конца описания —
-  // и тогда первый комментарий повторял бы его хвост.
-  let first = desc ? indexAt(cs, desc.end) : 0;
-  if (cs.length && desc && cs[first].at < desc.end) first += 1;
+  // Первый комментарий берётся строго ПОСЛЕ описания (а без описания — после
+  // названия): `indexAt` отдаёт кусок, которому смещение принадлежит, а он
+  // начинается раньше, — и первый комментарий повторял бы уже прочитанное.
+  // Без описания раньше бралось начало книги: на последнем ролике под
+  // концом книги стояли её первые страницы.
+  const after = desc ? desc.end : from;
+  let first = indexAt(cs, after);
+  if (cs[first] && cs[first].at < after) first += 1;
 
   const list = [];
   for (let k = 0; k < COMMENTS && first + k < cs.length; k++) list.push(first + k);
-  const endAt = list.length ? cs[list[list.length - 1]].end : (desc ? desc.end : 0);
+  const endAt = list.length ? cs[list[list.length - 1]].end : after;
   const more = endAt < text.length;
 
   // Курсор едет за комментариями: они и есть продолжение книги. Обработчик
@@ -280,7 +295,9 @@ export function Player({go, back}) {
           // `<=`, а не `<`: ▶ прокручивает ровно на эту отметку, и строгое
           // сравнение не засчитывало комментарий, к которому она привела, —
           // ▶ застревала на месте.
-          if (el.offsetTop <= box.scrollTop + 60) last = el;
+          // Запас в пару пикселей: на телефоне с дробной плотностью экрана
+          // плавная прокрутка останавливается на долю пикселя раньше.
+          if (el.offsetTop <= box.scrollTop + 62) last = el;
           else break;
         }
         // Докрутили до самого низа — на экране всё, что осталось: последние
@@ -302,9 +319,18 @@ export function Player({go, back}) {
 
   // Следующий ролик — следующая страница книги. Курсор переносим сами: он мог
   // остаться на середине комментариев, а «дальше» значит именно дальше.
+  //
+  // Дальше книги нет — ▶ ставит «дочитано», а не листает: раньше следующей
+  // «страницей» становилось начало книги, и место чтения уезжало туда.
+  // Перечитывали прочитанное (ролик позади места) — страница листается, а
+  // место стоит: назад его переносит только оглавление.
   const nextPage = () => {
+    if (!more) {
+      if (text.length - 1 > offRef.current) setOffset(text.length);
+      return;
+    }
     setHead(endAt);
-    setOffset(endAt);
+    if (endAt > offRef.current) setOffset(endAt);
   };
 
   // Большая ▶ — первое, что нажимает любой человек. Раньше она сразу листала

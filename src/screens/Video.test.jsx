@@ -56,14 +56,15 @@ function Gate({children}) {
   return ready ? children : null;
 }
 
-async function boot() {
+async function boot(at = 0, arg = null) {
   await saveText('b1', TEXT);
   await saveMeta({
     books: [{id: 'b1', title: 'Книга', len: TEXT.length, toc: 1}],
-    cur: 'b1', at: {b1: 0}, last: 'video', intro: 1, place: {id: 'player', arg: null}
+    cur: 'b1', at: {b1: at}, last: 'video', intro: 1, place: {id: 'player', arg: null}
   });
-  render(<StoreProvider><Gate><Player go={() => {}} back={() => {}} /><Probe /></Gate></StoreProvider>);
-  await waitFor(() => expect(document.querySelectorAll('.cmt').length).toBeGreaterThan(4));
+  render(<StoreProvider><Gate><Player go={() => {}} back={() => {}} arg={arg} /><Probe /></Gate></StoreProvider>);
+  // Заголовок есть у любого ролика, комментариев на последнем может не быть.
+  await waitFor(() => expect(document.querySelector('.vinfo h3')).not.toBeNull());
   // Комментарии нарисованы — но обработчик прокрутки плеер вешает эффектом,
   // после отрисовки, и под нагрузкой тест успевал прокрутить раньше него.
   await act(async () => {});
@@ -164,6 +165,68 @@ describe('«Следующее»', () => {
     await act(async () => {document.querySelector('.upnext + .vid').click();});
     expect(document.querySelector('.vinfo h3').textContent).toBe(promised);
     expect(promised.length).toBeGreaterThan(0);
+  });
+});
+
+describe('конец книги в плеере', () => {
+  // На последнем ролике описания нет — и комментариями раньше становилось
+  // НАЧАЛО книги, а ▶ уносила туда место чтения, стирая «дочитано».
+  const lastTitle = () => {
+    const ts = chunk(TEXT, SIZE.vlist);
+    return ts[ts.length - 1];
+  };
+
+  it('последний ролик: ни комментариев из начала книги, ни «Следующего»', async () => {
+    await boot(lastTitle().at);
+    expect(document.querySelector('.vinfo h3').textContent).toBe(lastTitle().text);
+    const firstAt = chunk(TEXT, SIZE.comment)[0].at;
+    for (const el of document.querySelectorAll('.cmt')) expect(Number(el.dataset.at)).toBeGreaterThan(firstAt);
+    expect(document.querySelector('.upnext')).toBeNull();
+  });
+
+  it('▶ на последнем ролике — «дочитано», а не начало книги', async () => {
+    const box = await boot(lastTitle().at);
+    box.scrollTo = () => {};
+    await act(async () => {document.querySelector('#player .pl').click();});
+    expect(now).toBe(TEXT.length - 1);
+    expect(document.querySelector('.vinfo h3').textContent).toBe(lastTitle().text);
+  });
+});
+
+describe('страница ролика без пропусков', () => {
+  // Кусок комментариев, перекрывавший конец описания, пропускался целиком:
+  // одно-два предложения не показывались нигде.
+  it('название, описание и комментарии идут подряд, как в книге', async () => {
+    // Длинные абзацы из предложений разной длины: куски описания и
+    // комментариев режутся по разным местам.
+    const words = ['Первое предложение.', 'Второе чуть длиннее, с запятой.', 'Третье.',
+      'Четвёртое предложение выходит заметно длиннее остальных, почти строка.'];
+    const long = Array.from({length: 12}, (_, p) =>
+      Array.from({length: 40}, (_, k) => words[(p + k) % 4].replace('.', ' ' + p + '-' + k + '.')).join(' ')
+    ).join('\n\n');
+    await saveText('b1', long);
+    await saveMeta({books: [{id: 'b1', title: 'Книга', len: long.length, toc: 1}], cur: 'b1', at: {b1: 0},
+      last: 'video', intro: 1});
+    render(<StoreProvider><Gate><Player go={() => {}} back={() => {}} /><Probe /></Gate></StoreProvider>);
+    await waitFor(() => expect(document.querySelectorAll('.cmt').length).toBeGreaterThan(0));
+    const flat = s => s.replace(/\s+/g, ' ').trim();
+    const shown = [document.querySelector('.vinfo h3').textContent, document.querySelector('.dtxt').textContent,
+      ...[...document.querySelectorAll('.cmt .ct')].map(el => el.textContent)].join(' ');
+    expect(flat(long).startsWith(flat(shown))).toBe(true);
+  });
+});
+
+describe('ролик позади места', () => {
+  // Перечитать прошлый ролик — не повод отматывать место чтения назад.
+  it('открывается по параметру, а место и ▶ его не трогают', async () => {
+    const at = chunk(TEXT, SIZE.vlist)[1].at;
+    const box = await boot(TEXT.length - 1, at);
+    box.scrollTo = () => {};
+    expect(document.querySelector('.vinfo h3').textContent).toBe(chunk(TEXT, SIZE.vlist)[1].text);
+    expect(now).toBe(TEXT.length - 1);
+    box.scrollTop = box.scrollHeight - box.clientHeight;
+    await act(async () => {document.querySelector('#player .pl').click();});
+    expect(now).toBe(TEXT.length - 1);
   });
 });
 
