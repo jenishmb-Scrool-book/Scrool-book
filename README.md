@@ -171,7 +171,7 @@ www_backup/            ванильный прототип, эталон пов�
 ```bash
 npm install
 npm run dev      # http://localhost:5173
-npm test         # 591 тест
+npm test         # 601 тест
 ```
 
 ## Сборка под Android
