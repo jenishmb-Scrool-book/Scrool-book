@@ -290,7 +290,13 @@ export default function App() {
       // из родителя возвращало бы в тот экран, из которого поднялись, —
       // переписка ↔ список чатов по кругу.
       const up = !!(opt && opt.up);
-      if (!up && id !== 'home' && (k < 0 || h.length === 0 || h[h.length - 1].screen !== from)) {
+      // Последний шаг истории сравниваем так же, как ищем, — с параметром:
+      // переписка с №5 и переписка с №3 — разные места, и «назад» из журнала
+      // звонков должно вести в ту, откуда в него пришли.
+      const top = h[h.length - 1];
+      const here = argRef.current == null ? null : argRef.current;
+      const same = top && top.screen === from && (top.arg == null ? null : top.arg) === here;
+      if (!up && id !== 'home' && (k < 0 || !same)) {
         h.push({screen: from, arg: argRef.current});
         if (h.length > DEPTH) h.shift();
       }

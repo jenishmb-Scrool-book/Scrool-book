@@ -577,3 +577,27 @@ describe('журнал звонков из переписки', () => {
   });
 });
 
+describe('история: один экран, разные параметры', () => {
+  // Переписка с №5 → журнал → переписка с №3 → журнал → «назад»: раньше
+  // вело в переписку с №5 — последний шаг истории сравнивался без параметра.
+  it('«назад» из журнала — в переписку, откуда в него пришли', async () => {
+    await seed({id: 'home', arg: null}, {skin: 'tg'});
+    await boot();
+    const tg = [...document.querySelectorAll('#home .grid .icon')].find(el => el.textContent.includes('Telegran'));
+    await act(async () => {tg.click();});
+    await act(async () => {document.querySelectorAll('.crow')[1].click();});
+    const phone = () => [...document.querySelectorAll('.chdr .ic')]
+      .find(el => el.getAttribute('aria-label') === DICT.ru['chats.tab_calls']);
+    await act(async () => {phone().click();});
+    const calls = [...document.querySelectorAll('.crow.call')];
+    const third = calls[2];
+    const who = third.querySelector('b').textContent;
+    await act(async () => {third.click();});
+    expect(document.querySelector('.chdr .who b').textContent).toBe(who);
+    await act(async () => {phone().click();});
+    await act(async () => {expect(await NAT.onBack()).toBe(true);});
+    expect(here()).toBe('chat');
+    expect(document.querySelector('.chdr .who b').textContent).toBe(who);
+  });
+});
+

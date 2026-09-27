@@ -258,7 +258,10 @@ export default function Chapters({go, back, arg}) {
   const jump = (at, q) => {
     setOffset(at, {jump: true});
     if (q) setQuery(q);
-    go(backTo, q ? {hit: {q, at}} : undefined);
+    // Шаг «вверх», назад в чтение: оглавление — спутник «приложения», и
+    // переход из него не копит историю. Иначе после двух заходов в
+    // оглавление «назад» из клипов открывало старое оглавление, а не дом.
+    go(backTo, q ? {hit: {q, at}, up: true} : {up: true});
   };
 
   return (
