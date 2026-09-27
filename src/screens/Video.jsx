@@ -11,6 +11,7 @@ import {SIZE} from '../ui/sizes.js';
 import {run} from '../ui/actions.js';
 import {TABS} from '../ui/tabs.js';
 import {APP_NAMES} from '../ui/skins.js';
+import {AppGlyph} from '../ui/AppIcon.jsx';
 import {commentEmo, dur, grad, likes, videoTitle, views} from '../ui/visual.js';
 import {FACE, shot} from '../ui/pics.js';
 import {contactAt} from '../lib/fake.js';
@@ -143,7 +144,7 @@ export default function Video({go, back}) {
       <StatusBar />
       <div className="yhdr">
         <span className="back" onClick={back} role="button" aria-label={t('back')}><Glyph name="back" /></span>
-        <b className="ylogo"><i><Glyph name="play" /></i>{APP_NAMES.video}</b>
+        <b className="ylogo"><i><AppGlyph name="tv" /></i>{APP_NAMES.video}</b>
         <span className="ic" onClick={() => act('find')} role="button"
               aria-label={t('video.search')}><Glyph name="search" /></span>
         <span className="ic" onClick={() => go('toc')} role="button"

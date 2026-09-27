@@ -30,14 +30,14 @@ import Glyph from '../ui/Glyph.jsx';
 // значков, и разойдись он с настоящим экраном — вступление обещало бы одно
 // приложение, а открывалось другое.
 export const APPS = [
-  ['plane', APP_NAMES.tg, 'chats', 'linear-gradient(145deg,#41b6e6,#1d7fb8)', 'tg', true],
-  ['phone', APP_NAMES.wa, 'chats', 'linear-gradient(145deg,#4ee07f,#0f7a4d)', 'wa', true],
-  ['camera', APP_NAMES.feed, 'feed', 'linear-gradient(145deg,#f9a03f,#d62976 58%,#7c5cff)'],
-  ['note', APP_NAMES.reels, 'reels', 'linear-gradient(150deg,#33333d,#0a0a0f)'],
-  ['play', APP_NAMES.video, 'video', 'linear-gradient(145deg,#ff4b4b,#a10f0f)'],
-  ['bolt', APP_NAMES.ms, 'chats', 'linear-gradient(145deg,#b06cff,#0084ff)', 'ms', true],
-  ['snap', APP_NAMES.stories, 'stories', 'linear-gradient(145deg,#ffd93b,#e0a000)'],
-  ['bird', APP_NAMES.tweets, 'tweets', 'linear-gradient(145deg,#5aa9e6,#1b6ca8)', null, true]
+  ['letter', APP_NAMES.tg, 'chats', 'linear-gradient(145deg,#41b6e6,#1d7fb8)', 'tg', true],
+  ['chat', APP_NAMES.wa, 'chats', 'linear-gradient(145deg,#4ee07f,#0f7a4d)', 'wa', true],
+  ['photo', APP_NAMES.feed, 'feed', 'linear-gradient(145deg,#f9a03f,#d62976 58%,#7c5cff)'],
+  ['clap', APP_NAMES.reels, 'reels', 'linear-gradient(150deg,#33333d,#0a0a0f)'],
+  ['tv', APP_NAMES.video, 'video', 'linear-gradient(145deg,#ff4b4b,#a10f0f)'],
+  ['zap', APP_NAMES.ms, 'chats', 'linear-gradient(145deg,#b06cff,#0084ff)', 'ms', true],
+  ['eye', APP_NAMES.stories, 'stories', 'linear-gradient(145deg,#ffd93b,#e0a000)'],
+  ['quote', APP_NAMES.tweets, 'tweets', 'linear-gradient(145deg,#5aa9e6,#1b6ca8)', null, true]
 ];
 
 // Док — наши собственные экраны, сетка — «приложения».

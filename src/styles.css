@@ -599,15 +599,16 @@ button,textarea,input{font:inherit;color:inherit}
 .post .cap{padding:0 12px;font-size:.81rem;opacity:.6}
 
 /* ===== видео ===== */
-/* Шапка с именем «приложения»: слово «Видео» не говорит ничего, а красная
-   плашка с треугольником узнаётся мгновенно — и это ровно то, зачем экран. */
+/* Шапка с именем «приложения»: слово «Видео» не говорит ничего, а значок с
+   плитки рядом с именем узнаётся сразу. Не красная плашка с треугольником:
+   это чужой логотип, а не просто «видео». */
 .yhdr{flex:none;display:flex;align-items:center;gap:8px;padding:9px 12px;
   background:var(--hdr);border-bottom:1px solid var(--line)}
 .ylogo{flex:1;display:flex;align-items:center;gap:6px;
   font-size:1.13rem;font-weight:700;letter-spacing:-.4px}
-.ylogo i{font-style:normal;display:grid;place-items:center;width:26px;height:18px;
-  border-radius:5px;background:#d33;color:#fff}
-.ylogo i .gl{width:11px;height:11px;vertical-align:0;margin-left:1px}
+.ylogo i{font-style:normal;display:grid;place-items:center;width:24px;height:24px;
+  border-radius:7px;background:linear-gradient(145deg,#ff4b4b,#a10f0f);color:#fff}
+.ylogo i svg{width:16px;height:16px;display:block}
 .yhdr .ic{font-size:1.13rem;opacity:.75;padding:2px 4px;cursor:pointer;user-select:none}
 
 /* Карточка ролика во всю ширину. Раньше здесь была строка со срезанным по
