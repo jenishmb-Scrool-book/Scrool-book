@@ -260,7 +260,10 @@ export function Player({go, back, arg}) {
   const j = indexAt(cs, till);
   if (cs[j] && cs[j].at < till && cs[j].end > till) till = cs[j].end;
   const desc = ds.length && till > from
-    ? {at: from, end: till, text: text.slice(from, till).replace(/\s+/g, ' ').trim()}
+    // Абзацы — абзацами: заголовок главы внутри описания сливался с текстом
+    // в одну строку («…решено. Глава 5. Мост Абзац 5.1…»).
+    ? {at: from, end: till, text: text.slice(from, till).split(/\n\s*\n/)
+      .map(s => s.replace(/\s+/g, ' ').trim()).filter(Boolean).join('\n\n')}
     : null;
   at = Math.min(at, Math.max(0, ds.length - 1));
 

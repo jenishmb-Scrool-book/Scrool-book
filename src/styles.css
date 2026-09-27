@@ -477,6 +477,7 @@ button,textarea,input{font:inherit;color:inherit}
    как в настоящем мессенджере, и без единого измерения в JS. */
 .msg .sp{display:inline-block;width:44px;height:1px}
 .msg.out .sp{width:60px}
+.msg .sender{display:block;font-size:.81rem;font-weight:600;margin-bottom:2px;color:var(--pr,var(--accent))}
 .msg .t{position:absolute;right:9px;bottom:6px;font-size:10px;opacity:.5;
   white-space:nowrap;line-height:1}
 .msg .t .tick{font-style:normal;margin-left:3px;letter-spacing:-2px;color:#53bdeb;opacity:.95}
@@ -755,6 +756,7 @@ button,textarea,input{font:inherit;color:inherit}
 #library .hdr .ic{font-size:1.2rem;opacity:.75;line-height:0;padding:4px}
 .hint{opacity:.5;font-size:.81rem;margin:6px 0 16px}
 .hint.bad{opacity:1;color:var(--bad);font-weight:500}
+.hint.note{opacity:.85}
 
 /* Переключатель из нескольких кнопок: тема, кегль, язык. */
 .seg{display:flex;gap:6px;margin:0 0 18px}

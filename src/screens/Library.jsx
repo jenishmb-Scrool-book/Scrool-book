@@ -16,7 +16,7 @@ const later = v => Promise.resolve(v);
 // Коды ошибок парсеров → ключи i18n. Всё, что кодом не помечено, — просто
 // «файл не разобрался»: пользователю незачем знать, XML там сломался или ZIP.
 const ERR = {zip: 'lib.parse_failed_zip', unsupported: 'lib.unsupported', pdf: 'lib.pdf', empty: 'lib.no_text',
-  binary: 'lib.binary'};
+  binary: 'lib.binary', docx: 'lib.docx'};
 
 // Что показывать в системном выборе файла.
 //
@@ -34,6 +34,7 @@ export default function Library({go, back}) {
   const t = useT();
   const [text, setText] = useState('');
   const [msg, setMsg] = useState('');
+  const [note, setNote] = useState('');     // не ошибка — просто что случилось
   // Разбор большого .fb2 и запись его на диск занимают заметное время, а на
   // экране до сих пор не менялось ничего. Секунда без единого признака жизни
   // читается как «не нажалось» — и человек жмёт второй раз, добавляя книгу дважды.
@@ -49,6 +50,7 @@ export default function Library({go, back}) {
       return setMsg(t('lib.empty_text'));
     }
     setMsg('');
+    setNote('');
     // Заголовок по умолчанию — первые 40 символов, как в прототипе.
     // addBook не реджектится: при переполнении и на пустом тексте она резолвится
     // в null и пишет причину в store.error. Поэтому решаем по id, а не по .catch.
@@ -60,6 +62,14 @@ export default function Library({go, back}) {
         // с плашкой это было второе сообщение об одном и том же.
         if (!id) return;
         setText('');            // поле чистим только после успеха, иначе текст потерян навсегда
+        // Книга уже была (та же целиком или та, чей текст пропал): она открыта
+        // на своём месте. Говорим это здесь, а не молча уводим на дом —
+        // иначе непонятно, что сработало и куда делась «новая» книга.
+        if (books.some(b => b.id === id)) {
+          setBusy('');
+          setNote(t('lib.again'));
+          return;
+        }
         go('home');
       })
       .catch(() => setMsg(t('lib.save_failed')))
@@ -152,6 +162,7 @@ export default function Library({go, back}) {
         {busy ? <div className="hint busy">{t(busy)}</div> : null}
         {/* Ошибка — не подсказка: серым она терялась среди пояснений под ней. */}
         {msg ? <div className="hint bad" role="alert">{msg}</div> : null}
+        {note ? <div className="hint note" role="status">{note}</div> : null}
         <div className="hint">{t('lib.hint')}</div>
 
         <div>

@@ -931,3 +931,29 @@ describe('renameBook', () => {
   });
 });
 
+describe('книга узнаётся по тексту, а не по названию', () => {
+  const TEXT = 'Абзац про осень. '.repeat(200).trim();
+
+  it('переименованная книга без текста принимает тот же файл и встаёт на место', async () => {
+    await saveMeta({
+      books: [{id: 'b1', title: 'Осень (черновик)', len: TEXT.length, toc: 1}],
+      cur: 'b1', at: {b1: 1500}, last: 'reels', intro: 1
+    });
+    const h = await mount();
+    const id = await add(h, 'Осень', TEXT);
+    expect(id).toBe('b1');
+    expect(h.result.current.books).toHaveLength(1);
+    expect(h.result.current.books[0].title).toBe('Осень (черновик)');   // название — прежнее
+    expect(h.result.current.offset).toBe(1500);
+  });
+
+  it('переименованная книга с текстом повторной вставкой не удваивается', async () => {
+    const h = await mount();
+    const a = await add(h, 'Осень', TEXT);
+    act(() => {h.result.current.renameBook(a, 'Осень — перечитать');});
+    const b = await add(h, 'Осень', TEXT);
+    expect(b).toBe(a);
+    expect(h.result.current.books).toHaveLength(1);
+  });
+});
+

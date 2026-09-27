@@ -86,6 +86,8 @@ function plainText(u8) {
 async function fromZip(u8, ext) {
   const z = openZip(u8);
   if (z.names.includes('META-INF/container.xml')) return parseEpub(u8);
+  // Документ Word — тот же ZIP. Частая ошибка, и у неё есть простой выход.
+  if (z.names.includes('word/document.xml')) throw failed('Документ Word', 'docx');
 
   // `.fb2.zip` — это один файл в архиве. Имя внутри бывает и без расширения,
   // поэтому единственную запись берём как есть и проверяем уже её содержимое.

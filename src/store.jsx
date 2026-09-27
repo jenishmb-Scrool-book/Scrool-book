@@ -524,6 +524,9 @@ export function StoreProvider({children}) {
       return null;
     }
 
+    // Импорт — тоже смена открытой книги. Открытие, начатое до него,
+    // завершилось бы позже и перебило бы `cur` на свою книгу.
+    ++openSeq.current;
     const prev = metaRef.current;
     const name = (title || txt.slice(0, 40)).trim();
 
@@ -533,13 +536,18 @@ export function StoreProvider({children}) {
     // под её же id: место чтения, лежавшее в копии, продолжает работать.
     // Без этого повторное добавление заводило новую книгу с нуля, а старая
     // запись с местом так и висела в библиотеке пустой.
+    // Узнаём по длине текста до знака, а название — только подсказка, кого
+    // проверить первым: книгу могли переименовать (карандаш в библиотеке), и
+    // по названию она больше не нашлась бы — место в ней пропало бы.
     let back = null;
     let same = null;
-    for (const b of prev.books) {
-      if (b.title !== name || b.len !== txt.length) continue;
+    const alike = prev.books
+      .filter(b => b.len === txt.length)
+      .sort((a, b) => (b.title === name) - (a.title === name));
+    for (const b of alike) {
       const had = String((await loadText(b.id)) ?? '');
-      if (!had) {back = b; break;}
       if (had === txt) {same = b; break;}
+      if (!had && !back) back = b;
     }
 
     // Та же книга уже лежит целиком — открываем её, а не заводим вторую
@@ -594,10 +602,14 @@ export function StoreProvider({children}) {
 
     const base = metaRef.current;                 // за await мета могла уехать
     const entry = {id, title: name, len: txt.length, toc: 1, pics: count};
-    const next = back
+    // Книгу, в которую возвращаем текст, могли удалить, пока шёл импорт, —
+    // тогда она заводится заново под тем же id, а не остаётся ссылкой в никуда.
+    const reuse = back && base.books.some(b => b.id === id);
+    const next = reuse
       ? {
         ...base,
-        books: base.books.map(b => (b.id === id ? {...b, ...entry} : b)),
+        // Название — прежнее: его могли поменять руками, и файл его не знает.
+        books: base.books.map(b => (b.id === id ? {...b, ...entry, title: b.title} : b)),
         at: {...base.at, [id]: clamp(base.at[id], txt.length)},
         cur: id
       }

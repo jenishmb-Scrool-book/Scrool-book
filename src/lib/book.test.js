@@ -173,3 +173,14 @@ describe('parseBook() — отказы', () => {
     }
   });
 });
+
+describe('parseBook() — документ Word', () => {
+  it('узнаётся по содержимому архива и получает свой код', async () => {
+    const docx = zipOf({'[Content_Types].xml': '<Types/>', 'word/document.xml': '<w:document/>'});
+    for (const name of ['kniga.docx', 'kniga']) {
+      const e = await parseBook(file(name, docx)).catch(x => x);
+      expect(e.code, name).toBe('docx');
+    }
+  });
+});
+

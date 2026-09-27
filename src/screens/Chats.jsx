@@ -309,10 +309,13 @@ export default function Chats({go, back, arg}) {
  * текст обтекает его, как в настоящем мессенджере. Это единственный способ
  * получить такое поведение без измерений в JS.
  */
-function Bubble({text, time, out, tick, react, count, pics}) {
+function Bubble({text, time, out, tick, react, count, pics, from}) {
   const cls = ['msg', out ? 'out' : '', 'tail', react ? 'hasr' : ''].filter(Boolean).join(' ');
   return (
     <div className={cls}>
+      {/* В группе над чужой репликой — имя того, кто её написал: без этого
+          «Семья» выглядела группой без людей. */}
+      {from ? <b className="sender">{from}</b> : null}
       {/* Внутри пузыря, над текстом: так и приходит сообщение с картинкой. */}
       <BookPics list={pics} />
       {text}
@@ -426,6 +429,7 @@ export function Chat({go, back, arg}) {
                   tick={out}
                   react={reaction(i)}
                   count={reactionCount(i)}
+                  from={c.group && !out ? personAt(i, ui.lang).name : null}
                 />
               )}
               {/* Ответ одним смайликом — с противоположной стороны: так на него

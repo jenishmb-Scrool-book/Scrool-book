@@ -75,7 +75,7 @@ const ru = {
   'home.left': 'осталось {left}',
   'home.search': 'Поиск',
   'home.today': 'Сегодня {m} мин',
-  'home.missing': 'Текста этой книги нет на телефоне. Открой тот же файл в библиотеке — место чтения сохранилось.',
+  'home.missing': 'Текста этой книги нет на телефоне. Открой тот же файл в библиотеке — место чтения вернётся.',
   'home.streak': '{n} дня подряд',
   'home.streak.one': '{n} день подряд',
   'home.streak.few': '{n} дня подряд',
@@ -219,6 +219,8 @@ const ru = {
   'lib.no_text': 'В файле не нашлось текста',
   'lib.binary': 'Это не текст, а картинка или документ. Нужна книга в .txt, .fb2, .fb2.zip или .epub.',
   'lib.missing': 'текста нет — открой файл заново',
+  'lib.again': 'Эта книга уже в библиотеке — открыта на своём месте.',
+  'lib.docx': 'Это документ Word. Сохрани его как «Обычный текст» (.txt) и открой снова.',
   'lib.pdf': 'PDF не поддерживается: это свёрстанные страницы, а читалке нужен сам текст. Найди эту книгу в .fb2 или .epub — их раздают почти все библиотеки.',
 
   // ===== настройки =====
@@ -319,7 +321,7 @@ const en = {
   'home.left': '{left} left',
   'home.search': 'Search',
   'home.today': 'Today {m} min',
-  'home.missing': 'This book’s text isn’t on this phone. Open the same file in the Library — your place is kept.',
+  'home.missing': 'This book’s text isn’t on this phone. Open the same file in the Library — your place comes back.',
   'home.streak': '{n} days in a row',
   'home.streak.one': '{n} day in a row',
   'home.streak.few': '{n} days in a row',
@@ -452,6 +454,8 @@ const en = {
   'lib.no_text': 'No text found in the file',
   'lib.binary': 'This isn’t text — it’s a picture or a document. You need a book in .txt, .fb2, .fb2.zip or .epub.',
   'lib.missing': 'text missing — open the file again',
+  'lib.again': 'This book is already in the Library — it’s open at your place.',
+  'lib.docx': 'This is a Word document. Save it as “Plain text” (.txt) and open it again.',
   'lib.pdf': 'PDF isn’t supported: it holds laid-out pages, and the reader needs the text itself. Look for the same book as .epub or .fb2 — most libraries offer them.',
 
   'set.title': 'Settings',

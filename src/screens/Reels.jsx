@@ -1,4 +1,4 @@
-import {useLayoutEffect, useMemo} from 'react';
+import {useLayoutEffect, useMemo, useRef} from 'react';
 import {useStore} from '../store.jsx';
 import {useT} from '../i18n.js';
 import Screen from '../ui/Screen.jsx';
@@ -51,13 +51,27 @@ export default function Reels({go, back}) {
   // Одно предложение длиннее куска резать нельзя, и такое всё равно не
   // влезает в карточку. Ему — кегль на ступень меньше: мельче, зато целиком,
   // без невидимой прокрутки внутри клипа. Меряем до того, как кадр нарисован.
+  //
+  // Меряем только новые карточки, и сначала все чтения, потом все записи:
+  // раньше на каждый сдвиг курсора класс снимался и размер читался у каждой
+  // из трёх десятков карточек по очереди — пересчёт вёрстки на каждую.
+  const fitted = useRef({size: 0, done: new Set()});
   useLayoutEffect(() => {
     const box = boxRef.current;
     if (!box) return;
-    for (const el of box.querySelectorAll('.reel .txt')) {
-      el.classList.remove('fit');
-      if (el.scrollHeight > el.clientHeight + 1) el.classList.add('fit');
+    const f = fitted.current;
+    if (f.size !== size) {
+      f.size = size;
+      f.done = new Set();
+      for (const el of box.querySelectorAll('.reel .txt.fit')) el.classList.remove('fit');
     }
+    const fresh = [...box.querySelectorAll('.reel')].filter(el => !f.done.has(el.dataset.i));
+    const over = fresh.map(el => {
+      const txt = el.querySelector('.txt');
+      return txt && txt.scrollHeight > txt.clientHeight + 1 ? txt : null;
+    });
+    over.forEach(txt => txt && txt.classList.add('fit'));
+    fresh.forEach(el => f.done.add(el.dataset.i));
   }, [items, size, boxRef]);
   const act = action => run(action, {go, boxRef, pos});
 
