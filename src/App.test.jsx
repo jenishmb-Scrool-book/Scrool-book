@@ -5,6 +5,7 @@ import App from './App.jsx';
 import {StoreProvider} from './store.jsx';
 import {saveMeta, saveText} from './lib/storage.js';
 import {DICT} from './i18n.js';
+import {APP_NAMES} from './ui/skins.js';
 import {dayKey} from './lib/streak.js';
 
 // Возврат на то место, где закрыли приложение.
@@ -394,7 +395,7 @@ describe('переход на другой экран', () => {
       const el = [...document.querySelectorAll('#home .grid .icon')].find(e => e.textContent.includes(label));
       await act(async () => {el.click();});
     };
-    await open('Telegran');
+    await open(APP_NAMES.tg);
     expect(here()).toBe('chats');
     await act(async () => {document.querySelector('.prog .counter.tap').click();});
     expect(here()).toBe('toc');
@@ -560,7 +561,7 @@ describe('журнал звонков из переписки', () => {
     // запасной шаг к родителю, и ошибку было не видно.
     await seed({id: 'home', arg: null}, {skin: 'tg'});
     await boot();
-    const tg = [...document.querySelectorAll('#home .grid .icon')].find(el => el.textContent.includes('Telegran'));
+    const tg = [...document.querySelectorAll('#home .grid .icon')].find(el => el.textContent.includes(APP_NAMES.tg));
     await act(async () => {tg.click();});
     expect(here()).toBe('chats');
     await act(async () => {document.querySelector('.crow').click();});
@@ -583,7 +584,7 @@ describe('история: один экран, разные параметры',
   it('«назад» из журнала — в переписку, откуда в него пришли', async () => {
     await seed({id: 'home', arg: null}, {skin: 'tg'});
     await boot();
-    const tg = [...document.querySelectorAll('#home .grid .icon')].find(el => el.textContent.includes('Telegran'));
+    const tg = [...document.querySelectorAll('#home .grid .icon')].find(el => el.textContent.includes(APP_NAMES.tg));
     await act(async () => {tg.click();});
     await act(async () => {document.querySelectorAll('.crow')[1].click();});
     const phone = () => [...document.querySelectorAll('.chdr .ic')]

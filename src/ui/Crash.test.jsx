@@ -5,6 +5,7 @@ import App from '../App.jsx';
 import {StoreProvider} from '../store.jsx';
 import {saveMeta, saveText} from '../lib/storage.js';
 import {DICT} from '../i18n.js';
+import {APP_NAMES} from './skins.js';
 import {describe as details} from './Crash.jsx';
 
 // Предохранитель проверяется на настоящем приложении и на экране, который
@@ -79,14 +80,14 @@ describe('упавший экран', () => {
     await boot({id: 'home', arg: null});
     // С дома — в короткие посты: падают.
     const go = [...document.querySelectorAll('#home .grid .icon')]
-      .find(el => el.textContent.includes('Tvitter'));
+      .find(el => el.textContent.includes(APP_NAMES.tweets));
     await act(async () => {go.click();});
     expect(here()).toBe('crash');
     await act(async () => {document.querySelector('.crash .igo').click();});
     expect(here()).toBe('home');
     BOOM.on = false;
     const again = [...document.querySelectorAll('#home .grid .icon')]
-      .find(el => el.textContent.includes('Tvitter'));
+      .find(el => el.textContent.includes(APP_NAMES.tweets));
     await act(async () => {again.click();});
     expect(here()).toBe('tweets');
   });
