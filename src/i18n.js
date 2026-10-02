@@ -400,7 +400,7 @@ const en = {
   'video.ago': '{n} weeks ago',
   'video.upnext': 'Up next',
   'video.tab_home': 'Home',
-  'video.tab_shorts': 'Shorts',
+  'video.tab_shorts': 'Clips',
   'video.tab_subs': 'Subscriptions',
   'video.tab_you': 'You',
 
