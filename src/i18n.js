@@ -43,11 +43,12 @@ const ru = {
   'a11y.dislike': 'Не нравится',
 
   'crash.title': 'Экран не открылся',
-  'crash.body': 'Внутри что-то сломалось. Книга и место чтения целы: они хранятся отдельно от экранов. Если повторяется — скопируй описание ошибки и пришли разработчику.',
+  'crash.body': 'Внутри что-то сломалось. Книга и место чтения целы: они хранятся отдельно от экранов. Если повторяется — напиши разработчику: описание ошибки уже будет в письме.',
   'crash.home': 'На главный экран',
   'crash.skip': 'Пропустить вступление',
   'crash.restart': 'Перезапустить',
   'crash.copy': 'Скопировать описание ошибки',
+  'crash.subject': '{app} {v} — экран не открылся',
   'crash.copied': 'Скопировано — вставь в сообщение разработчику',
   'crash.copy_failed': 'Скопировать не вышло — сними экран, описание ниже',
 
@@ -221,6 +222,9 @@ const ru = {
   'lib.missing': 'текста нет — открой файл заново',
   'lib.again': 'Эта книга уже в библиотеке — открыта на своём месте.',
   'lib.docx': 'Это документ Word. Сохрани его как «Обычный текст» (.txt) и открой снова.',
+  'lib.classic_head': 'Нет своей книги под рукой?',
+  'lib.classic_add': 'Взять «Капитанскую дочку»',
+  'lib.classic_hint': 'Пушкин, 14 глав. Книга лежит в самом приложении — интернет не нужен.',
   'lib.pdf': 'PDF не поддерживается: это свёрстанные страницы, а читалке нужен сам текст. Найди эту книгу в .fb2 или .epub — их раздают почти все библиотеки.',
 
   // ===== настройки =====
@@ -260,10 +264,13 @@ const ru = {
   'notif.test_body': 'Такое же будет приходить раз в день, около 12:00.',
   'set.about': 'О приложении',
   'set.version': 'Версия {v}',
+  'set.write': 'Написать разработчику',
   'set.copy': 'Скопировать сведения',
   'set.copied': 'Скопировано — вставляй в письмо',
   'set.copy_failed': 'Не удалось скопировать. Версия: {v}',
-  'set.about_hint': 'Если что-то сломалось — скопируй сведения и приложи к сообщению. Текста книги и ничего о тебе там нет.',
+  'set.about_hint': 'Ошибка или идея — напиши: откроется почта с готовым письмом, сведения о телефоне в нём уже есть. Текста книги и ничего о тебе там нет. Нет почты на телефоне — скопируй сведения и пришли, как тебе удобно.',
+  'mail.subject': '{app} {v} — отзыв',
+  'mail.note': 'Что случилось или что поменять:',
   'notif.title': 'Ты остановился на странице {page}',
   'notif.body': '«{title}» ждёт. Пара страниц — это пара минут.'
 };
@@ -292,11 +299,12 @@ const en = {
   'a11y.dislike': 'Dislike',
 
   'crash.title': 'This screen failed to open',
-  'crash.body': 'Something broke inside. Your book and reading position are safe: they are stored apart from the screens. If it keeps happening, copy the error details and send them to the developer.',
+  'crash.body': 'Something broke inside. Your book and reading position are safe: they are stored apart from the screens. If it keeps happening, write to the developer — the error details will already be in the email.',
   'crash.home': 'Go to the home screen',
   'crash.skip': 'Skip the introduction',
   'crash.restart': 'Restart',
   'crash.copy': 'Copy error details',
+  'crash.subject': '{app} {v} — a screen failed to open',
   'crash.copied': 'Copied — paste it into your message to the developer',
   'crash.copy_failed': 'Could not copy — take a screenshot, the details are below',
 
@@ -456,6 +464,9 @@ const en = {
   'lib.missing': 'text missing — open the file again',
   'lib.again': 'This book is already in the Library — it’s open at your place.',
   'lib.docx': 'This is a Word document. Save it as “Plain text” (.txt) and open it again.',
+  'lib.classic_head': 'No book of your own at hand?',
+  'lib.classic_add': 'Add Alice in Wonderland',
+  'lib.classic_hint': 'Lewis Carroll, 12 chapters. It ships inside the app — no internet needed.',
   'lib.pdf': 'PDF isn’t supported: it holds laid-out pages, and the reader needs the text itself. Look for the same book as .epub or .fb2 — most libraries offer them.',
 
   'set.title': 'Settings',
@@ -494,10 +505,13 @@ const en = {
   'notif.test_body': 'The same one will come once a day, around 12:00.',
   'set.about': 'About',
   'set.version': 'Version {v}',
+  'set.write': 'Write to the developer',
   'set.copy': 'Copy details',
   'set.copied': 'Copied — paste it into your message',
   'set.copy_failed': 'Could not copy. Version: {v}',
-  'set.about_hint': 'If something breaks, copy the details and attach them to your message. Nothing from your book or about you goes in.',
+  'set.about_hint': 'A bug or an idea? Write: your mail app opens with a ready email, phone details already inside. Nothing from your book or about you goes in. No mail app? Copy the details and send them however you like.',
+  'mail.subject': '{app} {v} — feedback',
+  'mail.note': 'What happened, or what to change:',
   'notif.title': 'You stopped on page {page}',
   'notif.body': '“{title}” is waiting. A couple of pages is a couple of minutes.'
 };

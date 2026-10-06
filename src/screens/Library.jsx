@@ -8,6 +8,7 @@ import {percent} from '../ui/Progress.jsx';
 import {pageCount} from '../lib/pages.js';
 import {parseBook} from '../lib/book.js';
 import {isNative} from '../native.js';
+import {classicOf, loadClassic} from '../classics.js';
 import Glyph from '../ui/Glyph.jsx';
 
 // Стор возвращает Promise; но если реализация вдруг синхронная — не падаем.
@@ -30,7 +31,7 @@ const ACCEPT = '.txt,.md,.fb2,.epub,.zip';
 // Библиотека: только книги. Настройки живут отдельным экраном — этот файл
 // иначе становится местом, где сходятся сразу несколько несвязанных задач.
 export default function Library({go, back}) {
-  const {books, current, text: bookText, offset, positions, addBook, openBook, deleteBook, renameBook} = useStore();
+  const {books, current, text: bookText, offset, positions, addBook, openBook, deleteBook, renameBook, ui} = useStore();
   const t = useT();
   const [text, setText] = useState('');
   const [msg, setMsg] = useState('');
@@ -106,6 +107,21 @@ export default function Library({go, back}) {
       });
   };
 
+  // Роман из самого приложения — тем же путём, что вставленный текст: те же
+  // «Готовлю книгу…», та же проверка на повтор, тот же переход на дом.
+  const classic = classicOf(ui.lang);
+  const fromClassic = () => {
+    if (busy) return;
+    setMsg('');
+    setBusy('lib.busy');
+    loadClassic(ui.lang)
+      .then(body => add(classic.title, body))
+      .catch(() => {
+        setBusy('');
+        setMsg(t('lib.save_failed'));
+      });
+  };
+
   const open = id => later(openBook(id)).then(() => go('home')).catch(() => {});
 
   // Переименовать — системным окном ввода: оно уже есть и привычно, а своё
@@ -164,6 +180,18 @@ export default function Library({go, back}) {
         {msg ? <div className="hint bad" role="alert">{msg}</div> : null}
         {note ? <div className="hint note" role="status">{note}</div> : null}
         <div className="hint">{t('lib.hint')}</div>
+
+        {/* Пропадает, когда роман уже в библиотеке: второй раз он не нужен,
+            а кнопка, которая «ничего не делает», выглядит сломанной. */}
+        {books.some(b => b.title === classic.title) ? null : (
+          <div className="classic">
+            <div className="sect">{t('lib.classic_head')}</div>
+            <div className="row">
+              <button className="ghost" onClick={fromClassic} disabled={!!busy}>{t('lib.classic_add')}</button>
+            </div>
+            <div className="hint">{t('lib.classic_hint')}</div>
+          </div>
+        )}
 
         <div>
           {books.length ? books.map(b => (

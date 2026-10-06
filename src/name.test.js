@@ -1,6 +1,6 @@
 import {readFileSync} from 'node:fs';
 import {describe, it, expect} from 'vitest';
-import {APP_NAME} from './name.js';
+import {APP_NAME, FEEDBACK_EMAIL} from './name.js';
 
 // Имя приложения и id пакета лежат в файлах, которые читают разные вещи:
 // лаунчер Android, Capacitor, браузер, Gradle. Совпадать они обязаны, а
@@ -76,5 +76,16 @@ describe('версия', () => {
   it('versionCode — целое положительное число', () => {
     const code = Number((gradle.match(/versionCode\s+(\d+)/) || [])[1]);
     expect(Number.isInteger(code) && code > 0).toBe(true);
+  });
+});
+
+// Адрес для отзывов опубликован в политике конфиденциальности. Если его
+// сменят в одном месте, письма из приложения уйдут туда, где их не читают,
+// или политика будет обещать адрес, на который приложение не пишет.
+describe('почта для отзывов', () => {
+  it('та же, что в политике конфиденциальности', () => {
+    const policy = read('docs/privacy/index.html');
+    const mails = [...new Set([...policy.matchAll(/mailto:([^"?]+)/g)].map(m => m[1]))];
+    expect(mails).toEqual([FEEDBACK_EMAIL]);
   });
 });

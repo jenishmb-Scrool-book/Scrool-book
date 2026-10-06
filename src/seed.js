@@ -36,6 +36,8 @@ export const SEED = `Как это работает
 
 Свои книги добавляй в «Библиотеке»: вставь текст в поле или открой файл — .txt, .fb2, .fb2.zip или .epub.
 
+Своей книги под рукой нет — там же есть кнопка «Взять „Капитанскую дочку“». Пушкин лежит прямо в приложении, скачивать ничего не нужно.
+
 Если в книге есть картинки, они показываются там же, где её текст: в ленте — кадром поста, в переписке — присланным фото, в роликах — превью.
 
 Оглавление открывается значком в шапке или нажатием на плашку «страница / осталось». Главы берутся из файла, а в обычном тексте распознаются заголовки вроде «Глава 5».
@@ -45,6 +47,8 @@ export const SEED = `Как это работает
 На той же плашке видно, сколько осталось: не проценты, а время. Вопрос обычно не «далеко ли я», а «успею ли сейчас».
 
 В настройках есть тема, размер шрифта, обои — двадцать готовых или своя картинка — и напоминание раз в сутки, если сам включишь.
+
+Там же, в самом низу, — «Написать разработчику». Нашлась ошибка или захотелось что-то поменять — откроется почта с готовым письмом, сведения о телефоне в нём уже будут.
 
 Приложение работает без интернета: разрешения выходить в сеть у него просто нет. Книги остаются на твоём телефоне, отправить их некуда.
 
@@ -74,6 +78,8 @@ The main thing: the position is shared. Read ten pieces in clips, open the chat 
 
 Add your own books in the Library: paste the text into the field or open a file — .txt, .fb2, .fb2.zip or .epub.
 
+No book of your own at hand? The same screen has an “Add Alice in Wonderland” button. The book ships inside the app, nothing to download.
+
 If the book has pictures in it, they show up where its text does: in the feed as the body of a post, in chat as a sent photo, in video as the thumbnail.
 
 The contents open with the icon in the header, or with a tap on the “page / left” badge. Chapters come from the file, and in plain text the app recognises headings like “Chapter 5”.
@@ -83,6 +89,8 @@ The magnifier in any of the apps and the Search bar on the home screen look thro
 The same badge shows what is left: not per cent, but time. The question is usually not “how far along am I”, it is “can I finish this now”.
 
 Settings hold the theme, the text size, the wallpaper — twenty ready-made ones or a picture of your own — and one reminder a day, if you switch it on yourself.
+
+At the very bottom there is “Write to the developer”. Found a bug or want something changed? Your mail app opens with a ready email, phone details already in it.
 
 The app works without the internet: it simply has no permission to go online. Your books stay on your phone, there is nowhere to send them.
 

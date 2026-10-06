@@ -1,6 +1,7 @@
 import {Component, useState} from 'react';
 import {useT} from '../i18n.js';
 import {APP_NAME} from '../name.js';
+import {mailto} from '../feedback.js';
 import Screen from './Screen.jsx';
 import StatusBar from './StatusBar.jsx';
 
@@ -65,6 +66,9 @@ function Fallen({err, onHome, homeLabel, onGo}) {
             <button className="crash-copy" onClick={() => onGo('settings')}>{t('set.title')}</button>
           </div>
         ) : null}
+        <a className="crash-copy" href={mailto(t('crash.subject', {app: APP_NAME, v: VERSION}), t('mail.note'), info)}>
+          {t('set.write')}
+        </a>
         <button className="crash-copy" onClick={copy}>{t('crash.copy')}</button>
         {note ? <p className="hint">{note}</p> : null}
         <div className="diag">{info}</div>

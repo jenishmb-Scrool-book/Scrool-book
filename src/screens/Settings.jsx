@@ -2,6 +2,7 @@ import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {useStore} from '../store.jsx';
 import {useT} from '../i18n.js';
 import {APP_NAME} from '../name.js';
+import {mailto} from '../feedback.js';
 import {WALLS, clearWallpaper, getWallpaper, setWallpaper, shrink} from '../wallpaper.js';
 import {NOTIFY, appInfo, cancelNotifications, ensureNotifications, notifyError, testNotification} from '../native.js';
 import {pageAt} from '../lib/pages.js';
@@ -111,9 +112,9 @@ export default function Settings({go, back, arg}) {
   // сеанс чтения ради строки, которую человек увидит завтра в полдень.
   // Смягчение бесплатное: повторное нажатие «Вкл» перепланирует напоминание
   // с текущей страницей, поэтому раннего возврата на «то же значение» здесь нет.
-  // Своей почты в приложении нет: адрес разработчика — его решение, а не наше,
-  // и вписывать его в код без спроса нельзя. Поэтому не «написать нам», а
-  // «скопировать» — тестировщик отправит это тем способом, каким уже общается.
+  // Письмо — главный путь, копирование — запасной: почтового приложения на
+  // телефоне может не быть, а тестировщик всё равно должен суметь сказать,
+  // какая у него сборка, — тем способом, каким уже общается с разработчиком.
   const copyDetails = async () => {
     const s = details(info, ui, text.length);
     try {
@@ -171,6 +172,13 @@ export default function Settings({go, back, arg}) {
   // «Убрать» рядом с решёткой снимало бы то, что в ней же и отмечено.
   const own = !!wall && !WALLS.includes(wall);
 
+  const version = info.version + (info.build ? ' (' + info.build + ')' : '');
+  const letter = mailto(
+    t('mail.subject', {app: APP_NAME, v: info.version || '?'}),
+    t('mail.note'),
+    details(info, ui, text.length)
+  );
+
   return (
     <Screen id="settings">
       <StatusBar />
@@ -227,9 +235,11 @@ export default function Settings({go, back, arg}) {
 
         <div className="sect">{t('set.about')}</div>
         <div className="hint">
-          {t('set.version', {v: info.version + (info.build ? ' (' + info.build + ')' : '')})}
+          {t('set.version', {v: version})}
         </div>
-        <div className="row">
+        {/* Друг под другом: рядом обе подписи не влезают и ломаются на две строки. */}
+        <div className="row col">
+          <a className="btn" href={letter}>{t('set.write')}</a>
           <button className="ghost" onClick={copyDetails}>{t('set.copy')}</button>
         </div>
         {copied ? <div className="hint">{copied}</div> : null}

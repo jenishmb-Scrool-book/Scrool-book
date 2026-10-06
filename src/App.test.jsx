@@ -319,6 +319,51 @@ describe('библиотека', () => {
   });
 });
 
+// Роман из самого приложения — для тестировщика, у которого своей книги нет.
+// Проверяется целиком, от кнопки до оглавления: текст грузится отдельным
+// куском сборки, и сломаться здесь может импорт, а не разметка.
+describe('книга из приложения', () => {
+  const classic = () => document.querySelector('#library .classic button');
+  const toc = id => JSON.parse(localStorage.getItem('scroll.book.' + id + '.toc') || 'null');
+
+  it('кладётся одной кнопкой, открывается, и главы у неё свои', async () => {
+    await seed({id: 'library', arg: null});
+    await boot();
+    expect(classic().textContent).toBe(DICT.ru['lib.classic_add']);
+    await act(async () => {classic().click();});
+    await waitFor(() => expect(here()).toBe('home'));
+    const meta = rawMeta();
+    const book = meta.books.find(b => b.title === 'Капитанская дочка');
+    expect(meta.cur).toBe(book.id);
+    expect(toc(book.id)).toHaveLength(14);
+  });
+
+  it('на английском — «Алиса»', async () => {
+    await seed({id: 'library', arg: null}, {lang: 'en'});
+    await boot();
+    expect(classic().textContent).toBe(DICT.en['lib.classic_add']);
+    await act(async () => {classic().click();});
+    await waitFor(() => expect(here()).toBe('home'));
+    const book = rawMeta().books.find(b => b.title === 'Alice’s Adventures in Wonderland');
+    expect(toc(book.id)).toHaveLength(12);
+  });
+
+  // Второй раз роман не нужен, а кнопка, после которой «ничего не
+  // произошло», выглядит сломанной.
+  it('кнопки нет, когда роман уже в библиотеке', async () => {
+    await Promise.all([
+      saveText('b1', TEXT),
+      saveMeta({
+        books: [{id: 'b1', title: 'Капитанская дочка', len: TEXT.length, toc: 1}],
+        cur: 'b1', at: {b1: 0}, last: 'reels', place: {id: 'library', arg: null}
+      })
+    ]);
+    await boot();
+    expect(here()).toBe('library');
+    expect(classic()).toBeNull();
+  });
+});
+
 describe('счёт дня на домашнем экране', () => {
   const at = (pace) => Promise.all([
     saveText('b1', TEXT),
