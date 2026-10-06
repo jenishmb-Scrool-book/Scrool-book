@@ -1,0 +1,3 @@
+# Тексты книг из приложения уезжают в сборку байт в байт. С core.autocrlf=true
+# Git на Windows выписал бы их с CRLF, и в книгу попали бы лишние \r.
+src/books/*.txt text eol=lf

@@ -20,5 +20,8 @@ const BOOKS = {
 
 export const classicOf = lang => BOOKS[lang === 'en' ? 'en' : 'ru'];
 
-/** Текст книги: строка, а не модуль. */
-export const loadClassic = lang => classicOf(lang).load().then(m => m.default);
+/**
+ * Текст книги: строка, а не модуль. Переводы строк — только LF: даже если
+ * файл однажды выпишется с CRLF, в книгу не должно попасть ни одного CR.
+ */
+export const loadClassic = lang => classicOf(lang).load().then(m => m.default.replace(/\r\n?/g, '\n'));
