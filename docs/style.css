@@ -60,3 +60,27 @@ code {
   font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
   font-size: .9em;
 }
+
+/* Страница теста: три шага, у каждого своя крупная кнопка. Нумерует список
+   сама страница, а не браузер, — иначе цифра и кнопка читались бы как два
+   разных счёта. */
+.steps { list-style: none; padding: 0; counter-reset: step; }
+.steps li { counter-increment: step; margin: 0 0 1.5rem; }
+.steps li::before {
+  content: counter(step);
+  display: inline-block;
+  width: 1.6rem; height: 1.6rem; margin-right: .5rem;
+  border-radius: 50%; background: var(--accent); color: var(--bg);
+  text-align: center; font-size: .9rem; line-height: 1.6rem; font-weight: 600;
+}
+.btn {
+  display: block;
+  margin-top: .6rem;
+  padding: .85rem 1rem;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+}
