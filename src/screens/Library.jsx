@@ -8,7 +8,7 @@ import {percent} from '../ui/Progress.jsx';
 import {pageCount} from '../lib/pages.js';
 import {parseBook} from '../lib/book.js';
 import {isNative} from '../native.js';
-import {classicOf, loadClassic} from '../classics.js';
+import {sampleOf, loadSample} from '../sample.js';
 import Glyph from '../ui/Glyph.jsx';
 
 // Стор возвращает Promise; но если реализация вдруг синхронная — не падаем.
@@ -107,15 +107,15 @@ export default function Library({go, back}) {
       });
   };
 
-  // Роман из самого приложения — тем же путём, что вставленный текст: те же
+  // Рассказ из самого приложения — тем же путём, что вставленный текст: те же
   // «Готовлю книгу…», та же проверка на повтор, тот же переход на дом.
-  const classic = classicOf(ui.lang);
-  const fromClassic = () => {
+  const sample = sampleOf(ui.lang);
+  const fromSample = () => {
     if (busy) return;
     setMsg('');
     setBusy('lib.busy');
-    loadClassic(ui.lang)
-      .then(body => add(classic.title, body))
+    loadSample(ui.lang)
+      .then(body => add(sample.title, body))
       .catch(() => {
         setBusy('');
         setMsg(t('lib.save_failed'));
@@ -181,15 +181,15 @@ export default function Library({go, back}) {
         {note ? <div className="hint note" role="status">{note}</div> : null}
         <div className="hint">{t('lib.hint')}</div>
 
-        {/* Пропадает, когда роман уже в библиотеке: второй раз он не нужен,
+        {/* Пропадает, когда рассказ уже в библиотеке: второй раз он не нужен,
             а кнопка, которая «ничего не делает», выглядит сломанной. */}
-        {books.some(b => b.title === classic.title) ? null : (
-          <div className="classic">
-            <div className="sect">{t('lib.classic_head')}</div>
+        {books.some(b => b.title === sample.title) ? null : (
+          <div className="sample">
+            <div className="sect">{t('lib.sample_head')}</div>
             <div className="row">
-              <button className="ghost" onClick={fromClassic} disabled={!!busy}>{t('lib.classic_add')}</button>
+              <button className="ghost" onClick={fromSample} disabled={!!busy}>{t('lib.sample_add')}</button>
             </div>
-            <div className="hint">{t('lib.classic_hint')}</div>
+            <div className="hint">{t('lib.sample_hint')}</div>
           </div>
         )}
 

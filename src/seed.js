@@ -36,7 +36,7 @@ export const SEED = `Как это работает
 
 Свои книги добавляй в «Библиотеке»: вставь текст в поле или открой файл — .txt, .fb2, .fb2.zip или .epub.
 
-Своей книги под рукой нет — там же есть кнопка «Взять „Капитанскую дочку“». Пушкин лежит прямо в приложении, скачивать ничего не нужно.
+Своей книги под рукой нет — там же есть кнопка «Добавить рассказ-пример». Короткий рассказ из трёх глав лежит прямо в приложении, скачивать ничего не нужно.
 
 Если в книге есть картинки, они показываются там же, где её текст: в ленте — кадром поста, в переписке — присланным фото, в роликах — превью.
 
@@ -78,7 +78,7 @@ The main thing: the position is shared. Read ten pieces in clips, open the chat 
 
 Add your own books in the Library: paste the text into the field or open a file — .txt, .fb2, .fb2.zip or .epub.
 
-No book of your own at hand? The same screen has an “Add Alice in Wonderland” button. The book ships inside the app, nothing to download.
+No book of your own at hand? The same screen has an “Add a sample story” button. A short story in three chapters ships inside the app, nothing to download.
 
 If the book has pictures in it, they show up where its text does: in the feed as the body of a post, in chat as a sent photo, in video as the thumbnail.
 

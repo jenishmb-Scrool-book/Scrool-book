@@ -222,9 +222,9 @@ const ru = {
   'lib.missing': 'текста нет — открой файл заново',
   'lib.again': 'Эта книга уже в библиотеке — открыта на своём месте.',
   'lib.docx': 'Это документ Word. Сохрани его как «Обычный текст» (.txt) и открой снова.',
-  'lib.classic_head': 'Нет своей книги под рукой?',
-  'lib.classic_add': 'Взять «Капитанскую дочку»',
-  'lib.classic_hint': 'Пушкин, 14 глав. Книга лежит в самом приложении — интернет не нужен.',
+  'lib.sample_head': 'Нет своей книги под рукой?',
+  'lib.sample_add': 'Добавить рассказ-пример',
+  'lib.sample_hint': 'Короткий рассказ из трёх глав — чтобы посмотреть, как это читается. Он лежит в самом приложении, интернет не нужен.',
   'lib.pdf': 'PDF не поддерживается: это свёрстанные страницы, а читалке нужен сам текст. Найди эту книгу в .fb2 или .epub — их раздают почти все библиотеки.',
 
   // ===== настройки =====
@@ -464,9 +464,9 @@ const en = {
   'lib.missing': 'text missing — open the file again',
   'lib.again': 'This book is already in the Library — it’s open at your place.',
   'lib.docx': 'This is a Word document. Save it as “Plain text” (.txt) and open it again.',
-  'lib.classic_head': 'No book of your own at hand?',
-  'lib.classic_add': 'Add Alice in Wonderland',
-  'lib.classic_hint': 'Lewis Carroll, 12 chapters. It ships inside the app — no internet needed.',
+  'lib.sample_head': 'No book of your own at hand?',
+  'lib.sample_add': 'Add a sample story',
+  'lib.sample_hint': 'A short story in three chapters, to see how this reads. It ships inside the app — no internet needed.',
   'lib.pdf': 'PDF isn’t supported: it holds laid-out pages, and the reader needs the text itself. Look for the same book as .epub or .fb2 — most libraries offer them.',
 
   'set.title': 'Settings',
