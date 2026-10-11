@@ -114,26 +114,28 @@ Hi! Solo dev from Kyrgyzstan, first app. I need 12 testers for 14 days.
 
 Scroll Book is an offline reader that shows a book the way you already scroll: as a chat, clips, stories or a feed. Same text, same position across all six views.
 
-Join in 2 minutes (all three steps on one page): https://jenishmb-scrool-book.github.io/Scrool-book/beta/
+The community group testers-community@googlegroups.com is added to my closed test, so if you're in it, it's two taps:
 
-1. Join the group: https://groups.google.com/g/scrollbook-testers
-2. Opt in: https://play.google.com/apps/testing/com.tirekai.scrollbook
-3. Install: https://play.google.com/store/apps/details?id=com.tirekai.scrollbook
+1. Opt in: https://play.google.com/apps/testing/com.tirekai.scrollbook
+2. Install: https://play.google.com/store/apps/details?id=com.tirekai.scrollbook
 
 No ads, no sign-up, no internet permission at all. No book of your own? Library → "Add a sample story".
 
-I test back every app in this thread: drop your opt-in link below and I'll keep it installed for the full 14 days and open it daily.
+I test back every app in this thread: drop your opt-in link below and I'll keep it installed for the full 14 days, open it daily and post a screenshot as proof.
 ```
 
-Если наша группа r/TestersCommunity уже добавлена в дорожку, шаг 1 для её
-участников не нужен — так и написать: `Members of r/TestersCommunity: your group
-is already added, just opt in and install.`
+Правила сабреддита (12 октября): только их группа
+`testers-community@googlegroups.com` — свою группу и страницу `/beta/` в посте
+не давать; обязательна метка (flair) поста; доказательство теста — скриншот.
 
 ### Ответ под чужим постом (EN)
 
+К ответу — скриншот: приложение установлено (страница в Play Маркете или экран
+приложения).
+
 ```
-Joined, opted in and installed ✅ Will keep it for the full 14 days and open it daily.
-Mine: Scroll Book — https://jenishmb-scrool-book.github.io/Scrool-book/beta/ — thanks for testing back!
+Joined, opted in and installed ✅ Screenshot attached. Will keep it for the full 14 days and open it daily.
+Mine: Scroll Book — opt in https://play.google.com/apps/testing/com.tirekai.scrollbook — thanks for testing back!
 ```
 
 ### Пост в Telegram-чат обмена (RU)
